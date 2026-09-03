@@ -77,6 +77,21 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
+    .compliance-box {
+      background-color: #FEF3C7;
+      border-left: 5px solid #D97706;
+      padding: 1.2rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .compliance-box h3 {
+      color: #92400E;
+      margin-top: 0;
+    }
+    .compliance-box p {
+      color: #78350F;
+      margin-bottom: 0.5rem;
+    }
     .highlight-box {
       background-color: #F0FDF4;
       border-left: 4px solid var(--primary);
@@ -109,9 +124,9 @@
       
       <h3>Core Functionalities:</h3>
       <ul>
-        <li><strong>Automatic ROAS Calculation:</strong> Instantly calculates Return on Ad Spend (ROAS) across all campaign rows.</li>
+        <li><strong>Automatic ROAS Calculation:</strong> Instantly calculates Return on Ad Spend (ROAS) across campaign rows.</li>
         <li><strong>Inventory & Burn-Rate Correlation:</strong> Alerts media buyers when high-performing ad sets risk burning out due to low stock inventory.</li>
-        <li><strong>AI Actionable Recommendations:</strong> Generates concrete next steps (e.g., <em>"🔥 SCALE BUDGET +30%"</em>, <em>"⛔ PAUSE IMMEDIATELY"</em>, or <em>"⚠️ LOW INVENTORY ALERT"</em>) in a formatted output column.</li>
+        <li><strong>AI Actionable Recommendations:</strong> Generates concrete tactical next steps (e.g., <em>"🔥 SCALE BUDGET +30%"</em>, <em>"⛔ PAUSE IMMEDIATELY"</em>, or <em>"⚠️ LOW INVENTORY ALERT"</em>) in a formatted output column.</li>
       </ul>
     </div>
 
@@ -131,20 +146,24 @@
       <p><strong>Effective Date:</strong> September 1, 2026</p>
       <p>AdSpend AI ("we", "our", or "the app") values user privacy. This privacy policy explains how data is collected, processed, and protected.</p>
 
-      <h3>1. Information We Collect</h3>
-      <p>The app only accesses data in the single spreadsheet opened by the user when the user clicks the audit button. We do not collect or store personal identifiers, account credentials, or entire Google Drive metadata.</p>
-
-      <div class="highlight-box">
-        <h3>2. Data Sharing and Third-Party Disclosures</h3>
-        <p>AdSpend AI strictly respects user privacy. Google user data obtained via restricted or sensitive scopes (such as Google Sheets data) is never sold, leased, or used for advertising purposes.</p>
-        <p>To provide real-time marketing audit insights, specific row performance metrics (e.g., ad spend, revenue numbers) are transmitted securely via encrypted HTTPS to third-party AI processors (specifically the <strong>OpenAI API</strong>) strictly for ephemeral text analysis.</p>
-        <p>We do not use Google Workspace data to train, retrain, or improve generalized AI/ML models. No Google user data is transferred, sold, or disclosed to any other third parties.</p>
+      <!-- Mandatory Google AI Limited Use Section -->
+      <div class="compliance-box">
+        <h3>Google Workspace API Limited Use Compliance Statement</h3>
+        <p><strong>The use of raw or derived user data received from Workspace APIs will adhere to the Google User Data Policy, including the Limited Use requirements.</strong></p>
+        <p>AdSpend AI strictly does not use, transfer, or disclose Google user data—including raw, aggregated, or derived data—to create, train, retrain, or improve foundational or generalized machine learning and artificial intelligence models.</p>
       </div>
 
-      <h3>3. Data Retention</h3>
+      <div class="highlight-box">
+        <h3>Data Sharing and Third-Party Disclosures</h3>
+        <p>AdSpend AI strictly respects user privacy. Google user data obtained via restricted or sensitive scopes (such as Google Sheets data) is never sold, leased, or used for advertising purposes.</p>
+        <p>To provide real-time marketing audit insights, specific row performance metrics (e.g., ad spend, revenue numbers) are transmitted securely via encrypted HTTPS to third-party AI processors (specifically the <strong>OpenAI API</strong>) strictly for ephemeral text analysis.</p>
+        <p>No Google user data is transferred, sold, or disclosed to any other third parties.</p>
+      </div>
+
+      <h3>Data Retention</h3>
       <p>All AI analysis queries are stateless and processed ephemerally. No spreadsheet contents are persistently recorded, logged, or retained on external databases by our add-on.</p>
 
-      <h3>4. User Rights & Contact</h3>
+      <h3>User Rights & Contact</h3>
       <p>Users can revoke add-on permissions at any time via the Google Account Security settings. For questions regarding privacy or data handling, contact us at: <strong>jyp970326@gmail.com</strong>.</p>
     </div>
 
