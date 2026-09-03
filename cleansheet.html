@@ -2,43 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CleanSheet AI - Privacy Policy & Terms of Service</title>
+  <title>CleanSheet AI - Data Cleaning & Formatting Tool</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 0 auto; padding: 40px 20px; background-color: #f8fafc; }
-    .card { background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; }
-    h1 { color: #0f172a; font-size: 24px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
-    h2 { font-size: 17px; margin-top: 24px; color: #1e293b; }
-    p, li { font-size: 14px; color: #475569; }
-    ul { padding-left: 20px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #1f2937; background: #f9fafb; }
+    .card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    h1 { color: #1e3a8a; }
+    h2 { color: #1f2937; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem; }
+    .feature-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>CleanSheet AI - Privacy Policy & Terms</h1>
-    <p>Last updated: August 2026</p>
+    <h1>CleanSheet AI</h1>
+    <p><strong>Application Purpose:</strong> CleanSheet AI is a professional data cleansing add-on designed for Google Sheets users. It automates tedious data sanitation tasks, helping businesses eliminate errors and maintain clean datasets effortlessly.</p>
+    
+    <h2>Core Application Features</h2>
+    <div class="feature-box">
+      <ul>
+        <li><strong>Smart Deduplication:</strong> Instantly scans, detects, and removes duplicate rows based on selected key columns without corrupting original data structures.</li>
+        <li><strong>Whitespace & Text Sanitation:</strong> Trims accidental leading, trailing, and excessive spaces, while standardizing uppercase/lowercase text formatting.</li>
+        <li><strong>Data Validation & Format Standardizing:</strong> Automatically detects broken email patterns, normalizes date formats (YYYY-MM-DD), and removes empty ghost rows.</li>
+      </ul>
+    </div>
 
-    <h2>1. Data Access & Scopes Requested</h2>
-    <p>CleanSheet AI requests access strictly limited to:</p>
-    <ul>
-      <li><strong>https://www.googleapis.com/auth/spreadsheets.currentonly:</strong> Reads only user-selected cells in the currently open active spreadsheet and writes back formatted/cleaned results.</li>
-      <li><strong>https://www.googleapis.com/auth/script.external_request:</strong> Sends selected text batches via HTTPS to OpenAI API endpoints for data standardization.</li>
-      <li><strong>User Profile / Email (basic info):</strong> Used solely to identify user license status.</li>
-    </ul>
+    <h2>Permission Scopes Usage</h2>
+    <p>CleanSheet AI only requests access to <code>spreadsheets.currentonly</code> strictly to inspect and format data within the active sheet selected by the user. We never read or modify external spreadsheets.</p>
+  </div>
 
-    <h2>2. Data Use Disclosure</h2>
-    <p>Google user data is processed exclusively in real-time to parse, clean, trim, and format spreadsheet cells upon explicit button clicks by the user.</p>
-
-    <h2>3. Third-Party Data Sharing & Transfer</h2>
-    <p>CleanSheet AI only transmits user-selected spreadsheet cell contents to the OpenAI API endpoint (<code>https://api.openai.com/</code>) via encrypted TLS/HTTPS for processing. <strong>We do NOT sell, rent, or transfer user data to any third-party advertisers or data brokers.</strong> OpenAI does not use data submitted via API to train models.</p>
-
-    <h2>4. Data Protection & Security Mechanisms</h2>
-    <p>All network communications are strictly encrypted using HTTPS/TLS. We do not maintain any persistent external database storing your spreadsheet data. API keys and user properties are encrypted via Google Apps Script PropertiesService.</p>
-
-    <h2>5. Data Retention & Deletion Policy</h2>
-    <p><strong>CleanSheet AI operates on a zero-retention architecture.</strong> User spreadsheet data is processed ephemerally in memory and is deleted immediately after the cleaned values are written back to your spreadsheet. Users can completely revoke access at any time via <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a>.</p>
-
-    <h2>6. Contact Developer</h2>
-    <p>For questions or data deletion requests, contact developer support at: <a href="mailto:jyp970326@gmail.com">jyp970326@gmail.com</a></p>
+  <div class="card">
+    <h2>Privacy Policy & Terms of Service</h2>
+    <p>Effective Date: September 2026</p>
+    <p>CleanSheet AI operates completely client-side within your Google Apps Script environment. No user spreadsheet data is collected, stored, or transmitted to any external servers or third parties.</p>
+    <p>For questions or support: <strong>jyp970326@gmail.com</strong></p>
   </div>
 </body>
 </html>
