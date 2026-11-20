@@ -1,0 +1,162 @@
+/* V9 | cinematic tabletop director. Designed for 360x640, 390x844 and desktop.
+ * Use true ordered DOM/animation transitions rather than simultaneous card updates. */
+.view[data-screen='play-blackjack'],.view[data-screen='play-baccarat']{overflow:hidden!important}
+.view[data-screen='play-blackjack']>.fade,.view[data-screen='play-baccarat']>.fade{height:100%;min-height:0}
+.view[data-screen='play-blackjack']>.fade>.v9-cardgame,
+.view[data-screen='play-baccarat']>.fade>.v9-cardgame{
+ height:100%!important;max-width:1020px;margin:0 auto;min-height:0;display:flex!important;flex-direction:column!important;
+ justify-content:flex-start!important;gap:6px!important;overflow:hidden;position:relative;
+}
+.v9-table-head{display:flex;flex:0 0 39px;align-items:center;justify-content:space-between;gap:10px;padding:0 2px;z-index:2}
+.v9-table-head b{font:800 clamp(16px,4.3vw,24px) Georgia,'Noto Sans KR',sans-serif;letter-spacing:.35px;color:#fbe1a2;text-shadow:0 1px 1px #000,0 2px 10px #c8933d77;white-space:nowrap}
+.v9-head-round{height:33px;width:33px;flex:0 0 33px;border-radius:50%;border:1.5px solid #d4ae64;color:#f5dda1;background:radial-gradient(circle at 30% 20%,#234d39,#051913 80%);font:bold 23px Georgia;box-shadow:0 2px 6px #0008,inset 0 0 5px #ccaf6a2b}
+.v9-casino-arena{flex:1 1 auto;min-height:0;position:relative;isolation:isolate;overflow:hidden;border:3px solid transparent;border-radius:21px 21px 30px 30px;
+ background:linear-gradient(110deg,#c9a66c 0%,#fff5c6 15%,#916d3d 32%,#f3d69b 55%,#573919 70%,#ddbd70 88%,#523819 100%) border-box;
+ box-shadow:0 7px 20px #000b,0 0 19px #d3a65c35,inset 0 0 10px #000c;}
+.v9-casino-arena:before{content:'';position:absolute;inset:3px;border-radius:17px 17px 27px 27px;z-index:0;
+ background:radial-gradient(ellipse at 50% 20%,#f8d6a333 0%,transparent 35%),
+ repeating-linear-gradient(94deg,#1f0e16 0 36px,#370f22 39px 43px,#170a11 50px 77px),
+ linear-gradient(#301715,#090c0a 35%,#05190f 85%);box-shadow:inset 0 0 38px #000c;}
+.v9-casino-arena:after{content:'';position:absolute;inset:0;border-radius:20px;pointer-events:none;z-index:9;
+ background:linear-gradient(100deg,#fff6c411,transparent 22%,transparent 82%,#f3d9930e),radial-gradient(ellipse at 50% 0%,#fff1cb12,transparent 45%)}
+.v9-dealer-scene{position:absolute;inset:0 0 auto;height:45%;min-height:115px;z-index:3;pointer-events:none;overflow:visible}
+.v9-dealer-glow{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at 50% 45%,#f1bb8040,transparent 37%),radial-gradient(ellipse at 50% 0%,#ffda8233,transparent 70%)}
+.v9-room-lamp{position:absolute;top:8%;width:24px;height:30px;border-radius:7px 7px 12px 12px;background:linear-gradient(105deg,#a77739,#fff1b0,#8f5724);z-index:1;filter:drop-shadow(0 0 10px #ffdb7f);opacity:.72}
+.v9-room-lamp:after{content:'';position:absolute;top:23px;left:10px;width:4px;height:32px;background:linear-gradient(#9a6a35,#fae0a2,#794f24)}
+.v9-lamp-left{left:7%}.v9-lamp-right{right:7%}
+.v9-dealer-stage{position:absolute;inset:0;z-index:5;display:flex;justify-content:center;align-items:flex-end;pointer-events:none}
+.v9-dealer-stage img{display:block;width:auto;height:clamp(160px,28dvh,260px);max-width:79%;object-fit:contain;object-position:bottom;transform:translate3d(0,9px,0);transform-origin:55% 100%;filter:drop-shadow(0 5px 9px #000d) drop-shadow(0 0 4px #c38e5433);will-change:transform}
+.v9-dealer-stage.v9-active-hand img.v9-reaching{animation:v9DealerReach .82s cubic-bezier(.21,.75,.36,1) both}
+@keyframes v9DealerReach{0%{transform:translate3d(0,9px,0) scale(1)}34%{transform:translate3d(0,13px,0) scale(1.027)}67%{transform:translate3d(0,17px,0) scale(1.053)}100%{transform:translate3d(0,9px,0) scale(1)}}
+.v9-dealer-label{position:absolute;left:8px;top:8px;z-index:6;color:#fce8c2bb;font:700 8px Georgia;letter-spacing:1.3px;text-shadow:0 2px #000}
+.v9-deck{position:absolute;top:82%;left:56%;height:34px;width:26px;transform:rotate(-15deg);border:2px solid #e4c17c;border-radius:4px;z-index:8;
+ background:repeating-linear-gradient(40deg,#771e35,#771e35 3px,#c2646d 5px,#501628 8px);box-shadow:2px 5px 5px #000a,inset 0 0 0 3px #e1af68;color:#ffe1a6;display:grid;place-items:center;font:18px Georgia}
+.v9-felt{position:absolute;left:1.5%;right:1.5%;top:29%;bottom:0;z-index:2;border:8px ridge #c4a05b;border-bottom-width:14px;border-radius:45% 45% 9% 9% / 16% 16% 8% 8%;
+ background:radial-gradient(ellipse at 49% 25%,#247454 0%,#105b41 28%,#075137 54%,#022b1f 92%),repeating-linear-gradient(30deg,#ffffff05 0 1px,#0000 1px 4px);
+ box-shadow:inset 0 0 35px #00140de6,inset 0 0 0 4px #ebd28a50,0 -5px 10px #ffd18630,0 10px 23px #000c;}
+.v9-felt:before{content:'';position:absolute;inset:10px;border-radius:46% 46% 6% 6% / 17% 17% 6% 6%;border:1px solid #f0c87475;box-shadow:0 0 6px #f1e2af35;pointer-events:none}
+.v9-felt-crest{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);color:#d9bf7740;text-shadow:0 1px 2px #9d7d5a22;font:bold clamp(32px,10vw,65px) Georgia}
+.v9-trim{position:absolute;bottom:13%;left:16%;right:16%;border-bottom:1px solid #f7da8055;border-radius:50%;height:30%}
+.v9-hand{position:absolute;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
+.v9-hand-dealer{top:45%;height:24%}.v9-hand-player{top:75%;height:24%}
+.v9-hand-label{margin:0 0 3px;font-weight:800;font-size:11px;color:#ffeac8;text-shadow:0 2px 3px #000,0 0 7px #f5bb5a55;background:#061e16a5;border:1px solid #ba965b99;border-radius:12px;padding:2px 10px;z-index:4;white-space:nowrap}
+.v9-hand-label span{color:#fadc8b;margin-left:7px;font-variant-numeric:tabular-nums}
+.v9-cards{display:flex;align-items:center;justify-content:center;gap:3px;min-height:57px;max-width:95%;z-index:6;perspective:900px;pointer-events:none}
+.v9-card{width:clamp(37px,11.5vw,62px);height:clamp(54px,16.6vw,88px);flex:0 0 auto;position:relative;perspective:900px;transform-style:preserve-3d;filter:drop-shadow(2px 5px 5px #0009)}
+.v9-card.v9-pending{opacity:0}.v9-card.v9-landed{animation:v9CardLand .3s cubic-bezier(.16,.78,.2,1.3) backwards}
+@keyframes v9CardLand{0%{transform:translateY(-5px) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+.v9-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .72s cubic-bezier(.18,.75,.23,1)}
+.v9-card.v9-hidden .v9-card-inner{transform:rotateY(180deg)}
+.v9-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:5px;border:2px solid #e2d3ad;box-shadow:inset 0 0 0 2px #fff8f4}
+.v9-front{background:linear-gradient(135deg,#fff 0%,#f2eee5 57%,#d4d0c6 100%);color:#181919}
+.v9-card.v9-red .v9-front{color:#c92735}
+.v9-rank{font:bold clamp(21px,5.4vw,33px) Georgia;line-height:1.08}
+.v9-pip{font-size:clamp(18px,5vw,29px);line-height:1}
+.v9-corner{position:absolute;top:3px;left:3px;font:700 9px Georgia}
+.v9-corner .v9-suit{margin-left:1px}
+.v9-back{transform:rotateY(180deg);background:repeating-linear-gradient(45deg,#55142a 0 4px,#af5361 5px,#4a1424 8px);color:#fce0a2;box-shadow:inset 0 0 0 3px #e2b972; font:bold 30px Georgia;text-shadow:0 0 5px #ffe2a1}
+.v9-back span{font:700 7px Georgia;letter-spacing:1px}
+.v9-center-mark{position:absolute;top:69%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;z-index:3;color:#f5d79382;font:600 clamp(8px,2.2vw,14px) Georgia;letter-spacing:1.5px;text-shadow:0 1px 2px #000}
+.v9-prize-anchor{position:absolute;inset:0;pointer-events:none;z-index:16;display:flex;justify-content:center;align-items:center}
+.v9-win-float{pointer-events:auto;position:relative;min-width:min(83%,270px);max-width:90%;padding:10px 18px;border-radius:15px;border:2px solid #f9db8c;
+ background:linear-gradient(135deg,#4c2b14f5,#092e20f9 34%,#07180ff8 85%);box-shadow:inset 0 0 18px #d99c3547,0 0 31px #f7c65ac0,0 12px 19px #000c;text-align:center;animation:v9PrizeBirth .5s cubic-bezier(.16,.89,.22,1.31) both;transform-style:preserve-3d}
+@keyframes v9PrizeBirth{0%{opacity:0;transform:perspective(600px) translateZ(-130px) rotateX(-24deg) scale(.65)}100%{opacity:1;transform:perspective(600px) translateZ(30px) rotateX(0) scale(1)}}
+.v9-win-title{font:900 clamp(17px,4.7vw,25px) Georgia;color:#ffdd7e;text-shadow:0 0 13px #ffa545,0 2px #000;letter-spacing:2px}
+.v9-win-money{font:900 clamp(22px,5vw,34px) Georgia;color:#fff5c7;white-space:nowrap;text-shadow:0 2px #74491f,0 0 11px #f2be65;font-variant-numeric:tabular-nums}
+.v9-win-money small{font:700 10px 'Noto Sans KR',sans-serif}
+.v9-win-net{font-size:11px;color:#fae2b1}.v9-win-net strong{color:#fff}
+.v9-win-skip{margin-top:6px;min-height:25px;padding:2px 14px;background:linear-gradient(#ffdf8b,#bd8a41);color:#2d200e;font-weight:800;border:1px solid #f6dda2;border-radius:20px;font-size:10px}
+.v9-lost{border-color:#b69067;box-shadow:0 0 14px #7d4b32a0}.v9-lost .v9-win-title{color:#e6cab7}
+.v9-prize-complete{animation:v9PrizeLeave .5s ease-in .4s both}
+@keyframes v9PrizeLeave{to{opacity:0;transform:translateY(-15px) scale(.95)}}
+.v9-flying-card{position:fixed;z-index:8000;pointer-events:none;width:44px;height:62px;border-radius:6px;border:3px solid #f8d58b;box-shadow:0 8px 13px #000c,0 0 15px #f2b84990,inset 0 0 0 3px #e0a76c;
+ display:grid;place-items:center;background:repeating-linear-gradient(45deg,#63162d 0 4px,#b35863 5px,#5c1934 9px)}
+.v9-flying-crest{width:80%;height:80%;border:1px solid #f5d28c;display:grid;place-items:center;color:#ffe8a0;font:bold 25px Georgia;text-shadow:0 0 6px #fcd276}
+.v9-card-controls{display:flex;flex:0 0 auto;flex-direction:column;gap:5px;z-index:3}
+.v9-bet-controller{display:flex;align-items:center;justify-content:space-between;min-height:38px;gap:6px;border:1px solid #b99958;background:linear-gradient(110deg,#09291d,#154632,#07291f);border-radius:13px;padding:4px 9px;box-shadow:inset 0 0 12px #0005,0 3px 8px #0008}
+.v9-bet-controller>span{font-size:11px;color:#e9d4ac;font-weight:700}
+.v9-bet-amount{margin-left:auto;display:flex;gap:5px;align-items:center;color:#ffe6a8;font-size:11px;white-space:nowrap}
+.v9-bet-amount strong{font-size:14px;font-variant-numeric:tabular-nums}
+.v9-bet-controller>button{border-radius:50%;height:29px;width:29px;min-width:29px;background:linear-gradient(#204d38,#07291e);border:1px solid #ddb675;color:#ffde91;font:800 19px Georgia}
+.v9-bet-controller>button:disabled{opacity:.38}
+.v9-turn-status{min-height:17px;text-align:center;font-size:11px;font-weight:700;color:#f7d69a;text-shadow:0 1px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v9-turn-status[data-kind=win]{color:#ffe77c}.v9-turn-status[data-kind=loss]{color:#f5af97}
+.v9-actions{display:flex;align-items:center;gap:8px;flex:0 0 45px}
+.v9-actions button{flex:1;height:44px;border-radius:24px;font-weight:900;font-size:clamp(12px,3.6vw,17px);border:2px solid #f2d5a0;box-shadow:0 3px 5px #0009,inset 0 3px 6px #fff6;white-space:nowrap}
+.v9-action-gold{background:linear-gradient(180deg,#ffeaae,#daa751 54%,#a6732d);color:#302011;text-shadow:0 1px #fff3b4}
+.v9-action-red{background:linear-gradient(#7e2134,#3d1023);color:#fff0cf;border-color:#c28a77!important}
+.v9-action-muted{background:#264033;color:#acbfb1;opacity:.75}
+/* Baccarat two side-by-side physical hands */
+.v9-baccarat-hands{position:absolute;left:4%;right:4%;top:53%;height:33%;z-index:6;display:flex;align-items:flex-start;justify-content:space-around;gap:6px}
+.v9-baccarat-hands .v9-hand{position:relative;top:auto;left:auto;right:auto;flex:1;min-width:0;height:auto}
+.v9-baccarat-hands .v9-cards{gap:1px;max-width:100%;min-height:59px}
+.v9-baccarat-hands .v9-card{width:clamp(32px,9.3vw,56px);height:clamp(48px,14.6vw,75px)}
+.v9-baccarat-hands .v9-rank{font-size:clamp(17px,4.6vw,27px)}.v9-baccarat-hands .v9-pip{font-size:clamp(15px,4vw,23px)}
+.v9-baccarat-hands .v9-hand-label{font-size:11px;max-width:100%;padding:2px 7px}
+.v9-bac-crest{top:87%;font-size:10px}
+.v9-bac-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;flex:0 0 34px}
+.v9-bac-choice{height:34px;border-radius:10px;border:1px solid #d1af6d;color:#fff0d1;font-weight:900;background:linear-gradient(#173f3d,#082b2b)}
+.v9-bac-1{background:linear-gradient(#347447,#1b5033)}.v9-bac-2{background:linear-gradient(#6a2030,#38131b)}
+.v9-bac-choice.selected{box-shadow:inset 0 0 0 2px #ffe7a9,0 0 9px #f8c85c;border-color:#ffdf8a}
+.v9-bac-choice:disabled{opacity:.66}
+/* Rouge/Noir roulette result displayed as a persistent gold-edged physical marker. */
+.r-scene .v9-roulette-win-panel{position:absolute;right:6px;bottom:5px;z-index:16;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:94px;max-width:34%;padding:4px 6px;
+ background:radial-gradient(ellipse at 50% 15%,#3b361d,#071c16f5 72%);border:1.5px solid #ffe09e;border-radius:12px;box-shadow:0 0 18px #f7bf55ad,0 5px 9px #000b;animation:v9RouletteWinner .5s cubic-bezier(.14,.9,.24,1.3) both}
+@keyframes v9RouletteWinner{from{opacity:0;transform:scale(.62) translateY(15px)}to{opacity:1;transform:scale(1)}}
+.r-scene .v9-win-label{font:bold 7px Georgia;letter-spacing:.3px;color:#ffdf97;white-space:nowrap}
+.r-scene .v9-win-ball{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:3px ridge #f7d889;color:#fff6da;font:900 29px Georgia;text-shadow:0 2px #000,0 0 10px #fff3c6;box-shadow:inset 0 3px 7px #ffffff44,0 3px 8px #0008}
+.v9-color-red{background:radial-gradient(circle at 28% 20%,#f65160,#8d071b 75%)}
+.v9-color-black{background:radial-gradient(circle at 28% 20%,#657583,#0a1116 70%)}
+.v9-color-green{background:radial-gradient(circle at 28% 20%,#39bd88,#03653f 75%)}
+.r-scene .v9-win-details{font-size:8px;text-align:center;color:#f8dfae;font-weight:800;line-height:1.3;font-variant-numeric:tabular-nums}
+.r-pocket.v9-roulette-hit{outline:3px solid #ffe17b;outline-offset:-2px;box-shadow:0 0 15px #ffe16ea5,inset 0 0 14px #fff5b675;animation:v9PocketGlow 2s ease-in-out 2}
+@keyframes v9PocketGlow{50%{filter:brightness(1.7);box-shadow:0 0 23px #ffeb84}}
+.v9-poker-scene{position:relative}.v9-poker-deck{position:absolute;right:21%;top:15%;z-index:4;width:24px;height:34px;transform:rotate(-15deg);border:1px solid #f4d393;background:#7b2038;color:#e9c277;font:20px Georgia;text-align:center;box-shadow:2px 3px #311c15}
+@media(max-width:799px){
+ .v9-casino-arena{border-width:2.5px}
+ .v9-cardgame .v9-card-controls{gap:4px}
+ .v9-cardgame .v9-table-head{flex-basis:34px}
+ .v9-cardgame .v9-hand-dealer{top:44%}
+ .v9-cardgame .v9-hand-player{top:75%}
+ .view[data-screen='play-blackjack']>.fade,.view[data-screen='play-baccarat']>.fade{overflow:hidden}
+}
+@media(max-height:700px) and (max-width:799px){
+ .view[data-screen='play-blackjack']>.fade>.v9-cardgame,.view[data-screen='play-baccarat']>.fade>.v9-cardgame{gap:3px!important}
+ .v9-cardgame .v9-table-head{flex-basis:30px}.v9-table-head b{font-size:15px}
+ .v9-dealer-stage img{height:clamp(130px,24dvh,180px)}
+ .v9-hand-label{font-size:9px;padding:1px 7px}
+ .v9-card{width:clamp(31px,10vw,42px);height:clamp(46px,15vw,62px)}
+ .v9-baccarat-hands .v9-card{width:29px;height:42px}.v9-baccarat-hands .v9-pip{font-size:14px}
+ .v9-bet-controller{min-height:30px;padding:2px 7px}
+ .v9-turn-status{min-height:14px;font-size:9px}
+ .v9-actions{flex-basis:37px}.v9-actions button{height:37px}
+ .v9-bac-choices{flex-basis:30px}.v9-bac-choice{height:30px}
+}
+@media(min-width:800px){
+ .v9-casino-arena{min-height:0}
+ .v9-dealer-stage img{height:clamp(180px,35vh,310px)}
+ .v9-hand-dealer{top:41%}.v9-hand-player{top:74%}
+ .v9-baccarat-hands{top:58%}
+ .v9-hand-label{font-size:14px}
+ .v9-baccarat-hands .v9-card{width:55px;height:78px}
+ .v9-card{width:clamp(60px,6vw,86px);height:clamp(86px,9vw,113px)}
+ .v9-cardgame .v9-card-controls{max-width:840px;width:100%;align-self:center}
+ .v9-table-head{flex-basis:43px}
+}
+@media(prefers-reduced-motion:reduce){.v9-casino-arena *{animation-duration:.1ms!important;transition-duration:.1ms!important}}
+/* V9 finishing: side stacks add a physical foreground; losing hands must stay readable. */
+.v9-chip-pile{position:absolute;z-index:4;bottom:18%;width:45px;height:45px;pointer-events:none;filter:drop-shadow(0 5px 4px #0009);opacity:.9}
+.v9-chips-left{left:5%}.v9-chips-right{right:5%}
+.v9-chip-pile i{position:absolute;bottom:0;width:22px;height:13px;border:3px dashed #f8e4af;border-radius:50%;background:linear-gradient(90deg,#9d223c,#f8526d,#9d223c);box-shadow:0 -4px #79172b,0 -7px #fbc8c3,0 -11px #81142b,0 -13px #d78591}
+.v9-chip-pile i:nth-child(1){left:0}.v9-chip-pile i:nth-child(2){left:17px;bottom:10px;background:linear-gradient(90deg,#05654c,#38d69e,#05654c);box-shadow:0 -4px #05654c,0 -8px #2ac99a,0 -12px #055541,0 -15px #c7f1df}.v9-chip-pile i:nth-child(3){left:9px;bottom:0;background:linear-gradient(90deg,#092d72,#4d91ef,#092d72);box-shadow:0 -4px #0c3b8b,0 -8px #91b9e8,0 -12px #104a92}
+.r-scene .v8-money-pop{display:none!important}
+.r-wheel-stage #realWheel{transform:perspective(650px) rotateX(10deg);transform-origin:50% 50%}
+@media(max-width:799px){.v9-chip-pile{transform:scale(.7);bottom:17%}.v9-chips-left{left:1%}.v9-chips-right{right:1%}}
+@media(min-width:800px){
+ .v9-cardgame .v9-table-head{max-width:840px;width:100%;align-self:center}
+ .v9-cardgame .v9-casino-arena{max-width:840px;width:100%;align-self:center}
+ .v9-cardgame .v9-card-controls{max-width:840px}
+ .v9-dealer-scene{height:49%}
+ .v9-dealer-stage img{height:clamp(165px,22vh,215px)!important}
+ .v9-felt{top:30%}
+}
