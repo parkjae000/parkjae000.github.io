@@ -50,7 +50,7 @@ function v10CryptoDie(){const a=new Uint32Array(1);crypto.getRandomValues(a);ret
 window.v10RollDice=async function(sic){if(diceBusy)return;const bets={...v10DiceBets},total=Object.values(bets).reduce((a,b)=>a+b,0);if(!total){$t('#v10DiceResult').textContent='칩을 선택해 베팅판 위에 올려주세요.';return}if(total>state.money){$t('#v10DiceResult').textContent='보유한 칩보다 베팅액이 많습니다.';return}
  diceBusy=true;changeMoney(-total);const button=$t('#v10DiceSpin');button.disabled=true;const resultEl=$t('#v10DiceResult');resultEl.textContent='딜러가 주사위를 흔들고 있습니다…';sound('spin');let values=Array.from({length:sic?3:1},()=>v10CryptoDie());
  const d=Array.from(document.querySelectorAll('.v10-dice-cube'));const duration=2600,started=performance.now();const angles=[[0,180,90,-90,270,0],[0,180,90,-90,270,0]];
- const rotFor=v=>({1:[0,0],2:[0,-90],3:[-90,0],4:[0,90],5:[90,0],6:[180,0]})[v];
+ const rotFor=v=>({1:[0,0],2:[0,180],3:[0,-90],4:[0,90],5:[90,0],6:[-90,0]})[v];
  function tick(t){const pct=Math.min(1,(t-started)/duration);const easing=1-Math.pow(1-pct,3);
  d.forEach((el,i)=>{const [rx,ry]=rotFor(values[i]);const turns=3+i*2;el.style.transform=`translateZ(0) rotateX(${turns*360*(1-easing)+rx*easing}deg) rotateY(${(turns-1)*360*(1-easing)+ry*easing}deg)`;el.style.filter=pct>.86?'drop-shadow(0 5px 7px #0007)':'drop-shadow(0 7px 12px #0009)'});
  if(pct<1){requestAnimationFrame(tick)}else finish()};requestAnimationFrame(tick);
