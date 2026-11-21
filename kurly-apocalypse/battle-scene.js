@@ -11,6 +11,7 @@ export function buildBattleEvents(frames){
   const events=[];
   for(let i=1;i<frames.length;i++){
     const before=frames[i-1],after=frames[i];
+    for(const skill of after.skills||[])events.push({type:'skill',side:skill.side,id:skill.id,at:after.t});
     for(const side of ['a','b']){
       for(const [key] of HEALTH_KINDS){const damage=before[side+key]-after[side+key];if(damage>0)events.push({type:'structure',side,key,at:after.t,damage});}
       const lost=before[side].n-after[side].n;
@@ -56,8 +57,9 @@ export function paintBattle(canvas,frame,{assets,sprites,phase,events=[],ownStat
   }
   base('a');if(frame)base('b');if(!frame)return;
   const an=frame.a.n,bn=frame.b.n,ax=frame.a.x*W,bx=frame.b.x*W;
-  const melee=an>0&&bn>0&&Math.abs(frame.b.x-frame.a.x)<.105;
-  const attackA=playing&&an>0&&(melee||frame.a.x>=.725),attackB=playing&&bn>0&&(melee||frame.b.x<=.275);
+  const aliveA=an>0||frame.a.h?.hp>0,aliveB=bn>0||frame.b.h?.hp>0;
+  const melee=aliveA&&aliveB&&Math.abs(frame.b.x-frame.a.x)<.105;
+  const attackA=playing&&aliveA&&(melee||frame.a.x>=.725),attackB=playing&&aliveB&&(melee||frame.b.x<=.275);
   function unit(px,py,side,index,attacking=false,fall=0){
     const own=side==='a',dir=own?1:-1,step=playing&&!attacking?Math.floor(t*7+index)%4:0;
     const swing=Math.sin(t*10+index*.8),lunge=attacking?Math.max(0,swing)*4:0;
@@ -75,10 +77,42 @@ export function paintBattle(canvas,frame,{assets,sprites,phase,events=[],ownStat
   }
   for(let i=0;i<Math.min(an,28);i++)unit(ax-(i%5)*22,432-Math.floor(i/5)*19,'a',i,attackA);
   for(let i=0;i<Math.min(bn,28);i++)unit(bx+(i%5)*22,432-Math.floor(i/5)*19,'b',i,attackB);
+  const colors={frozen:'#63c8ff',ambient:'#eab74e',chilled:'#59d7a0',beauty:'#d293e6',cs:'#678fff',returns:'#f39c60'};
+  const names={frozen:'급속냉각',ambient:'재고사수',chilled:'콜드체인',beauty:'하자적발',cs:'긴급지원',returns:'반품처리'};
+  for(const side of ['a','b']){
+    const hero=frame[side].h;if(!hero||hero.hp<=0)continue;
+    const own=side==='a',px=(own?ax:bx)+(own?-58:58),py=460,dir=own?1:-1,col=colors[hero.id];
+    ctx.save();ctx.translate(px,py-49);ctx.scale(dir,1);ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(own?sprites.own:sprites.enemy,(playing?Math.floor(t*5)%4:0)*24,0,24,24,-34,-14,68,68);
+    // Department jacket, scarf and distinct equipment on a larger pixel captain.
+    ctx.fillStyle=col;ctx.fillRect(-23,30,42,15);ctx.fillRect(-28,19,16,8);ctx.fillRect(-31,25,8,18);
+    ctx.fillStyle='#ffe57e';ctx.fillRect(-13,31,5,5);ctx.fillRect(7,31,5,5);
+    const swing=playing?Math.sin(t*9)*5:0;ctx.translate(26,19+swing);
+    if(hero.id==='ambient'){ctx.fillStyle=col;ctx.fillRect(-3,0,22,28);ctx.fillStyle='#fff4ba';ctx.fillRect(5,4,6,20);}
+    else if(hero.id==='returns'){ctx.fillStyle='#775445';ctx.fillRect(-2,-5,5,32);ctx.fillStyle=col;ctx.fillRect(-11,-10,28,15);}
+    else if(hero.id==='chilled'){ctx.fillStyle='#efffef';ctx.fillRect(-6,0,20,23);ctx.fillStyle=col;ctx.fillRect(2,4,5,14);ctx.fillRect(-2,8,13,5);}
+    else {ctx.fillStyle='#48566c';ctx.fillRect(-3,3,24,9);ctx.fillStyle=col;ctx.fillRect(15,-1,13,15);}
+    ctx.restore();
+    ctx.fillStyle='#ffffff';ctx.fillRect(px-38,py+7,76,8);ctx.fillStyle=col;ctx.fillRect(px-37,py+8,74*hero.hp/hero.max,6);
+    ctx.font='bold 15px system-ui';ctx.fillStyle='#554360';ctx.strokeStyle='#fff8e6';ctx.lineWidth=4;ctx.textAlign='center';ctx.strokeText('★ 파트장',px,py+34);ctx.fillText('★ 파트장',px,py+34);
+    if(hero.activeUntil>t&&playing){
+      ctx.save();ctx.strokeStyle=col;ctx.lineWidth=4;ctx.globalAlpha=.8;ctx.beginPath();ctx.ellipse(px,py+2,57+Math.sin(t*6)*5,20,0,0,Math.PI*2);ctx.stroke();
+      if(hero.id==='chilled'){ctx.font='bold 24px system-ui';ctx.fillStyle=col;ctx.fillText('+',(own?ax:bx),390-(t%1)*35);}
+      if(hero.id==='frozen'){ctx.strokeStyle=col;ctx.lineWidth=4;for(let j=0;j<4;j++){const fx=(own?bx:ax)+Math.sin(j*4+t)*28,fy=400-j*17;ctx.beginPath();ctx.moveTo(fx-8,fy);ctx.lineTo(fx+8,fy);ctx.moveTo(fx,fy-8);ctx.lineTo(fx,fy+8);ctx.stroke();}}
+      ctx.restore();
+    }
+  }
+  const skill=events.filter(e=>e.type==='skill'&&t>=e.at&&t-e.at<1.8).at(-1);
+  if(skill&&playing){
+    const age=t-skill.at,side=skill.side,px=side==='a'?430:W-630;
+    ctx.save();ctx.globalAlpha=Math.min(1,age*6,(1.8-age)*4);ctx.fillStyle='#fff6e8ee';ctx.strokeStyle=colors[skill.id];ctx.lineWidth=4;ctx.beginPath();ctx.roundRect(px,80,200,78,15);ctx.fill();ctx.stroke();
+    const img=assets['hero-'+skill.id];if(img?.complete&&img.naturalWidth)ctx.drawImage(img,px+5,85,68,68);
+    ctx.font='bold 18px system-ui';ctx.textAlign='left';ctx.fillStyle='#67516c';ctx.fillText(names[skill.id],px+82,125);ctx.restore();
+  }
   if(playing){
     if(melee){const cx=(ax+bx)/2;for(let i=0;i<3;i++)burst(cx+Math.sin(i*4+t*7)*21,405-i*15,((t+i*.21)% .65),.55);}
     for(const side of ['a','b']){
-      const own=side==='a',n=own?an:bn,enemyN=own?bn:an,front=own?frame.a.x:frame.b.x;
+      const own=side==='a',n=own?aliveA:aliveB,enemyN=own?aliveB:aliveA,front=own?frame.a.x:frame.b.x;
       if(n&&((own&&front>=.725)||(!own&&front<=.275))){
         const target=own?'b':'a',key=frame[target+'W']>0?'W':frame[target+'T']>0?'T':'C',p=structurePoint(target,key);
         burst(p.x,p.y,(t+(own?0:.25))%.7,.85);
@@ -91,7 +125,7 @@ export function paintBattle(canvas,frame,{assets,sprites,phase,events=[],ownStat
         ctx.fillStyle='#fffbcb';ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();if(u<.2)burst(p.x,p.y,u,.5);if(u>.6)burst(to,415,(u-.6)*1.6,.75);
       }
     }
-    for(const e of recent){const age=t-e.at;if(e.type==='structure'){const p=structurePoint(e.side,e.key);burst(p.x,p.y,age,1);ctx.font='bold 24px system-ui';ctx.fillStyle='#bb4a3e';ctx.strokeStyle='#fff7dc';ctx.lineWidth=4;ctx.strokeText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);ctx.fillText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);}else{const u=age/.78;unit(e.x*W+(e.side==='a'?-1:1)*e.index*21,432-(e.index%3)*16,e.side,e.index,false,u);if(age<.45)burst(e.x*W,432,age,.55);}}
+    for(const e of recent){const age=t-e.at;if(e.type==='structure'){const p=structurePoint(e.side,e.key);burst(p.x,p.y,age,1);ctx.font='bold 24px system-ui';ctx.fillStyle='#bb4a3e';ctx.strokeStyle='#fff7dc';ctx.lineWidth=4;ctx.strokeText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);ctx.fillText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);}else if(e.type==='fall'){const u=age/.78;unit(e.x*W+(e.side==='a'?-1:1)*e.index*21,432-(e.index%3)*16,e.side,e.index,false,u);if(age<.45)burst(e.x*W,432,age,.55);}}
   }
   ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillStyle='#3d3b52';ctx.strokeStyle='#fff8df';ctx.lineWidth=6;
   for(const [px,n,label] of [[ax-48,an,'아군'],[bx+48,bn,'상대']])if(n){ctx.strokeText(label+' '+n+'명',px,350);ctx.fillText(label+' '+n+'명',px,350);}
