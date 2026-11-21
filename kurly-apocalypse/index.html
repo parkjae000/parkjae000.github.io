@@ -1,18 +1,18 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#111827"><meta name="description" content="택배를 채굴하고 센터를 성장시키며 친구들과 대결하는 물류센터 점령 게임"><title>컬리 아포칼립스 | 박스의 반란</title><link rel="stylesheet" href="style.css"></head>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#111827"><meta name="description" content="택배를 채굴하고 센터를 성장시키며 친구들과 대결하는 물류센터 점령 게임"><title>컬리 아포칼립스 | 박스의 반란</title><link rel="preload" as="image" href="assets/scene-title.webp"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="immersive.css?v=20261121-immersive-6"></head>
 <body>
 <div id="auth" class="screen-auth">
  <div class="auth-shine"></div>
  <div class="auth-inner">
-  <div class="brandmark">📦</div><div class="eyebrow">BOXES · DEFENSE · CONQUEST</div><h1>컬리<br><span>아포칼립스</span></h1>
+  <div class="eyebrow">복슬이의 독립 물류센터</div><h1>컬리<br><span>아포칼립스</span></h1>
   <p class="auth-sub">박스는 쌓여가는데 월급은 제자리.<br>이제 우리가 센터를 접수한다!</p>
-  <div class="auth-card">
+  <div class="auth-entry"><button class="btn btn-gold" id="enterSignup">새로 시작하기</button><button class="btn btn-outline" id="enterLogin">이어서 하기</button></div><div class="auth-card"><button type="button" id="titleBack" class="auth-back">닫기 ✕</button>
    <div class="auth-switch"><button id="signupTab" class="active" type="button">새 계정 만들기</button><button id="loginTab" type="button">기존 계정 로그인</button></div>
    <form id="authForm" autocomplete="off">
     <label for="worldField">서버 코드 <small>같은 코드끼리 경쟁해요</small></label><input id="worldField" maxlength="12" required placeholder="예: NIGHT-TEAM" autocapitalize="characters" spellcheck="false">
     <label for="nickField">닉네임</label><input id="nickField" maxlength="12" minlength="2" required placeholder="사용할 닉네임" autocomplete="username">
     <label for="pinField">6자리 PIN</label><input id="pinField" type="password" maxlength="6" minlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" autocomplete="off">
-    <button id="authSubmit" class="btn btn-gold btn-wide" type="submit">혁명 시작하기 →</button>
+    <button id="authSubmit" class="btn btn-gold btn-wide" type="submit">센터 운영 시작</button>
    </form>
    <p class="auth-help">계정은 서버 코드·닉네임·PIN으로 구분해요. PIN을 잊으면 현재 버전에서는 복구할 수 없으니 꼭 기억해 주세요.</p>
   </div>
@@ -23,13 +23,14 @@
 <div id="app" class="app hidden">
  <header class="app-header">
   <div class="header-top"><div class="brand-mini"><div class="logo-mini">📦</div><div><strong>컬리 아포칼립스</strong><small id="serverLabel">서버 연결 중</small></div></div><div class="header-tools"><button id="guideBtn" title="스토리와 가이드" class="iconbtn">❔</button><button id="profileBtn" title="프로필" class="profilebtn">👤</button></div></div>
-  <div class="resbar"><button id="boxResource" class="resbox"><span>📦</span><strong id="boxCount">0</strong><small>박스</small></button><button id="cashResource" class="resbox rare"><span>💰</span><strong id="cashCount">0</strong><small>돈 · 상점 ↗</small></button><div class="powerbox"><small>종합 세력력</small><strong id="powerCount">0</strong></div></div>
+  <div class="resbar"><button id="boxResource" class="resbox"><span>📦</span><strong id="boxCount">0</strong><small>박스</small></button><button id="cashResource" class="resbox rare"><span>💰</span><strong id="cashCount">0</strong><small>돈 · 상점 </small></button><div class="powerbox"><small>종합 세력력</small><strong id="powerCount">0</strong></div></div>
  </header>
  <main id="main"><section id="tabCenter" class="tab-page"></section><section id="tabMine" class="tab-page hidden"></section><section id="tabWar" class="tab-page hidden"></section><section id="tabServer" class="tab-page hidden"></section></main>
  <nav class="navbar" aria-label="메인 탭"><button data-tab="center" class="navitem selected"><span>🏢</span><small>내 센터</small></button><button data-tab="mine" class="navitem"><span>⛏️</span><small>택배 채굴</small></button><button data-tab="war" class="navitem"><span>⚔️</span><small>전쟁</small></button><button data-tab="server" class="navitem"><span>🏆</span><small>서버</small></button></nav>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="modalOverlay" class="overlay hidden"><div id="modalContent" class="modal-content"></div></div>
-<div id="onboardOverlay" class="onboard-overlay hidden"><div class="onboard-wrap"><div id="onboardContent"></div><div class="onboard-actions"><button id="onboardSkip" class="btn btn-outline">건너뛰기</button><span id="onboardCounter">1 / 9</span><button id="onboardNext" class="btn btn-gold">다음 →</button></div></div></div>
-<script type="module" src="game.js"></script>
+<div id="onboardOverlay" class="onboard-overlay hidden"><div class="onboard-wrap"><div id="onboardContent"></div><div class="onboard-actions"><button id="onboardSkip" class="btn btn-outline">건너뛰기</button><span id="onboardCounter">1 / 9</span><button id="onboardNext" class="btn btn-gold">다음</button></div></div></div>
+<div id="battleTransition" class="battle-transition hidden" aria-label="전투 시작 일러스트"></div>
+<script type="module" src="/game.js"></script>
 </body></html>

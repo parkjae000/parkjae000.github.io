@@ -2,3 +2,111 @@
 
 /* Gameplay first: worker controls and mining grid appear before explanation and statistics. */
 #tabMine{display:flex;flex-direction:column}#tabMine>.page-title{order:0}#tabMine>.card:nth-of-type(2){order:3}#tabMine>.card:nth-of-type(3){order:1}#tabMine>.card:nth-of-type(4){order:2}
+
+/* v1.2 cinematic mobile scenes. The art layers are static; interactive sprites/HUD remain live. */
+[hidden]{display:none!important}
+.illustrated-center{
+  height:clamp(260px,44vw,440px);border-color:#6594c4;
+  background:#273d65 url('assets/scene-center.webp') center 57%/cover no-repeat;
+  box-shadow:inset 0 -80px 80px #080f23a3,0 15px 30px #080d1b75;
+}
+.center-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,#050c20a6 100%)}
+.center-hero-title{position:absolute;left:16px;bottom:15px;font-size:16px;font-weight:900;color:#fff5d3;text-shadow:0 2px 6px #040914}
+.center-hero-title b{color:#ffe19a}
+.illustrated-center .stage-caption{top:15px;right:14px;background:#0e172bcf}
+.recruit-queue{display:grid;gap:7px;margin:10px 0}
+.recruit-job{background:#101b30e3;border:1px solid #54748b;padding:10px;border-radius:12px;display:grid;grid-template-columns:1fr auto;gap:7px;font-size:12px}
+.recruit-job b{color:#f8d48c;font-variant-numeric:tabular-nums}
+.recruit-progress{grid-column:1/-1;background:#182d42;height:5px;border-radius:10px;overflow:hidden}
+.recruit-progress i{height:100%;display:block;background:linear-gradient(90deg,#27bbd8,#ffdf79)}
+/* The mine and battlefield use the full viewport; only the familiar navigation stays anchored. */
+.app.immersive-mine,.app.immersive-war{height:100dvh;min-height:0;max-width:none;padding:0;overflow:hidden;background:#071020}
+.immersive-mine .app-header,.immersive-war .app-header{display:none}
+.immersive-mine #main,.immersive-war #main{height:calc(100dvh - 70px - env(safe-area-inset-bottom));max-width:none}
+.immersive-mine #tabMine,.immersive-war #tabWar{height:100%;max-width:none;margin:0;padding:0;display:block;overflow:hidden}
+.immersive-mine .navbar,.immersive-war .navbar{background:linear-gradient(#18263dcc,#081021f5);border-top:1px solid #8aaac65c;backdrop-filter:blur(14px)}
+.mine-map{position:relative;width:100%;height:100%;overflow:hidden;background:#1f2b41 url('assets/scene-mine.webp') center/cover no-repeat;isolation:isolate}
+.mine-map:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#070f2499,transparent 25%,transparent 75%,#070f2488),linear-gradient(#0813228c,transparent 18%,transparent 75%,#070f25d5);pointer-events:none}
+.mine-hud{position:absolute;top:calc(9px + env(safe-area-inset-top));left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;z-index:10}
+.mine-hud-stat{display:grid;gap:4px;background:#081423ca;border:1px solid #6b9bbb82;border-radius:11px;padding:7px 10px;box-shadow:0 5px 18px #0006}
+.mine-hud-stat b{color:#f9e1aa;font-size:12px}
+.mine-hud-stat span{font-size:10px;color:#a6e6f4;font-weight:700}
+.mine-hud-actions{display:flex;gap:5px;align-items:center}
+.mine-sector,.mine-icon{background:#0e1930db;color:#f4e6c0;border:1px solid #8a8c8a99;border-radius:10px;padding:7px 9px;font-weight:800;font-size:11px;box-shadow:0 6px 16px #0006}
+.mine-icon{font-size:15px;min-width:34px;min-height:34px;position:relative}
+.mine-icon small{font-size:8px;position:absolute;right:2px;bottom:1px;color:#ffe69a}
+.mine-icon.activated{border-color:#ffdb7b;box-shadow:0 0 14px #e0a22c99}
+.mineboard-new{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(calc(100vw - 22px),43dvh,450px);aspect-ratio:5/9;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(9,1fr);gap:1px;border-radius:18px;padding:4px;background:#11182c32;box-shadow:inset 0 0 40px #050e2188;touch-action:pan-y}
+.mine-tile{position:relative;border:1px solid #91a4b32c;min-width:0;min-height:0;display:grid;align-content:center;justify-items:center;gap:3px;padding:1px;background:radial-gradient(ellipse,#49352fc9,#252a31aa 75%,#19223472);border-radius:7px;color:#eaf4ff;box-shadow:inset 0 0 10px #151e30a8;overflow:visible}
+.mine-tile.is-cleared{background:#1b2d3e1e;border-color:#d1f4e80b;box-shadow:none}
+.mine-tile.has-cash{background:radial-gradient(#675633b9,#27282e9c)}
+.mine-tile.active-entry{background:#1d454566;border-color:#6bc4bc75}
+.mine-tile .mine-ore{font-size:clamp(19px,5vw,28px);filter:drop-shadow(0 2px 5px #0009);animation:mineFloat 2.2s ease-in-out infinite}
+.mine-ore-count{font-size:10px;color:#ffeab3;font-weight:900;text-shadow:0 1px 3px #050b12}
+.mine-ore-health{width:70%;height:4px;background:#0b1320a6;border:1px solid #aec5d15c;border-radius:8px;overflow:hidden}
+.mine-ore-health i{display:block;height:100%;background:#f6bd59}
+.mine-tile.is-mining{border-color:#ffdf9d9e;box-shadow:inset 0 0 15px #f4bb5955,0 0 15px #e4b46c55}
+.mine-sparks{position:absolute;left:0;top:0;font-size:26px;color:#ffe69c;animation:sparkle .45s ease-in-out infinite alternate}
+.mine-ore-timer{position:absolute;top:-10px;font-size:9px;white-space:nowrap;color:white;background:#0e203bcc;border-radius:8px;padding:1px 4px}
+.mine-tile.mine-drop{outline:3px solid #7af9f7;background:#2479876b;z-index:4}
+.mine-worker{position:absolute;transform:translate(-50%,-50%);width:48px;height:53px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:6;touch-action:none;filter:drop-shadow(0 3px 4px #070a17);user-select:none}
+.worker-avatar{display:grid;place-items:center;background:linear-gradient(160deg,#e8cf85,#aa702c);border:2px solid #e7e1b6;border-radius:50%;width:35px;height:35px;font-size:21px;box-shadow:0 3px 0 #5c423b}
+.worker-level{font-size:9px;font-weight:950;border:1px solid #e1c374;border-radius:7px;background:#1d2e46;padding:1px 4px;white-space:nowrap;color:#ffe6a9}
+.mine-worker.selected .worker-avatar{box-shadow:0 0 0 3px #49e8f2,0 0 15px #51ebffd1}
+.mine-worker.mining-now .worker-avatar{animation:workerPick 0.55s ease-in-out infinite alternate}
+.mine-worker.just-summoned{animation:workerPop .6s cubic-bezier(.2,1.8,.5,1)}
+.mine-worker.dragging{z-index:35!important;filter:drop-shadow(0 3px 12px #80edff);opacity:.93}
+.mine-tip{position:absolute;bottom:89px;left:50%;transform:translateX(-50%);width:min(92%,450px);padding:6px 9px;background:#0b1831b8;border-radius:8px;text-align:center;color:#d5ebef;font-size:10px;line-height:1.3;z-index:9;pointer-events:none}
+.mine-bottom{position:absolute;z-index:12;bottom:12px;width:100%;display:flex;justify-content:center;align-items:center;gap:6px}
+.mine-summon{background:linear-gradient(180deg,#ffdf90,#d39137);border:2px solid #ffeeba;border-radius:50px;padding:11px 19px;font-size:13px;font-weight:950;color:#342313;box-shadow:0 4px 0 #7c502a,0 8px 25px #090d20b2}
+.mine-summon small{font-weight:950;font-size:10px;margin-left:5px}
+.mine-next,.mine-boost{background:#1c4668db;color:#d7ffff;border:1px solid #6dcfda;border-radius:11px;padding:9px;font-size:11px;font-weight:900}
+@keyframes mineFloat{50%{transform:translateY(-3px)}}@keyframes sparkle{to{transform:translate(9px,7px) scale(.75);opacity:.4}}
+@keyframes workerPick{to{transform:rotate(-12deg) translateY(-4px)}}@keyframes workerPop{0%{transform:translate(-50%,-50%) scale(.1);opacity:0}70%{transform:translate(-50%,-75%) scale(1.22)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.war-scene{position:relative;height:100%;width:100%;overflow:hidden;background:#162440}
+.war-scroller{position:absolute;inset:0;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x}
+.war-scroller::-webkit-scrollbar{display:none}
+.war-scroller.closed{overflow-x:hidden}.war-scroller.open{overflow-x:auto}
+.war-scroller canvas{display:block;height:100%;width:auto;max-width:none;image-rendering:auto}
+.war-topbar{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;justify-content:space-between;z-index:11;pointer-events:none}
+.war-mini-badge{background:#102640d9;border:1px solid #75b9df;border-radius:12px;padding:7px 9px;min-width:100px;box-shadow:0 6px 18px #0006}
+.war-mini-badge b,.war-mini-badge span{display:block;font-size:11px}.war-mini-badge span{color:#b3f4ed;margin-top:4px;font-variant-numeric:tabular-nums}
+.war-mini-badge.opponent{background:#3e1b2cda;border-color:#df8c98;text-align:right}
+.war-mini-badge.opponent span{color:#ffc7bb}
+.war-bottombar{position:absolute;bottom:25px;left:12px;right:12px;z-index:12}
+.war-ready,.war-finished,.war-playback{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0b172dcc;border:1px solid #789cbd9b;border-radius:15px;padding:12px;backdrop-filter:blur(9px);box-shadow:0 8px 25px #0009}
+.war-ready strong,.war-ready small,.war-finished strong,.war-finished span{display:block}
+.war-ready strong,.war-finished strong{font-size:13px;color:#fbe8bc}
+.war-ready small,.war-finished span{font-size:11px;color:#bbd0e0;margin-top:4px}
+.war-ready .btn,.war-finished .btn{flex-shrink:0;font-size:12px}
+.war-history-btn{margin-top:7px;padding:7px 12px;background:#111c32c4;border:1px solid #7690a4a0;border-radius:11px;color:#ebeddf;font-weight:750;font-size:11px}
+.war-playback #battleHint{flex:1;font-size:11px;color:#e8f5fb}
+.war-pill{border:1px solid #9aaec2;color:white;background:#1c2d45;border-radius:10px;padding:10px 12px;font-size:11px;font-weight:900}
+.war-scroll-tip{position:absolute;z-index:8;bottom:135px;left:50%;transform:translateX(-50%);background:#0b19309b;border-radius:20px;padding:5px 10px;font-size:10px;color:#e6f3ff;pointer-events:none;white-space:nowrap}
+.battle-transition{position:fixed;inset:0;z-index:96;background:linear-gradient(125deg,#174967 0 48%,#f7d488 49% 51%,#713e51 52%);display:grid;place-items:center;animation:versusBurst 1s ease both}
+.battle-transition:after{content:'VS';font-weight:1000;font-size:clamp(78px,23vw,180px);font-style:italic;color:#ffe9bd;text-shadow:0 0 14px #f35d42,0 8px 0 #4c1834;letter-spacing:-8px;animation:versusPop .8s ease-out}
+@keyframes versusPop{0%{transform:scale(3);opacity:0}60%{transform:scale(.9);opacity:1}100%{transform:scale(1)}}@keyframes versusBurst{from{filter:brightness(2)}to{filter:brightness(1)}}
+.onboard-overlay.story-mode{padding:0;backdrop-filter:none;background:#07101b}
+.onboard-wrap{position:relative}
+.onboard-overlay.story-mode .onboard-wrap{width:100vw;max-width:none;background:#070c1a;box-shadow:none}
+.onboard-overlay.story-mode #onboardContent{height:100%;min-height:0;flex:1}
+.onboard-cinema{position:relative;height:100%;width:100%;overflow:hidden;background:#090f1b}
+.cinema-image{width:100%;height:100%;display:block;object-fit:cover;object-position:center}
+.cinema-vignette{position:absolute;inset:0;background:linear-gradient(180deg,#08101e78,transparent 22%,transparent 50%,#050810aa 94%)}
+.cinema-topline{position:absolute;top:calc(12px + env(safe-area-inset-top));left:15px;color:#ffdda1;font-size:12px;font-weight:950;text-shadow:0 2px 5px #000}
+.cinema-topline span{display:block;font-size:10px;color:#f5e8cc}
+.cinema-bubble{position:absolute;width:min(80%,350px);border:2px solid #293448;border-radius:22px;padding:15px 18px;background:#fff8e9;color:#1a2031;font-size:clamp(15px,3.8vw,21px);font-weight:850;line-height:1.45;box-shadow:0 10px 30px #0008;opacity:0;transform:translateY(30px) scale(.96);transition:opacity .55s ease,transform .55s ease}
+.cinema-bubble.visible{opacity:1;transform:translateY(0) scale(1)}
+.bubble-head{top:23%;right:5%;text-align:center}
+.bubble-body{bottom:20%;left:5%;font-size:clamp(14px,3.4vw,18px)}
+.bubble-head:after,.bubble-body:after{content:'';position:absolute;bottom:-15px;left:22px;border-width:15px 13px 0 5px;border-style:solid;border-color:#fff8e9 transparent transparent transparent}
+.cinema-progress{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:10%;right:10%;display:flex;gap:5px}
+.cinema-progress span{height:4px;flex:1;background:#ffffff55;border-radius:10px}
+.cinema-progress span.current{background:#f5dd9d}
+.onboard-overlay.story-mode .onboard-actions{position:absolute;z-index:10;top:calc(6px + env(safe-area-inset-top));right:9px;left:auto;bottom:auto;background:transparent;border:0;padding:0;width:auto;pointer-events:none}
+.onboard-overlay.story-mode #onboardSkip{pointer-events:auto;background:#0d1934dc;border:1px solid #a7abb3;border-radius:40px;color:white;padding:7px 13px;font-size:12px;min-height:34px}
+.onboard-overlay.story-mode #onboardCounter{display:none}
+.onboard-overlay.story-mode #onboardNext{display:none}
+.tutorial-page .onboard-panel img{object-fit:contain}
+@media(max-width:380px){.mine-ore-count{font-size:8px}.mine-worker{width:42px}.worker-avatar{width:31px;height:31px}.war-playback{padding:7px}.war-pill{padding:8px}}
+@media(prefers-reduced-motion:reduce){.mine-worker,.mine-ore,.mine-sparks,.cinema-bubble{animation:none!important;transition:none!important}}
