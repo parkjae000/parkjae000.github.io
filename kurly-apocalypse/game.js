@@ -1,5 +1,5 @@
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261121-bright-3';
-const RELEASE='20261121-bright-3';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261121-bright-4';
+const RELEASE='20261121-bright-4';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1';
 const $=id=>document.getElementById(id);

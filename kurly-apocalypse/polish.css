@@ -53,3 +53,6 @@ input,textarea,.auth-card input{background:#fffdf6;color:#604d68;border-color:#c
 .mine-tile:not(.is-cleared) .mine-ore img{width:100%;height:100%;object-fit:contain}.mine-ore-count{position:absolute;bottom:6px;left:0;right:0;text-align:center}.mine-ore-health{position:absolute;bottom:2px;left:11%;margin:0}
 
 .mine-hud-actions{flex-shrink:0;gap:4px}.mine-sector{white-space:nowrap;flex-shrink:0;padding:9px 7px}.mine-hud-stat{min-width:0;flex:1;padding:7px 8px}.mine-hud-stat span{font-size:11px}.mine-hud{gap:5px;padding-left:4px;padding-right:4px}.mine-icon{min-width:39px;padding:7px}
+
+.auth-entry .btn-outline{background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-color:#fff3d7}
+#onboardOverlay.story-mode #onboardSkip{background:#fff8e8 url('assets/button-gold-v2.webp') center/100% 100% no-repeat;color:#6d4d2d;border-color:#caa161}
