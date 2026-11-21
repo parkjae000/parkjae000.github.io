@@ -1,5 +1,5 @@
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261121-rebellion-2';
-const RELEASE='20261121-rebellion-2';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261121-rebellion-3';
+const RELEASE='20261121-rebellion-3';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1';
 const $=id=>document.getElementById(id);
@@ -382,7 +382,7 @@ document.addEventListener('input',e=>{if(e.target.id==='warSlider'){warCount=Num
 document.addEventListener('submit',async e=>{if(e.target.id==='chatForm'){e.preventDefault();const input=$('chatInput'),message=input.value.trim();if(!message)return;try{await api('/api/chat','POST',{message,requestId:crypto.randomUUID()});input.value='';await loadState({silent:true});toast('채팅을 전송했어요.')}catch(err){toast(err.message,true)}return;}
 if(e.target.id==='authForm'){e.preventDefault();const pin=$('pinField').value,nickname=$('nickField').value.trim(),world=$('worldField').value.trim().toUpperCase();const submit=$('authSubmit');submit.disabled=true;try{await api('/api/'+authMode,'POST',{pin,nickname,world});await loadState();}catch(err){toast(err.message,true)}finally{submit.disabled=false;}return;}});
 $('signupTab').addEventListener('click',()=>{authMode='register';$('signupTab').classList.add('active');$('loginTab').classList.remove('active');$('authSubmit').textContent='혁명 시작하기 →';});$('loginTab').addEventListener('click',()=>{authMode='login';$('loginTab').classList.add('active');$('signupTab').classList.remove('active');$('authSubmit').textContent='기존 계정으로 로그인 →';});
-setInterval(()=>{if(!state||document.hidden||showOnboard||!$('modalOverlay').classList.contains('hidden')||animating||miningDragging)return;loadState({silent:true});},5000);
+setInterval(()=>{if(!state||document.hidden||showOnboard||(!$('modalOverlay').classList.contains('hidden')&&!$('modalContent').querySelector('[data-mail-read]'))||animating||miningDragging)return;loadState({silent:true});},5000);
 
 let timerRefreshAt=0;
 setInterval(()=>{
