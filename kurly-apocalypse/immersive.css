@@ -40,3 +40,4 @@ body{background:#171828}button:focus-visible{outline:3px solid #9ef3e8;outline-o
 .mine-hud-stat{display:flex;align-items:center;flex-wrap:wrap;max-width:100%;padding:8px 10px;gap:5px 12px}.mine-hud{align-items:flex-start}.mine-hud-stat b{white-space:nowrap}.mine-hud-stat span{white-space:nowrap}.mine-tip{pointer-events:none}.mine-worker{z-index:10}
 
 .war-finished{display:grid;grid-template-columns:1fr auto}.war-finished strong{grid-column:1/-1;font-size:18px}.war-finished span{font-size:14px;margin:0}.war-finished .btn{font-size:14px}.war-ready strong{white-space:nowrap}
+.mine-hud-stat span:last-child{display:inline}
