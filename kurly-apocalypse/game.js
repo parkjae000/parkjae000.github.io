@@ -1,5 +1,5 @@
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-expedition-2';
-const RELEASE='20261122-expedition-2';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-expedition-fix-1';
+const RELEASE='20261122-expedition-fix-1';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1';
 const $=id=>document.getElementById(id);
@@ -108,7 +108,7 @@ function warTargets(){
 function renderWar(){
  const el=$('tabWar'),g=state.me.game;
  if(!animation){
-  el.innerHTML=`<div class="expedition-hub"><div class="expedition-heading"><h2>출정</h2><button data-open-mail class="btn btn-outline mail-button" aria-label="우편함">✉<b data-mail-badge ${!(g.mailbox||[]).some(m=>!m.readAt)?'hidden':''}>${(g.mailbox||[]).filter(m=>!m.readAt).length}</b></button></div><div class="expedition-home"><h3>${h(state.me.nickname)}의 센터</h3><img src="assets/fortress.webp" alt="출정을 준비하는 우리 센터"><span>대기 사원 ${number(g.troops)}명 · 전투력 ${number(state.me.power.total)}</span></div><div class="expedition-modes"><button data-expedition="raid" class="expedition-mode raid"><span>⚔</span><strong>약탈전</strong></button><button data-expedition="conquest" class="expedition-mode conquest"><span>🚩</span><strong>정복전</strong></button><button class="expedition-mode explore" disabled><span>🔒</span><strong>탐사전</strong><small>업데이트 예정</small></button></div>${state.income?.boxesPerHour?`<div class="territory-income"><b>정복지 수입</b><span>시간당 📦 ${number(state.income.boxesPerHour)} · 💰 ${number(state.income.cashPerHour)}</span></div>`:''}</div>`;
+  el.innerHTML=`<div class="expedition-hub"><div class="expedition-heading"><button data-open-war-log class="btn btn-outline expedition-log" aria-label="전투기록">📜 전투기록</button></div><div class="expedition-home"><h3>${h(state.me.nickname)}의 센터</h3><img src="assets/fortress.webp" alt="출정을 준비하는 우리 센터"><span>대기 사원 ${number(g.troops)}명 · 전투력 ${number(state.me.power.total)}</span></div><div class="expedition-modes"><button data-expedition="raid" class="expedition-mode raid"><span>⚔</span><strong>약탈전</strong></button><button data-expedition="conquest" class="expedition-mode conquest"><span>🚩</span><strong>정복전</strong></button><button class="expedition-mode explore" disabled><span>🔒</span><strong>탐사전</strong><small>업데이트 예정</small></button></div>${state.income?.boxesPerHour?`<div class="territory-income"><b>정복지 수입</b><span>시간당 📦 ${number(state.income.boxesPerHour)} · 💰 ${number(state.income.cashPerHour)}</span></div>`:''}</div>`;
   return;
  }
  const current=animation.current||animation.frames[0],inBattle=animation.phase!=='finished';

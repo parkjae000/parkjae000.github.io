@@ -6,3 +6,7 @@
 .shop-art.auto{background-image:url('assets/scene-mine.webp');background-position:center 60%}.shop-art.auto img{object-fit:contain;padding:10px}
 
 .tutorial-art{width:100%;height:100%;aspect-ratio:auto;display:flex;justify-content:center}.tutorial-art img{width:100%;height:100%;object-fit:contain;max-height:100%;border-radius:10px}
+
+/* Keep the center scene; the only header control is its battle log. */
+.expedition-heading{justify-content:flex-end;min-height:40px}.expedition-heading .expedition-log{font-size:13px;min-height:38px;padding:8px 13px;border-color:#c5a584;box-shadow:0 3px 8px #6b526b26}.expedition-home{justify-content:flex-start;padding-top:12px}.expedition-home img{max-height:calc(100% - 90px)}
+@media(min-width:900px){.expedition-home{padding-top:12px;justify-content:center}.expedition-heading .expedition-log{font-size:15px}}
