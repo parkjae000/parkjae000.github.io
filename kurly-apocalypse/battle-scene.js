@@ -61,12 +61,14 @@ export function paintBattle(canvas,frame,{assets,sprites,phase,events=[],ownStat
   const melee=aliveA&&aliveB&&Math.abs(frame.b.x-frame.a.x)<.105;
   const attackA=playing&&aliveA&&(melee||frame.a.x>=.725),attackB=playing&&aliveB&&(melee||frame.b.x<=.275);
   function unit(px,py,side,index,attacking=false,fall=0){
+    const roster=frame[side].roles,total=frame[side].n,sample=(index+.5)*total/Math.max(1,Math.min(total,28)),role=roster?(sample<roster.assault?'assault':sample<roster.assault+roster.support?'support':'engineer'):null;
     const own=side==='a',dir=own?1:-1,step=playing&&!attacking?Math.floor(t*7+index)%4:0;
     const swing=Math.sin(t*10+index*.8),lunge=attacking?Math.max(0,swing)*4:0;
     ctx.save();ctx.globalAlpha=1-fall;
     ctx.fillStyle='#605a6a3d';ctx.beginPath();ctx.ellipse(px+4,py+24,15,5,0,0,Math.PI*2);ctx.fill();
     ctx.translate(px+dir*lunge,py-18-fall*16);if(!own)ctx.scale(-1,1);if(fall)ctx.rotate(fall*1.1);
     ctx.imageSmoothingEnabled=false;ctx.drawImage(own?sprites.own:sprites.enemy,step*24,0,24,24,-22,0,44,44);
+    if(role){ctx.fillStyle={assault:'#e78c68',support:'#65bba0',engineer:'#dcac51'}[role];ctx.fillRect(-11,28,24,8);if(role==='support'){ctx.fillStyle='#8bd7b7';ctx.fillRect(10,17,13,22);ctx.fillStyle='#e4f4c7';ctx.fillRect(15,20,3,16);}if(role==='engineer'){ctx.fillStyle='#7b5c43';ctx.fillRect(15,13,4,21);ctx.fillStyle='#d9e4e8';ctx.fillRect(9,10,16,7);}}
     if(attacking){
       ctx.translate(8,24);ctx.rotate(-.9+swing*.95);
       ctx.strokeStyle='#5c4944';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(14,-22);ctx.stroke();
