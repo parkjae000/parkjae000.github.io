@@ -1,7 +1,7 @@
-import {upgradeCost} from './balance.js?v=20261122-v192-guided';
-import {FORMATIONS,TROOP_ROLES,buildFormation} from './formation.js?v=20261122-v192-guided';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v192-guided';
-const RELEASE='20261122-v192-guided';
+import {upgradeCost} from './balance.js?v=20261122-v193-guide-nav';
+import {FORMATIONS,TROOP_ROLES,buildFormation} from './formation.js?v=20261122-v193-guide-nav';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v193-guide-nav';
+const RELEASE='20261122-v193-guide-nav';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1',ADMIN_KEY='ka_admin_session_v1';
 let warHero='',warFormation='balanced',marchContext='war',warehousePage='items',recruiting=false,recruitReady=null,researchGroup='center',shopGroup='equipment',adminState=null,popupPending=false;
@@ -539,6 +539,7 @@ function prepareTrainingLayout(){
 }
 function renderTraining(){
  const coach=$('trainingCoach');if(!coach)return;
+ const cue=$('trainingNavCue');cue?.classList.add('hidden');coach.style.bottom='';
  document.querySelectorAll('.guide-target').forEach(el=>el.classList.remove('guide-target'));
  const o=state?.me.game.onboarding;
  document.body.classList.toggle('in-training',!!o&&o.stage!=='done'&&!showOnboard);
@@ -551,7 +552,7 @@ function renderTraining(){
  const stages=['summon','mine','summonSecond','merge','recruit','upgrade'],n=stages.indexOf(o.stage)+1;
  const center=['recruit','upgrade'].includes(o.stage),page=center?'center':'mine';
  let title,body,selectors=[],extra='';
- if(selectedTab!==page){title=center?'채굴한 박스로 센터를 키워요':'택배 채굴로 이동해요';body=center?'빛나는 내 센터 버튼을 눌러 주세요.':'빛나는 택배 채굴 버튼을 눌러 주세요.';selectors=[`[data-tab="${page}"]`];}
+ if(selectedTab!==page){title=center?'채굴한 박스로 센터를 키워요':'택배 채굴로 이동해요';body=center?'화살표로 표시한 내 센터 버튼을 눌러 주세요.':'화살표로 표시한 택배 채굴 버튼을 눌러 주세요.';selectors=[`[data-tab="${page}"]`];}
  else if(o.stage==='summon'){title='첫 일용직을 불러요';body='일용직 소환 버튼을 누르세요. 첫 일용직은 무료예요.';selectors=['[data-summon]'];}
  else if(o.stage==='mine'){title=o.assigned?'첫 박스를 채굴하고 있어요':'빛나는 박스에 배치해요';body=o.assigned?'채굴이 끝나면 박스가 들어와요. 잠시 기다려 주세요.':'박스를 누르거나 일용직을 박스로 끌어 놓으세요.';selectors=['[data-tile="37"]'];if(!o.assigned)selectors.push(`[data-worker="${o.workerIds[0]}"]`);}
  else if(o.stage==='summonSecond'){title='박스 '+number(o.minedBoxes)+'개를 얻었어요!';body='일용직을 한 명 더 소환해 보세요. 이번에는 박스 80개를 사용해요.';selectors=['[data-summon]'];}
@@ -560,6 +561,17 @@ function renderTraining(){
  else if(o.stage==='upgrade'){title='센터 성장을 시작해요';body='보유 박스로 가능한 빛나는 연구를 하나 시작하세요. 모은 박스는 성장에 쓰여요.';selectors=['#tabCenter [data-upgrade]:not(:disabled)'];}
  coach.className='training-coach '+(page==='mine'?'over-mine':'over-center');coach.innerHTML=`<img src="assets/worker-cute.webp" alt="복슬이의 안내"><div><span class="training-step">센터장 실습 ${n} / 6</span><h3>${title}</h3><p>${body}</p>${extra}</div>`;
  const targets=selectors.flatMap(sel=>[...document.querySelectorAll(sel)]);targets.forEach(el=>el.classList.add('guide-target'));
+ const navTarget=targets.find(el=>el.matches('.navbar .navitem'));
+ if(navTarget&&cue){
+  coach.classList.add('to-navigation');
+  requestAnimationFrame(()=>{
+   if(!navTarget.isConnected||!navTarget.classList.contains('guide-target'))return;
+   const r=navTarget.getBoundingClientRect(),center=r.left+r.width/2,left=Math.max(8,Math.min(innerWidth-76,center-34));
+   cue.style.left=left+'px';cue.style.top=(r.top-38)+'px';cue.style.setProperty('--arrow-left',(center-left)+'px');cue.classList.remove('hidden');
+   coach.style.bottom=(innerHeight-r.top+54)+'px';
+  });
+ }
+
  const key=state.me.id+':'+o.stage+':'+o.assigned+':'+selectedTab+':'+researchGroup;
  if(key!==guidePaintKey){guidePaintKey=key;const target=targets.find(el=>el.getClientRects().length);if(target&&!target.closest('.navbar')&&page==='center')requestAnimationFrame(()=>target.isConnected&&target.scrollIntoView({block:'center',behavior:'smooth'}));}
 }
@@ -571,3 +583,6 @@ document.addEventListener('click',e=>{
  const allowed={summon:'[data-tab="mine"],[data-summon]',mine:'[data-tab="mine"],[data-worker],[data-tile="37"]',summonSecond:'[data-tab="mine"],[data-summon]',merge:'[data-tab="mine"],[data-worker],[data-training-merge]',recruit:'[data-tab="center"],[data-recruit="1"]',upgrade:'[data-tab="center"],[data-research-group],[data-upgrade]'};
  if((guidePending&&!btn.matches(common))||!btn.matches(common+','+(allowed[stage]||'[data-no-training-action]'))){e.preventDefault();e.stopImmediatePropagation();if(!guidePending)toast('복슬이의 안내에 따라 빛나는 버튼을 눌러 주세요.');}
 },true);
+
+window.addEventListener('resize',()=>{if(state)renderTraining();});
+window.visualViewport?.addEventListener('resize',()=>{if(state)renderTraining();});
