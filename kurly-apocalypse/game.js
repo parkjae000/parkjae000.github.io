@@ -1,7 +1,7 @@
-import {upgradeCost} from './balance.js?v=20261122-v191-engagement';
-import {FORMATIONS,TROOP_ROLES,buildFormation} from './formation.js?v=20261122-v191-engagement';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v191-engagement';
-const RELEASE='20261122-v191-engagement';
+import {upgradeCost} from './balance.js?v=20261122-v192-guided';
+import {FORMATIONS,TROOP_ROLES,buildFormation} from './formation.js?v=20261122-v192-guided';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v192-guided';
+const RELEASE='20261122-v192-guided';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1',ADMIN_KEY='ka_admin_session_v1';
 let warHero='',warFormation='balanced',marchContext='war',warehousePage='items',recruiting=false,recruitReady=null,researchGroup='center',shopGroup='equipment',adminState=null,popupPending=false;
@@ -12,18 +12,20 @@ const timeLeft=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return s>=3600?`${Mat
 const ago=ms=>{const t=new Date(ms);return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
 let introTimers=[],warPlaybackSpeed=1,miningDragging=null,spawnedWorkerId=null,warPanelOpen=false,warScrollLeft=0;
 let state=null,selectedTab='center',selectedWorker='w1',authMode='register',rankMode='total',warMode='raid',warTarget='',warCount=12,showOnboard=false,onboardStep=0,animation=null,animating=false, lastSnapshot=0,serverOffset=0,toastTimer=null,lastPageRendered='';
+let introAdvanceBusy=false,guidePending=false,guideAccount='',guideStage='',guidePaintKey='';
 let shopPurchasing=false;const shopDisclosure={normal:false,rare:false};
 const SHOP_DETAILS={auto:{icon:'⚙️',image:'worker-cute',description:'아래쪽 자원부터 이동하며 자동 채굴합니다.'},bot:{icon:'🛠',image:'panel-workshop',description:'스탭 2 합류 · 연구 2개를 동시에 진행합니다.'},boost:{icon:'⚡',image:'ore-money',description:'10분 동안 채굴 속도 2배'},forklift:{icon:'🔒',image:'forklift-cute',description:'추후 업데이트 예정'}};
 const UPGRADES=[{key:'center',name:'센터 레벨',icon:'🏢',desc:'센터 체력 및 다른 연구 상한 증가'},{key:'mine',name:'채굴 효율',icon:'⛏️',desc:'일용직 채굴 속도 +8%'},{key:'troopAtk',name:'사원 공격력',icon:'⚔️',desc:'사원 공격 피해 +8%'},{key:'troopHp',name:'사원 체력',icon:'❤️',desc:'사원 최대 체력 +10%'},{key:'troopSpeed',name:'사원 공격속도',icon:'⚡',desc:'사원 공격속도 +3%'},{key:'capacity',name:'사원 수용 한도',icon:'👥',desc:'최대 사원 +8명'},{key:'wall',name:'방벽 내구도',icon:'🛡️',desc:'방벽 체력 +12%'},{key:'turretDmg',name:'포탑 공격력',icon:'🎯',desc:'포탑 공격 피해 +10%'},{key:'turretSpeed',name:'포탑 공격속도',icon:'💥',desc:'포탑 공격속도 +4%'}];
 const storyCaptions=[{"speaker": "복슬이", "head": "“센터가 또 커졌네. 우리가 밤낮없이 옮긴 박스 덕분이지!”", "reply": "동료 사원", "body": "“새 창고에 새 설비까지… 그럼 이번엔 월급도 오르겠지?”"}, {"speaker": "동료 사원", "head": "“또 그대로야. 늘어난 이익은 윗사람들이 전부 챙겼대.”", "reply": "복슬이", "body": "“센터는 이렇게 커졌는데, 우리 월급만 그대로라고? 더는 못 참아!”"}, {"speaker": "복슬이", "head": "“이 센터, 우리가 접수한다! 오늘부터 반란이야!”", "reply": "사원들", "body": "“좋아! 남 좋은 일만 시키던 센터는 이제 끝이야!”"}, {"speaker": "사원들", "head": "“센터 점령 완료! 복슬이, 이제 네가 센터장이야!”", "reply": "복슬이 센터장", "body": "“좋아! 일용직은 박스를 캐고, 사원들은 전투를 준비해!”"}, {"speaker": "복슬이 센터장", "head": "“저쪽 창고에도 우리가 벌어 준 박스가 산더미네?”", "reply": "사원들", "body": "“다른 센터까지 전부 약탈하자! 진격하라!”"}];
 async function api(endpoint,method='GET',body){const r=await fetch(API_BASE+endpoint,{method,credentials:API_BASE?'omit':'same-origin',headers:{...(body?{'Content-Type':'application/json'}:{}),...(localStorage.getItem(endpoint.startsWith('/api/admin/')?ADMIN_KEY:TOKEN_KEY)?{Authorization:'Bearer '+localStorage.getItem(endpoint.startsWith('/api/admin/')?ADMIN_KEY:TOKEN_KEY)}:{})},body:body?JSON.stringify(body):undefined});const v=await r.json().catch(()=>({error:'서버 응답을 읽지 못했어요.'}));if(!r.ok){const error=new Error(v.error||'요청에 실패했어요.');error.status=r.status;throw error;}if(v.adminToken)localStorage.setItem(ADMIN_KEY,v.adminToken);if(v.token)localStorage.setItem(TOKEN_KEY,v.token);if(endpoint==='/api/logout')localStorage.removeItem(TOKEN_KEY);return v;}
 function toast(message,error=false){const el=$('toast');el.textContent=message;el.classList.toggle('error',error);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3800);}
-async function loadState({silent=false,resumeBattle=true}={}){try{const v=await api('/api/state');state=v;lastSnapshot=Date.now();serverOffset=v.serverTime-Date.now();$('auth').classList.add('hidden');$('app').classList.remove('hidden');if(!v.me.game.storySeen||!v.me.game.tutorialSeen){if(!showOnboard){showOnboard=true;onboardStep=0;showTutorial();}}render();maybeEventPopup();if(resumeBattle&&v.activeBattle&&!animation&&!showOnboard)playBattle(v.activeBattle,true);if(!$('modalOverlay').classList.contains('hidden')){if($('modalContent').querySelector('[data-mail-read]'))openMail();else if($('modalContent').querySelector('[data-explore-claim]'))openExplore();}return v;}catch(e){if(/로그인이 필요/.test(e.message)){$('auth').classList.remove('hidden');$('app').classList.add('hidden');}else if(!silent)toast(e.message,true);return null;}}
+async function loadState({silent=false,resumeBattle=true}={}){try{const v=await api('/api/state');state=v;lastSnapshot=Date.now();serverOffset=v.serverTime-Date.now();$('auth').classList.add('hidden');$('app').classList.remove('hidden');if(!v.me.game.storySeen||!v.me.game.tutorialSeen){if(!showOnboard){showOnboard=true;onboardStep=v.me.game.onboarding?.page||0;showTutorial();}else if(v.me.game.onboarding?.stage==='intro'&&onboardStep!==v.me.game.onboarding.page){onboardStep=v.me.game.onboarding.page;renderTutorial();}}render();maybeEventPopup();if(resumeBattle&&v.activeBattle&&!animation&&!showOnboard)playBattle(v.activeBattle,true);if(!$('modalOverlay').classList.contains('hidden')){if($('modalContent').querySelector('[data-mail-read]'))openMail();else if($('modalContent').querySelector('[data-explore-claim]'))openExplore();}return v;}catch(e){if(/로그인이 필요/.test(e.message)){$('auth').classList.remove('hidden');$('app').classList.add('hidden');}else if(!silent)toast(e.message,true);return null;}}
 function serverNow(){return Date.now()+serverOffset;}
 async function doAction(type,params={}){
+  const training=isTrainingActive();if(training&&guidePending)return null;if(training)guidePending=true;
   try{
     const priorWorkers=new Set((state?.me.game.workers||[]).map(w=>w.id));
-    const out=await api('/api/action','POST',{...params,type,requestId:crypto.randomUUID()});
+    const out=await api('/api/action','POST',{...params,type,requestId:training?`training-${state.me.id}-${state.me.game.onboarding.stage}`:crypto.randomUUID()});
     if(out.message&&!out.battle)toast(out.message);
     await loadState({silent:true,resumeBattle:!out.battle});
     if(type==='worker/summon'){
@@ -34,20 +36,20 @@ async function doAction(type,params={}){
     if(type==='mine/next-zone')showZoneTransition(state.me.game.mine.zone);
     if(out.battle)playBattle(out.battle);
     return out;
-  }catch(e){toast(e.message,true);return null;}
+  }catch(e){toast(e.message,true);return null;}finally{if(training){guidePending=false;renderTraining();}}
 }
-function render(){if(!state)return;const g=state.me.game;const power=state.me.power.total;$('serverLabel').textContent=`${state.me.world} · ${state.me.nickname}`;$('boxCount').textContent=number(g.boxes);$('cashCount').textContent=number(g.cash);$('powerCount').textContent=number(power);const unread=(g.mailbox||[]).filter(m=>!m.readAt).length;document.querySelectorAll('[data-mail-badge]').forEach(e=>{e.textContent=unread>99?'99+':unread;e.hidden=!unread;});
+function render(){if(!state)return;prepareTrainingLayout();const g=state.me.game;const power=state.me.power.total;$('serverLabel').textContent=`${state.me.world} · ${state.me.nickname}`;$('boxCount').textContent=number(g.boxes);$('cashCount').textContent=number(g.cash);$('powerCount').textContent=number(power);const unread=(g.mailbox||[]).filter(m=>!m.readAt).length;document.querySelectorAll('[data-mail-badge]').forEach(e=>{e.textContent=unread>99?'99+':unread;e.hidden=!unread;});
 for(const t of ['center','mine','war','shop','server']){$(`tab${t[0].toUpperCase()+t.slice(1)}`).classList.toggle('hidden',t!==selectedTab)}document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('selected',b.dataset.tab===selectedTab));
 $('app').classList.toggle('immersive-mine',selectedTab==='mine');$('app').classList.toggle('immersive-war',selectedTab==='war');
 if(selectedTab==='server'&&chatComposing)return;
-if(selectedTab==='center')renderCenter();else if(selectedTab==='mine')renderMine();else if(selectedTab==='war')renderWar();else if(selectedTab==='shop')renderShop();else renderServer();}
+if(selectedTab==='center')renderCenter();else if(selectedTab==='mine')renderMine();else if(selectedTab==='war')renderWar();else if(selectedTab==='shop')renderShop();else renderServer();renderTraining();}
 function renderCenter(){const el=$('tabCenter'),g=state.me.game,p=state.me.power,stats=state.unitStats,bots=g.shop.bot?2:1,pending=(g.recruitQueue||[]).reduce((sum,j)=>sum+j.amount,0);
 const active=UPGRADES.filter(u=>g.upgrades.some(j=>j.key===u.key));const rows=UPGRADES.filter(u=>({center:['center','wall','turretDmg','turretSpeed'],combat:['troopAtk','troopHp','troopSpeed','capacity'],mine:['mine']}[researchGroup]||[]).includes(u.key)).map(u=>{const lv=g.levels[u.key],next=lv+1,job=g.upgrades.find(j=>j.key===u.key),mx=lv>=10,locked=u.key!=='center'&&next>g.levels.center+1,c=upgradeCost(u.key,next),room=g.upgrades.length<bots;return `<div class="upgrade-item"><h4>${u.icon} ${u.name}<span class="tag">Lv.${lv}</span></h4><small>${u.desc}</small><div class="value">${job?'진행 중':mx?'최대 레벨':`${number(c.boxes)} 📦 · ${timeLeft(c.seconds*1000)}`}</div><button class="btn ${job?'btn-purple':'btn-outline'}" data-upgrade="${u.key}" ${mx||locked||!!job||!room||g.boxes<(c?.boxes||0)?'disabled':''}>${job?'업그레이드 중':mx?'최대 레벨':locked?'센터 레벨 필요':'강화 시작'}</button></div>`}).join('');
 const jobs=Array.from({length:bots},(_,i)=>{const j=g.upgrades[i];return `<div class="slot"><h4>🛠 스탭 ${i+1}</h4>${j?`<small>${h(UPGRADES.find(v=>v.key===j.key)?.name||j.key)} Lv.${j.target}</small><div class="progress" style="margin:9px 0"><div class="bar" data-progress-start="${j.startAt}" data-progress-end="${j.endAt}" style="width:${Math.max(0,Math.min(100,100*(serverNow()-j.startAt)/(j.endAt-j.startAt)))}%"></div></div><strong class="counter" data-live-end="${j.endAt}">${timeLeft(j.endAt-serverNow())}</strong>`:`<span class="good">대기 중 · 연구 가능</span>`}</div>`}).join('')+(bots===1?`<div class="slot"><h4>🔒 스탭 2</h4><small>상점에서 희귀 돈 3,600으로 영구 해금</small><button class="btn btn-outline" style="margin-top:8px" data-modal="shop">상점 열기</button></div>`:'');
 el.innerHTML=`<div class="page-title"><div><h2>내 센터 <span class="goldtext">Lv.${g.levels.center}</span></h2></div><span class="pill">전투력 ${number(p.total)}</span></div>
 <div class="center-utilities"><button class="btn btn-outline" data-workbook>📒 업무수첩 <b>${state.progression.quests.filter(q=>q.ready&&!q.claimed).length||''}</b></button><button class="btn btn-outline" data-inventory>📦 창고</button></div><div class="dashboard-columns"><div><div class="card card-center"><div class="card-head"><h3>📦 독립 물류센터</h3><span class="tag good">운영 중</span></div><div class="warehouse-stage illustrated-center"><div class="center-hero-shade"></div><span class="center-hero-title">독립 물류센터 <b>Lv.${g.levels.center}</b></span><span class="stage-caption">방벽 Lv.${g.levels.wall} · 포탑 Lv.${g.levels.turretDmg}</span></div><div class="gridstats" style="margin-top:11px"><div class="statbox"><small>센터 최대 HP</small><strong>${number(Math.ceil(stats.center))}</strong></div><div class="statbox"><small>방벽 HP</small><strong>${number(Math.ceil(stats.wall))}</strong></div><div class="statbox"><small>포탑 공격력</small><strong>${number(stats.turretDamage)}</strong></div></div></div>
 <div class="card card-army"><div class="card-head"><h3>👥 사원 증원 <small class="production-rate">1명 / 1분</small></h3><span class="pill">${g.troops} / ${stats.cap}명 · 생산 ${pending}명${reservedUi(g)?` · 외부·회복 ${reservedUi(g)}명`:""}</span></div><div class="gridstats"><div class="statbox"><small>공격력</small><strong>${number(stats.damage)}</strong></div><div class="statbox"><small>체력</small><strong>${number(stats.hp)}</strong></div><div class="statbox"><small>공격 속도</small><strong>${stats.interval.toFixed(2)}초</strong></div></div><div class="recruit-queue">${(g.recruitQueue||[]).length?(g.recruitQueue||[]).map((j,i)=>`<div class="recruit-job"><span>👷 ${j.amount}명 생산 ${i?'대기':'진행 중'}</span><b data-live-end="${j.endAt}">${timeLeft(j.endAt-serverNow())}</b><div class="recruit-progress"><i data-progress-start="${j.startAt}" data-progress-end="${j.endAt}" style="width:${Math.max(0,Math.min(100,100*(serverNow()-j.startAt)/(j.endAt-j.startAt)))}%"></i></div></div>`).join(''):''}</div><div class="btnrow"><button data-recruit="1" class="btn btn-outline" ${g.boxes<45||g.troops+(reservedUi(g))+pending>=stats.cap?'disabled':''}>+1명 · 📦45</button><button data-recruit="5" class="btn btn-outline" ${g.boxes<225||g.troops+(reservedUi(g))+pending+5>stats.cap?'disabled':''}>+5명 · 📦225</button><button data-recruit="10" class="btn btn-outline" ${g.boxes<450||g.troops+(reservedUi(g))+pending+10>stats.cap?'disabled':''}>+10명 · 📦450</button></div><button class="btn btn-gold recruit-max" data-recruit-max ${g.boxes<45||g.troops+(reservedUi(g))+pending>=stats.cap||(g.recruitQueue||[]).length>=4?'disabled':''}>최대 생산 <span>${Math.max(0,Math.min(Math.floor(g.boxes/45),stats.cap-g.troops-(reservedUi(g))-pending))}명</span></button></div></div>
-<div>${woundedMarkup(g)}<div class="card card-workshop"><div class="card-head"><h3>🛠️ 진행 중인 업그레이드</h3><span class="tag">${g.upgrades.length} / ${bots}건</span></div><div class="slots">${jobs}</div></div><div class="card card-research"><div class="card-head"><h3>📈 업그레이드 · 연구</h3><small class="muted">택배 박스 사용</small></div><div class="category-tabs">${[['center','🏢 센터'],['combat','⚔ 전투'],['mine','⛏ 채굴']].map(([id,name])=>`<button class="btn ${researchGroup===id?'btn-gold':'btn-outline'}" data-research-group="${id}">${name}</button>`).join('')}</div><div class="upgrade-grid">${rows}</div></div></div></div>`;}
+<div>${woundedMarkup(g)}<div class="card card-workshop"><div class="card-head"><h3>🛠️ 진행 중인 업그레이드</h3><span class="tag">${g.upgrades.length} / ${bots}건</span></div><div class="slots">${jobs}</div></div><div class="card card-research"><div class="card-head"><h3>📈 업그레이드 · 연구</h3><small class="muted">택배 박스 사용</small></div><div class="category-tabs">${[['center','🏢 센터'],['combat','⚔ 전투'],['mine','⛏ 채굴']].map(([id,name])=>`<button class="btn ${researchGroup===id?'btn-gold':'btn-outline'}" data-research-group="${id}">${name}</button>`).join('')}</div><div class="upgrade-grid">${rows}</div></div></div></div>`;renderTraining();}
 function renderMine(){
   const el=$('tabMine'),g=state.me.game,m=g.mine,workers=g.workers;
   const chosen=workers.find(w=>w.id===selectedWorker)||workers[0];
@@ -92,13 +94,13 @@ function renderMine(){
      </div>
      <div class="mine-bottom">
        <button class="mine-summon" data-summon ${g.boxes<state.mineStats.summonCost||workers.length>=8?'disabled':''}>
-        <span>✦ +</span> 일용직 소환 <small>📦 ${number(state.mineStats.summonCost)}</small>
+        <span>✦ +</span> 일용직 소환 <small>${state.mineStats.summonCost===0?'첫 일용직 무료':'📦 '+number(state.mineStats.summonCost)}</small>
        </button>
        
        ${workers.some(w=>w.parked)?'<span class="parked-note">대기 일용직은 통로가 열리면 배치됩니다.</span>':''}${boost>0?`<span class="mine-boost">⚡ ${timeLeft(boost)}</span>`:''}
      </div>
      ${gate.done?'<div class="zone-clear"><span>구역 돌파!</span><button class="btn btn-gold" data-next-zone>다음 구역으로 이동 ↑</button></div>':''}
-   </div>`;
+   </div>`;renderTraining();
 }
 function warTargets(){
  if(warMode==='conquest')return (state.territories||[]).map(v=>({...v,disabled:v.mine||v.busy||v.shieldUntil>serverNow(),status:v.mine?'내 정복지':v.busy?'교전 중':v.shieldUntil>serverNow()?'정복 보호 중':v.ownerId?'점령 중':'중립지대'}));
@@ -172,7 +174,7 @@ function clearIntroTimers(){introTimers.forEach(clearTimeout);introTimers=[];}
 function showTutorial(){
   if(!state)return;
   clearIntroTimers();showOnboard=true;
-  $('onboardOverlay').classList.remove('hidden');
+  $('onboardOverlay').classList.remove('hidden');$('app').inert=true;closeModal();$('trainingCoach')?.classList.add('hidden');
   renderTutorial();
 }
 function guidePage(step){
@@ -195,15 +197,34 @@ function renderTutorial(){
   guidePage(i-5);
   $('onboardCounter').textContent=isStory?`${i+1} / 5`:`${i-4} / 4`;
   $('onboardNext').hidden=isStory;
-  $('onboardNext').textContent=i===8?'게임 시작하기 →':'다음 →';
+  $('onboardNext').textContent=i===8?(isTrainingActive()?'운영 실습 시작':'게임 시작하기'):'다음';
+  const mandatory=!state.me.game.storySeen||!state.me.game.tutorialSeen;
+  $('onboardSkip').hidden=mandatory;
+  $('onboardNext').disabled=mandatory&&!!state.me.game.onboarding&&(serverNow()<state.me.game.onboarding.readyAt||introAdvanceBusy);
+  if(!isStory&&mandatory&&state.me.game.onboarding)introTimers.push(setTimeout(()=>{$('onboardNext').disabled=introAdvanceBusy;},Math.max(0,state.me.game.onboarding.readyAt-serverNow())));
   $('onboardSkip').textContent=isStory?'SKIP »':'건너뛰기';
   if(isStory){
     introTimers.push(setTimeout(()=>$('cinemaHead')?.classList.add('visible'),450));
     introTimers.push(setTimeout(()=>$('cinemaBody')?.classList.add('visible'),2900));
-    introTimers.push(setTimeout(()=>{if(!showOnboard)return;onboardStep=Math.min(8,onboardStep+1);renderTutorial();},7600));
+    introTimers.push(setTimeout(()=>{if(!showOnboard)return;if(document.hidden){renderTutorial();return;}advanceOnboarding();},7600));
   }
 }
-async function completeTutorial(){clearIntroTimers();showOnboard=false;$('onboardOverlay').classList.add('hidden');await doAction('onboard/done');}
+async function completeTutorial(){
+ if(state.me.game.onboarding?.stage==='intro')return advanceOnboarding();
+ const out=await doAction('onboard/done');if(!out)return;
+ clearIntroTimers();showOnboard=false;$('onboardOverlay').classList.add('hidden');$('app').inert=false;renderTraining();maybeEventPopup();
+}
+async function advanceOnboarding(){
+ if(introAdvanceBusy)return;
+ if(state.me.game.onboarding?.stage!=='intro'){if(onboardStep>=8)return completeTutorial();onboardStep++;renderTutorial();return;}
+ introAdvanceBusy=true;$('onboardNext').disabled=true;
+ try{
+  await api('/api/action','POST',{type:'onboard/advance',page:onboardStep,requestId:`intro-${state.me.id}-${onboardStep}`});
+  const synced=await loadState({silent:true});if(!synced)throw new Error('안내 진행 상태를 다시 확인하고 있어요.');
+  if(state.me.game.onboarding.stage!=='intro'){clearIntroTimers();showOnboard=false;$('onboardOverlay').classList.add('hidden');$('app').inert=false;render();}
+ }catch(e){toast(e.message,true);await loadState({silent:true});if(state.me.game.onboarding?.stage==='intro')renderTutorial();}
+ finally{introAdvanceBusy=false;if(showOnboard&&onboardStep>=5)$('onboardNext').disabled=serverNow()<(state.me.game.onboarding?.readyAt||0);}
+}
 function setTab(tab){if(!['center','mine','war','shop','server'].includes(tab))return;selectedTab=tab;render();window.scrollTo({top:0,behavior:'smooth'});}
 
 function makeBoksilSheet(enemy=false){
@@ -294,7 +315,7 @@ function runBattle(current){
 
 async function replay(id){try{const v=await api('/api/battle/'+id);closeModal();playBattle(v.battle);}catch(e){toast(e.message,true)}}
 let suppressMineClickUntil=0;
-function handleAction(e){if(Date.now()<suppressMineClickUntil&&e.target.closest('#tabMine'))return;const btn=e.target.closest('button');if(!btn)return;if(handleAdminButton(btn))return;if(!state)return;if(handleV17Button(btn))return;
+function handleAction(e){if(Date.now()<suppressMineClickUntil&&e.target.closest('#tabMine'))return;const btn=e.target.closest('button');if(!btn)return;if(handleAdminButton(btn))return;if(!state)return;if(btn.dataset.trainingMerge!==undefined){const o=state.me.game.onboarding;if(o?.stage==='merge')doAction('worker/merge',{a:o.workerIds[0],b:o.workerIds[1]});return;}if(btn.dataset.trainingFinish!==undefined){doAction('training/finish').then(out=>{if(out){closeModal();maybeEventPopup();}});return;}if(handleV17Button(btn))return;
 if(btn.dataset.returnBattle){returnFromBattle(btn.dataset.returnBattle);return}if(btn.dataset.openMail!==undefined){openMail();return}if(btn.dataset.mailRead!==undefined){doAction('mail/read').then(openMail);return}if(btn.dataset.recruitMax!==undefined){doAction('troops/recruit',{max:true});return}if(btn.dataset.gate!==undefined){const w=state.me.game.workers.find(v=>v.id===selectedWorker)||state.me.game.workers[0];if(w)doAction('mine/gate',{worker:w.id});else toast('일용직을 먼저 소환해 주세요.',true);return}if(btn.dataset.skipIntro!==undefined){beginBattle();return}if(btn.dataset.tab){if(miningDragging)return;setTab(btn.dataset.tab);return}if(btn.dataset.modal==='shop'){openShop();return}if(btn.dataset.close!==undefined){closeModal();return}if(btn.dataset.guide!==undefined){closeModal();onboardStep=0;showTutorial();return}if(btn.dataset.logout!==undefined){api('/api/logout','POST',{}).then(()=>location.reload()).catch(err=>toast(err.message,true));return}
 if(btn.dataset.upgrade){doAction('upgrade/start',{key:btn.dataset.upgrade});return}if(btn.dataset.recruit){doAction('troops/recruit',{amount:Number(btn.dataset.recruit)});return}if(btn.dataset.summon!==undefined){doAction('worker/summon');return}if(btn.dataset.worker){selectedWorker=btn.dataset.worker;renderMine();return}if(btn.dataset.openMerge!==undefined){openMerge();return}if(btn.dataset.merge){const [a,b]=btn.dataset.merge.split('|');closeModal();doAction('worker/merge',{a,b});return}
 if(btn.dataset.tile!==undefined){const idx=Number(btn.dataset.tile),w=state.me.game.workers.find(v=>v.id===selectedWorker)||state.me.game.workers[0],n=state.me.game.mine.nodes[idx];if(!w){toast('일용직을 먼저 소환해 주세요.',true);return}if(n.done)doAction('mine/move',{worker:w.id,x:idx%5,y:Math.floor(idx/5)});else doAction('mine/dispatch',{worker:w.id,idx});return}
@@ -359,7 +380,7 @@ document.addEventListener('pointerup',e=>endMineDrag(e));
 document.addEventListener('pointercancel',e=>endMineDrag(e,true));
 document.addEventListener('click',handleAction);
 $('modalOverlay').addEventListener('click',e=>{if(e.target===$('modalOverlay'))closeModal()});$('cashResource').addEventListener('click',openShop);$('boxResource').addEventListener('click',()=>setTab('mine'));$('guideBtn').addEventListener('click',()=>{onboardStep=0;showTutorial()});$('profileBtn').addEventListener('click',openProfile);$('mailBtn').addEventListener('click',openMail);
-$('onboardNext').addEventListener('click',()=>{if(onboardStep>=8)completeTutorial();else{onboardStep++;renderTutorial()}});$('onboardSkip').addEventListener('click',()=>{if(onboardStep<5){onboardStep=5;renderTutorial();}else completeTutorial()});
+$('onboardNext').addEventListener('click',advanceOnboarding);$('onboardSkip').addEventListener('click',()=>{if(!state?.me.game.storySeen||!state?.me.game.tutorialSeen)return;if(onboardStep<5){onboardStep=5;renderTutorial();}else completeTutorial()});
 document.addEventListener('input',e=>{if(e.target.id==='warSlider'){warCount=Number(e.target.value);updateMarchCounts();}});
 document.addEventListener('submit',async e=>{if(e.target.id==='chatForm'){e.preventDefault();const input=$('chatInput'),message=input.value.trim();if(!message)return;try{await api('/api/chat','POST',{message,requestId:crypto.randomUUID()});input.value='';await loadState({silent:true});toast('채팅을 전송했어요.')}catch(err){toast(err.message,true)}return;}
 if(e.target.id==='authForm'){e.preventDefault();const pin=$('pinField').value,nickname=$('nickField').value.trim(),world=$('worldField').value.trim().toUpperCase();const submit=$('authSubmit');submit.disabled=true;try{const master=authMode==='login'&&nickname.toLowerCase()==='master';await api(master?'/api/admin/login':'/api/'+authMode,'POST',{pin,nickname,world:master?'':world});if(master)await loadAdmin();else{localStorage.removeItem(ADMIN_KEY);await loadState();}}catch(err){toast(err.message,true)}finally{submit.disabled=false;}return;}});
@@ -423,7 +444,7 @@ function openEvents(){const a=state.progression.attendance;showModal(`${modalHea
 function inventoryMarkup(){return warehouseItemsMarkup();}
 
 function openForklift(){const g=state.me.game,active=g.forklift.permanent||g.forklift.until>serverNow();showModal(`${modalHead('지게차 배치')}<div class="inventory-card"><img src="assets/forklift-cute.webp" alt="지게차"><p>${active?'일용직 1명에게 탑승시켜 주세요.':'7일 출석 이벤트에서 이용권을 획득할 수 있습니다.'}</p>${active?g.workers.filter(w=>!w.parked).map(w=>`<button class="btn btn-gold btn-wide" data-equip-forklift="${w.id}">Lv.${w.level} 일용직 ${g.forklift.workerId===w.id?'✓ 탑승 중':'탑승'}</button>`).join(''):''}${g.forklift.workerId?'<button class="btn btn-outline" data-equip-forklift="">내리기</button>':''}<button class="btn btn-outline btn-wide" data-inventory>이용권 확인</button></div>`);}
-function maybeEventPopup(){if(!state||showOnboard||animation||recruiting||popupPending||!$('modalOverlay').classList.contains('hidden'))return;const a=state.progression?.attendance,today=new Date(serverNow()+9*3600000).toISOString().slice(0,10);if(a?.claimable&&a.popupDay!==today){popupPending=true;a.popupDay=today;openEvents();api('/api/action','POST',{type:'event/popup',requestId:crypto.randomUUID()}).finally(()=>popupPending=false);}}
+function maybeEventPopup(){if(!state||showOnboard||isTrainingActive()||(state.me.game.onboarding&&!state.me.game.onboarding.acknowledged)||animation||recruiting||popupPending||!$('modalOverlay').classList.contains('hidden'))return;const a=state.progression?.attendance,today=new Date(serverNow()+9*3600000).toISOString().slice(0,10);if(a?.claimable&&a.popupDay!==today){popupPending=true;a.popupDay=today;openEvents();api('/api/action','POST',{type:'event/popup',requestId:crypto.randomUUID()}).finally(()=>popupPending=false);}}
 function handleV17Button(b){
  const d=b.dataset;
  if(d.recruitReveal!==undefined){if(recruitReady)showRecruitResults(recruitReady.pulls);return true;}if(d.recruitClose!==undefined){$('recruitOverlay').classList.add('hidden');recruiting=false;recruitReady=null;if(selectedTab==='shop')renderShop();return true;}
@@ -509,3 +530,44 @@ async function shareServer(){
 const invitedServer=new URLSearchParams(location.search).get('server');
 if(invitedServer&&/^[A-Za-z0-9_-]{2,20}$/.test(invitedServer))$('worldField').value=invitedServer.toUpperCase();
 document.addEventListener('click',e=>{if(e.target.closest('[data-copy-invite]'))document.querySelector('.invite-link')?.select();});
+
+function isTrainingActive(){const o=state?.me.game.onboarding;return !!o&&o.stage!=='done';}
+function prepareTrainingLayout(){
+ const o=state?.me.game.onboarding;if(!o)return;
+ if(guideAccount!==state.me.id){guideAccount=state.me.id;guideStage='';if(o.stage!=='intro'&&o.stage!=='done')selectedTab=['summon','mine','summonSecond','merge'].includes(o.stage)?'mine':'center';}
+ if(guideStage!==o.stage){if(o.stage==='summon')selectedTab='mine';if(o.stage==='upgrade')researchGroup='mine';guideStage=o.stage;}
+}
+function renderTraining(){
+ const coach=$('trainingCoach');if(!coach)return;
+ document.querySelectorAll('.guide-target').forEach(el=>el.classList.remove('guide-target'));
+ const o=state?.me.game.onboarding;
+ document.body.classList.toggle('in-training',!!o&&o.stage!=='done'&&!showOnboard);
+ if(!o||showOnboard||o.stage==='intro'){coach.classList.add('hidden');return;}
+ if(o.stage==='done'){
+  coach.classList.add('hidden');
+  if(!o.acknowledged&&!$('modalContent').querySelector('[data-training-finish]'))showModal(`<div class="training-complete"><img src="assets/worker-cute.webp" alt="복슬이"><h2>운영 실습 완료!</h2><p>박스를 채굴하고, 일용직을 합성했어요.<br>이제 모은 박스로 사원과 센터를 키워 보세요!</p><div class="training-done-list"><span>✓ 채굴 · 합성 완료</span><span>✓ 사원 1명 생산 시작</span><span>✓ ${h(UPGRADES.find(u=>u.key===o.upgradeKey)?.name||'업그레이드')} 연구 시작</span></div><button class="btn btn-gold btn-wide" data-training-finish>센터 운영 시작</button></div>`);
+  return;
+ }
+ const stages=['summon','mine','summonSecond','merge','recruit','upgrade'],n=stages.indexOf(o.stage)+1;
+ const center=['recruit','upgrade'].includes(o.stage),page=center?'center':'mine';
+ let title,body,selectors=[],extra='';
+ if(selectedTab!==page){title=center?'채굴한 박스로 센터를 키워요':'택배 채굴로 이동해요';body=center?'빛나는 내 센터 버튼을 눌러 주세요.':'빛나는 택배 채굴 버튼을 눌러 주세요.';selectors=[`[data-tab="${page}"]`];}
+ else if(o.stage==='summon'){title='첫 일용직을 불러요';body='일용직 소환 버튼을 누르세요. 첫 일용직은 무료예요.';selectors=['[data-summon]'];}
+ else if(o.stage==='mine'){title=o.assigned?'첫 박스를 채굴하고 있어요':'빛나는 박스에 배치해요';body=o.assigned?'채굴이 끝나면 박스가 들어와요. 잠시 기다려 주세요.':'박스를 누르거나 일용직을 박스로 끌어 놓으세요.';selectors=['[data-tile="37"]'];if(!o.assigned)selectors.push(`[data-worker="${o.workerIds[0]}"]`);}
+ else if(o.stage==='summonSecond'){title='박스 '+number(o.minedBoxes)+'개를 얻었어요!';body='일용직을 한 명 더 소환해 보세요. 이번에는 박스 80개를 사용해요.';selectors=['[data-summon]'];}
+ else if(o.stage==='merge'){title='같은 레벨끼리 합성해요';body='두 일용직을 겹쳐 놓거나 아래 합성 버튼을 누르세요.';selectors=o.workerIds.map(id=>`[data-worker="${id}"]`);extra=`<button class="btn btn-gold" data-training-merge ${guidePending?'disabled':''}>일용직 합성</button>`;}
+ else if(o.stage==='recruit'){title='사원 1명을 생산해요';body='박스 45개를 사용해 사원 1명 생산을 시작하세요. 합류까지 1분 걸려요.';selectors=['[data-recruit="1"]'];}
+ else if(o.stage==='upgrade'){title='센터 성장을 시작해요';body='보유 박스로 가능한 빛나는 연구를 하나 시작하세요. 모은 박스는 성장에 쓰여요.';selectors=['#tabCenter [data-upgrade]:not(:disabled)'];}
+ coach.className='training-coach '+(page==='mine'?'over-mine':'over-center');coach.innerHTML=`<img src="assets/worker-cute.webp" alt="복슬이의 안내"><div><span class="training-step">센터장 실습 ${n} / 6</span><h3>${title}</h3><p>${body}</p>${extra}</div>`;
+ const targets=selectors.flatMap(sel=>[...document.querySelectorAll(sel)]);targets.forEach(el=>el.classList.add('guide-target'));
+ const key=state.me.id+':'+o.stage+':'+o.assigned+':'+selectedTab+':'+researchGroup;
+ if(key!==guidePaintKey){guidePaintKey=key;const target=targets.find(el=>el.getClientRects().length);if(target&&!target.closest('.navbar')&&page==='center')requestAnimationFrame(()=>target.isConnected&&target.scrollIntoView({block:'center',behavior:'smooth'}));}
+}
+document.addEventListener('click',e=>{
+ if(!isTrainingActive()||showOnboard||adminState)return;
+ const btn=e.target.closest('button');if(!btn)return;
+ const o=state.me.game.onboarding,stage=o.stage;
+ const common='#profileBtn,[data-logout],[data-close]';
+ const allowed={summon:'[data-tab="mine"],[data-summon]',mine:'[data-tab="mine"],[data-worker],[data-tile="37"]',summonSecond:'[data-tab="mine"],[data-summon]',merge:'[data-tab="mine"],[data-worker],[data-training-merge]',recruit:'[data-tab="center"],[data-recruit="1"]',upgrade:'[data-tab="center"],[data-research-group],[data-upgrade]'};
+ if((guidePending&&!btn.matches(common))||!btn.matches(common+','+(allowed[stage]||'[data-no-training-action]'))){e.preventDefault();e.stopImmediatePropagation();if(!guidePending)toast('복슬이의 안내에 따라 빛나는 버튼을 눌러 주세요.');}
+},true);
