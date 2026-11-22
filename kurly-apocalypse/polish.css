@@ -56,3 +56,9 @@ input,textarea,.auth-card input{background:#fffdf6;color:#604d68;border-color:#c
 
 .auth-entry .btn-outline{background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-color:#fff3d7}
 #onboardOverlay.story-mode #onboardSkip{background:#fff8e8 url('assets/button-gold-v2.webp') center/100% 100% no-repeat;color:#6d4d2d;border-color:#caa161}
+
+/* Drag positions are painted once per frame, independent of mining animations. */
+.mine-worker.dragging,.mine-worker.drop-pending{will-change:transform;transition:none!important;cursor:grabbing;z-index:35!important}
+.mine-worker.dragging .worker-avatar,.mine-worker.drop-pending .worker-avatar{animation:none!important}
+.mine-worker.drop-pending{pointer-events:none}
+.shop-art.auto img{object-fit:contain;padding:8px}
