@@ -1,8 +1,8 @@
-import {chatNotification} from './social.js?v=20261122-v197-mining';
-import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261122-v197-mining';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261122-v197-mining';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v197-mining';
-const RELEASE='20261122-v197-mining';
+import {chatNotification} from './social.js?v=20261122-v197-quietmove';
+import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261122-v197-quietmove';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261122-v197-quietmove';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v197-quietmove';
+const RELEASE='20261122-v197-quietmove';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1',ADMIN_KEY='ka_admin_session_v1';
 const SUPPORT_ACCOUNT='3333170215737';
@@ -56,7 +56,7 @@ async function doAction(type,params={},{mineDrop=false}={}){
   try{
     const priorWorkers=new Set((state?.me.game.workers||[]).map(w=>w.id));
     const out=await api('/api/action','POST',{...params,type,requestId:training?`training-${state.me.id}-${state.me.game.onboarding.stage}`:crypto.randomUUID()});
-    if(out.message&&!out.battle)toast(out.message);
+    if(out.message&&!out.battle&&!['mine/move','mine/dispatch'].includes(type))toast(out.message);
     if(mineDrop&&miningSettling)miningSettling.ready=true;
     await loadState({silent:true,resumeBattle:!out.battle});
     if(type==='worker/summon'){
