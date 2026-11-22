@@ -11,6 +11,7 @@ export function buildBattleEvents(frames){
   const events=[];
   for(let i=1;i<frames.length;i++){
     const before=frames[i-1],after=frames[i];
+    for(const effect of after.effects||[])events.push({...effect,at:after.t});
     for(const skill of after.skills||[])events.push({type:'skill',side:skill.side,id:skill.id,at:after.t});
     for(const side of ['a','b']){
       for(const [key] of HEALTH_KINDS){const damage=before[side+key]-after[side+key];if(damage>0)events.push({type:'structure',side,key,at:after.t,damage});}
@@ -128,6 +129,10 @@ export function paintBattle(canvas,frame,{assets,sprites,phase,events=[],ownStat
       }
     }
     for(const e of recent){const age=t-e.at;if(e.type==='structure'){const p=structurePoint(e.side,e.key);burst(p.x,p.y,age,1);ctx.font='bold 24px system-ui';ctx.fillStyle='#bb4a3e';ctx.strokeStyle='#fff7dc';ctx.lineWidth=4;ctx.strokeText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);ctx.fillText('-'+Math.ceil(e.damage),p.x,p.y-24-age*35);}else if(e.type==='fall'){const u=age/.78;unit(e.x*W+(e.side==='a'?-1:1)*e.index*21,432-(e.index%3)*16,e.side,e.index,false,u);if(age<.45)burst(e.x*W,432,age,.55);}}
+  }
+  for(const side of ['a','b']){
+    const effects=recent.filter(e=>e.side===side&&['critical','reflect','leech'].includes(e.type));
+    for(const [i,type] of ['critical','reflect','leech'].entries()){const effect=effects.filter(e=>e.type===type).at(-1);if(!effect||!playing)continue;const age=t-effect.at,px=side==='a'?ax-35:bx+35,py=300-i*29-age*18;ctx.save();ctx.globalAlpha=1-age/.9;ctx.font='bold 22px system-ui';ctx.textAlign='center';ctx.strokeStyle='#fff9ea';ctx.lineWidth=5;ctx.fillStyle=type==='leech'?'#278c66':type==='reflect'?'#9c65b8':'#d8772e';const label=type==='critical'?'치명타!':type==='reflect'?'반사 −'+Math.ceil(effect.amount):'흡혈 +'+Math.ceil(effect.amount);ctx.strokeText(label,px,py);ctx.fillText(label,px,py);ctx.restore();}
   }
   ctx.font='bold 21px system-ui';ctx.textAlign='center';ctx.fillStyle='#3d3b52';ctx.strokeStyle='#fff8df';ctx.lineWidth=6;
   for(const [px,n,label] of [[ax-48,an,'아군'],[bx+48,bn,'상대']])if(n){ctx.strokeText(label+' '+n+'명',px,350);ctx.fillText(label+' '+n+'명',px,350);}
