@@ -1,8 +1,8 @@
-import {chatNotification} from './social.js?v=20261122-v196-combat';
-import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261122-v196-combat';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261122-v196-combat';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v196-combat';
-const RELEASE='20261122-v196-combat';
+import {chatNotification} from './social.js?v=20261122-v196-release';
+import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261122-v196-release';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261122-v196-release';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261122-v196-release';
+const RELEASE='20261122-v196-release';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1',ADMIN_KEY='ka_admin_session_v1';
 const SUPPORT_ACCOUNT='3333170215737';

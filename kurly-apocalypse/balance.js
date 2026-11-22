@@ -36,3 +36,9 @@ export function marchPower(stats,hero,amount,factors={hp:1,attack:1,siegeAttack:
  const troop=(stats.hp*factors.hp*.18+stats.damage/stats.interval*(factors.attack*.8+factors.siegeAttack*.2)*8*crit)*(1+(stats.lifeSteal||0)*.5);
  return Math.round(count*troop+(hero?(hero.hp*.18+hero.damage/hero.interval*8):0));
 }
+
+export function repairWallThroughUpgrades(g,now){
+ const jobs=(g.upgrades||[]).filter(j=>j.endAt<=now&&['wall','wallRepair'].includes(j.key)).sort((a,b)=>a.endAt-b.endAt);
+ for(const job of jobs){repairWall(g,job.endAt);g.levels[job.key]=Math.max(g.levels[job.key],job.target);repairWall(g,job.endAt);}
+ repairWall(g,now);
+}
