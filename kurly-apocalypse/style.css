@@ -110,3 +110,11 @@
 .tutorial-page .onboard-panel img{object-fit:contain}
 @media(max-width:380px){.mine-ore-count{font-size:8px}.mine-worker{width:42px}.worker-avatar{width:31px;height:31px}.war-playback{padding:7px}.war-pill{padding:8px}}
 @media(prefers-reduced-motion:reduce){.mine-worker,.mine-ore,.mine-sparks,.cinema-bubble{animation:none!important;transition:none!important}}
+/* Mining progression: keep the ceiling visible without covering the board. */
+.mine-hud-stat .mine-level-guide{flex-basis:100%;border:1px solid #8e744e;border-radius:7px;background:#fff6df;color:#654823;font:inherit;font-size:14px;font-weight:800;min-height:30px;padding:4px 6px;cursor:pointer}
+.mine-worker.worker-veteran .worker-level{background:#e7e0fa;color:#50357f;border-color:#8a69af}
+.mine-worker.worker-max .worker-level{background:#ffe5a1;color:#5d3a08;border:2px solid #a77723}
+.mine-worker.worker-veteran .worker-avatar{filter:drop-shadow(0 0 3px #a58ade)}
+.mine-worker.worker-max .worker-avatar{filter:drop-shadow(0 0 4px #ffd66a)}
+.miner-progression-note{background:#fff2d9;border:1px solid #caae79;border-radius:12px;padding:12px;margin:14px 0;line-height:1.6;font-size:14px;color:#654f37}
+.miner-progression-note p{margin:6px 0 0}.miner-level-table{margin-top:16px;font-size:14px;line-height:1.6}.miner-level-table summary{cursor:pointer;font-weight:800;padding:10px 0}.miner-level-table table{width:100%;border-collapse:collapse}.miner-level-table th,.miner-level-table td{padding:7px;border-bottom:1px solid #bdab8c;text-align:right}.miner-level-table th:first-child{text-align:left}
