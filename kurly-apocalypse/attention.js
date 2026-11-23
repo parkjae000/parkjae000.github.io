@@ -30,3 +30,5 @@ export function battleNames(payload={},rows=[],ranks=[]){
  return {a:payload.attackerName||user(payload.attackerId||record?.attacker_id)||'공격 센터',b:payload.defenderPlayerName||user(payload.defenderId||record?.defender_id)||payload.defenderName||'방어 센터'};
 }
 export function lastSeenLabel(at,now){if(!(at>0))return '마지막 접속 기록 없음';const seconds=Math.max(0,Math.floor((now-at)/1000));return '마지막 접속 '+(seconds<60?'방금':seconds<3600?Math.floor(seconds/60)+'분 전':seconds<86400?Math.floor(seconds/3600)+'시간 전':Math.floor(seconds/86400)+'일 전');}
+
+export function eventReadyCount(progression,now){const a=progression?.attendance;if(!a)return 0;const day=new Date(now+9*3600000).toISOString().slice(0,10);return a.claimed<7&&a.lastDay!==day?1:0;}
