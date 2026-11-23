@@ -43,8 +43,8 @@ export function marchPower(stats,hero,amount,factors=null){
 }
 export function centerPower(g,miningDps){
  const l=g.levels,clamp=v=>Math.max(0,Math.min(1,v)),L=k=>clamp(((l[k]||1)-1)/9),mean=(keys,legacy)=>keys.reduce((v,k)=>v+clamp(((l[k]||1)-1+(l[legacy]||1)-1)/9),0)/3;
- const mining=Math.round(2500*(.6*clamp(miningDps/400)+.4*L('mine'))),defense=Math.round(3000*(.35*L('center')+.25*L('wall')+.25*L('turretDmg')+.15*L('turretSpeed'))),army=Math.round(3500*(.3*mean(['rangedDamage','spearDamage','shieldDamage'],'troopAtk')+.3*mean(['rangedHp','spearHp','shieldHp'],'troopHp')+.2*mean(['rangedSpeed','spearSpeed','shieldSpeed'],'troopSpeed')+.2*L('capacity'))),capture=500*g.captures.length;
- return {total:Math.max(0,Math.min(10000,mining+defense+army+capture)),mining,defense,army,capture};
+ const mining=Math.round(2500*(.6*clamp(miningDps/400)+.4*L('mine'))),defense=Math.round(3000*(.35*L('center')+.25*L('wall')+.25*L('turretDmg')+.15*L('turretSpeed'))),army=Math.round(3500*(.3*mean(['rangedDamage','spearDamage','shieldDamage'],'troopAtk')+.3*mean(['rangedHp','spearHp','shieldHp'],'troopHp')+.2*mean(['rangedSpeed','spearSpeed','shieldSpeed'],'troopSpeed')+.2*L('capacity'))),capture=0;
+ return {total:Math.max(0,Math.min(9000,mining+defense+army)),mining,defense,army,capture};
 }
 
 export function repairWallThroughUpgrades(g,now){
