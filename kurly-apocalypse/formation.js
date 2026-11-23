@@ -19,5 +19,5 @@ export const ROLE_SPECS={support:{weapon:'shield',range:.05,hp:1.4,damage:.65,in
 export const HERO_RANGE=id=>['frozen','chilled','cs','beauty'].includes(id)?.235:.098;
 export function formationFactors(formation,classes=null){
  const n=formation.amount||1,r=formation.roles;
- return {hp:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.hpFactor??ROLE_SPECS[k].hp),0)/n,attack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n,siegeAttack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n};
+ return {roles:{...r},hp:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.hpFactor??ROLE_SPECS[k].hp),0)/n,attack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n,siegeAttack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n};
 }

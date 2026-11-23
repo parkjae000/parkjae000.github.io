@@ -1,5 +1,5 @@
 // Fetch the release pointer without HTTP cache so a previously cached HTML page loads current modules.
-const fallback='20261123-v211-garrison',safe=/^\d{8}-v\d+-[a-z0-9-]+$/;
+const fallback='20261123-v212-research-news',safe=/^\d{8}-v\d+-[a-z0-9-]+$/;
 const newer=(a,b)=>{const x=a.match(/^(\d{8})-v(\d+)/),y=b.match(/^(\d{8})-v(\d+)/);return !!x&&!!y&&(x[1]>y[1]||x[1]===y[1]&&Number(x[2])>Number(y[2]));};
 async function currentRelease(){try{const r=await fetch(new URL('release.json?check='+Date.now(),import.meta.url),{cache:'no-store'});if(!r.ok)return fallback;const v=await r.json();return safe.test(v.release)&&newer(v.release,fallback)?v.release:fallback;}catch{return fallback;}}
 const release=await currentRelease();document.documentElement.dataset.clientRelease=release;
