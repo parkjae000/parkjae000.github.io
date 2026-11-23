@@ -1,4 +1,4 @@
-import atlas from './scene-atlas.js?v=20261123-v202-presence';
+import atlas from './scene-atlas.js?v=20261123-v203-chat';
 export const FILES={warehouse:'warehouse.webp',miners:'miners.webp',parcel:'parcel.webp',money:'money.webp',yard:'yard.webp',fighters:'fighters.webp',forklift:'forklift.webp',damage:'damage.webp',fortress:'fortress-state.webp',resultWin:'result-win.webp',resultLoss:'result-loss.webp',resultDraw:'result-draw.webp',charge:'chargeSpeech.webp',csMotion:'csMotion.webp',beautyMotion:'beautyMotion.webp',ambientMotion:'ambientMotion.webp',chilledMotion:'chilledMotion.webp',returnsMotion:'returnsMotion.webp',heroFrozen:'hero-frozen.webp',heroChilled:'hero-chilled.webp',heroAmbient:'hero-ambient.webp',heroCs:'hero-cs.webp',heroBeauty:'hero-beauty.webp',heroReturns:'hero-returns.webp'};
 export function prepareAssets(raw,meta,makeCanvas){
  const A={...raw};for(const name of ['miners','fighters','forklift','damage','fortress'])A[name+'Frames']=meta[name].map(r=>{const c=makeCanvas(r.w,r.h);c.getContext('2d').drawImage(raw[name],r.x,r.y,r.w,r.h,0,0,r.w,r.h);return c;});
