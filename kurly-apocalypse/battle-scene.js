@@ -1,9 +1,9 @@
-import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261123-v200-pc3';
-import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261123-v200-pc3';
+import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261123-v201-alerts2';
+import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261123-v201-alerts2';
 export const HEALTH_KINDS=[['C','센터','🏢','center'],['W','방벽','🛡','wall'],['T','포탑','🎯','turret']];
 
-export function battleHealthMarkup(side,frame,maxima,ready=false){
-  return `<div class="battle-health-card ${side==='a'?'allied':'hostile'}"><strong>${side==='a'?'우리 센터':'상대 센터'}</strong>${HEALTH_KINDS.map(([key,label,icon,color])=>{
+export function battleHealthMarkup(side,frame,maxima,ready=false,label=null){
+  return `<div class="battle-health-card ${side==='a'?'allied':'hostile'}"><strong>${String(label||(side==='a'?'공격 센터':'방어 센터')).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong>${HEALTH_KINDS.map(([key,label,icon,color])=>{
     const value=frame?.[side+key]??(side==='a'?maxima[key]:0),max=maxima[key]||1;
     return `<div class="health-row health-${color}" data-health-row="${side+key}"><div><span>${icon} ${label}</span><b data-health-number="${side+key}">${ready&&side==='b'?'선택 전':Math.ceil(value).toLocaleString('ko-KR')+' / '+Math.ceil(max).toLocaleString('ko-KR')}</b></div><i><em data-health-bar="${side+key}" style="width:${Math.max(0,Math.min(100,100*value/max))}%"></em></i></div>`;
   }).join('')}</div>`;
@@ -61,6 +61,6 @@ export function paintBattle(canvas,frame,{phase,events=[],maxima={}}={}){
   for(const sh of events){if(sh.type!=='shot')continue;const age=t-sh.at,duration=sh.impactAt-sh.at;if(age<0||age>duration+.55)continue;const from={x:sh.side==='a'?326:954,y:400},to={x:sh.to*1280,y:456};if(age<duration){const q=age/duration,x=mix(from.x,to.x,q),y=mix(from.y,to.y,q)-Math.sin(q*Math.PI)*50;c.strokeStyle='#fff3bc';c.lineWidth=3;c.beginPath();c.moveTo(x+(sh.side==='a'?-14:14),y-3);c.lineTo(x,y);c.stroke();c.fillStyle='#ffc265';c.beginPath();c.arc(x,y,4,0,TAU);c.fill();if(age<.13)burst(c,from.x,from.y,age,{size:.6,count:4});}else burst(c,to.x,to.y,age-duration,{size:.9,count:7});}
   for(const e of recent.filter(e=>['critical','reflect','leech'].includes(e.type))){if(t-e.at>.7)continue;const x=frame[e.side].x*1280,y=340-(t-e.at)*20,label=e.type==='critical'?'치명타!':e.type==='reflect'?'반사 −'+Math.ceil(e.amount):'흡혈 +'+Math.ceil(e.amount);txt(c,label,x,y,18,e.type==='leech'?'#3d9674':'#b17c49','center');}
  }
- for(const [si,side]of ['a','b'].entries()){const f=frame[side];round(c,si?950:32,40,298,48,14,'#fff8ecef',si?'#d7b0b6':'#b7cdc1');txt(c,(si?'상대 사원 ':'아군 사원 ')+f.n+'명',si?1099:181,71,23,si?'#a36d7b':'#548c83','center');}
+ for(const [si,side]of ['a','b'].entries()){const f=frame[side];round(c,si?950:32,40,298,48,14,'#fff8ecef',si?'#d7b0b6':'#b7cdc1');txt(c,(si?'방어 사원 ':'공격 사원 ')+f.n+'명',si?1099:181,71,23,si?'#a36d7b':'#548c83','center');}
  const active=heroes.filter(h=>h.skill.active).sort((a,b)=>a.skill.age-b.skill.age)[0];if(active){drawSkillBanner(c,active);drawSkillCutIn(c,A,active);}
 }
