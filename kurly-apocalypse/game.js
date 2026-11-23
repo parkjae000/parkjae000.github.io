@@ -1,10 +1,11 @@
-import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,lastSeenLabel} from './attention.js?v=20261123-v201-alerts2';
-import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261123-v201-alerts2';
-import {chatNotification} from './social.js?v=20261123-v201-alerts2';
-import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261123-v201-alerts2';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261123-v201-alerts2';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261123-v201-alerts2';
-const RELEASE='20261123-v201-alerts2';
+import {browserAway} from './presence.js?v=20261123-v202-presence';
+import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,lastSeenLabel} from './attention.js?v=20261123-v202-presence';
+import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261123-v202-presence';
+import {chatNotification} from './social.js?v=20261123-v202-presence';
+import {upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261123-v202-presence';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors} from './formation.js?v=20261123-v202-presence';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261123-v202-presence';
+const RELEASE='20261123-v202-presence';
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
 const TOKEN_KEY='ka_game_session_v1',ADMIN_KEY='ka_admin_session_v1';
 const SUPPORT_ACCOUNT='3333170215737';
@@ -20,7 +21,7 @@ let introAdvanceBusy=false,guidePending=false,guideAccount='',guideStage='',guid
 let stateLoadSequence=0;
 let recruitPool='normal',serverPage='chat';
 let shopPurchasing=false;const shopDisclosure={normal:false,rare:false};
-let socialHeartbeatAt=0,lastSocialAt=0,socialBusy=false,lastInteractionAt=Date.now(),lastAway=null,chatExpanded=false,chatForceBottom=false;
+let socialHeartbeatAt=0,lastSocialAt=0,socialBusy=false,lastAway=null,chatExpanded=false,chatForceBottom=false;
 const presenceLabels={online:'접속 중',away:'자리비움',offline:'오프라인'};
 function presenceDot(status='offline'){const safe=presenceLabels[status]?status:'offline';return `<i class="presence-dot ${safe}" role="img" aria-label="${presenceLabels[safe]}" title="${presenceLabels[safe]}"></i>`;}
 function warReadKey(){return 'ka_war_read_v1:'+state.me.world+':'+state.me.id;}
@@ -50,19 +51,17 @@ function syncChatBadge(){
  const nav=document.querySelector('[data-tab="server"]');if(nav)nav.setAttribute('aria-label',unread?`서버 · 새 채팅 ${unread}개`:'서버');
 }
 async function refreshSocial(){
- if(!state||socialBusy)return;socialBusy=true;const actor=state.me.id,away=document.hidden||!document.hasFocus()||Date.now()-lastInteractionAt>=120000;
+ if(!state||socialBusy)return;socialBusy=true;const actor=state.me.id,away=browserAway(document);
  try{const out=await api('/api/social','POST',{away});if(state?.me.id!==actor)return;
   const current=chatNotification(state.chat||[],actor,0).latest,next=chatNotification(out.chat||[],actor,0).latest;if(next>=current)state.chat=out.chat;
   for(const p of out.presence||[]){const user=state.ranks.find(v=>v.id===p.id);if(user){user.presence=p.status;user.lastSeenAt=p.lastSeenAt||0;}}
   socialHeartbeatAt=Date.now();lastSocialAt=Date.now();lastAway=away;
   if(selectedTab==='server'&&!chatComposing)renderServer();syncChatBadge();
- }catch{}finally{socialBusy=false;}
+ }catch{}finally{socialBusy=false;if(state?.me.id===actor&&away!==browserAway(document))queueMicrotask(refreshSocial);}
 }
-for(const event of ['pointerdown','pointermove','keydown','touchstart'])document.addEventListener(event,()=>{lastInteractionAt=Date.now();},{passive:true});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)lastInteractionAt=Date.now();refreshSocial();});
-window.addEventListener('focus',()=>{lastInteractionAt=Date.now();refreshSocial();});
-window.addEventListener('blur',()=>refreshSocial());
-setInterval(()=>{const now=Date.now(),away=document.hidden||!document.hasFocus()||now-lastInteractionAt>=120000;if(state&&(away!==lastAway||now-socialHeartbeatAt>20000||(!document.hidden&&now-lastSocialAt>6500)))refreshSocial();},5000);
+document.addEventListener('visibilitychange',()=>refreshSocial());
+window.addEventListener('focus',()=>refreshSocial());
+setInterval(()=>{const now=Date.now(),away=browserAway(document);if(state&&(away!==lastAway||now-socialHeartbeatAt>20000||(!document.hidden&&now-lastSocialAt>6500)))refreshSocial();},5000);
 
 const SHOP_DETAILS={auto:{icon:'⚙️',image:'worker-cute',description:'아래쪽 자원부터 이동하며 자동 채굴합니다.'},bot:{icon:'🛠',image:'panel-workshop',description:'스탭 2 합류 · 연구 2개를 동시에 진행합니다.'},boost:{icon:'⚡',image:'ore-money',description:'10분 동안 채굴 속도 2배'},forklift:{icon:'🔒',image:'forklift-cute',description:'추후 업데이트 예정'}};
 const UPGRADES=[{key:'wallReflect',name:'방벽 반사 피해',icon:'🛡',desc:'방벽이 받은 피해의 일부를 공격자에게 반사'},{key:'wallRepair',name:'방벽 자가 수리',icon:'🧱',desc:'첫 연구 시 시간당 최대 방벽 HP의 1% 수리'},{key:'troopCritChance',name:'사원 치명타 확률',icon:'🎯',desc:'단계당 치명타 확률 +2%p'},{key:'troopCritDmg',name:'사원 치명타 피해',icon:'💥',desc:'단계당 치명타 피해 +10%p'},{key:'troopLeech',name:'사원 피흡',icon:'💚',desc:'단계당 사원이 가한 피해의 1% 회복'},{key:'laborCost',name:'일용직 인건비 감소',icon:'👷',desc:'단계당 소환 비용 4% 감소 · 최대 36%'},{key:'lossDiscovery',name:'로스 발견',icon:'📦',desc:'박스·희귀 돈 획득량 단계당 +10%'},{key:'careerLevel',name:'경력 증가',icon:'🎓',desc:'기본 소환 레벨 +1 · 최대 Lv.6'},{key:'mergeLuck',name:'경력 확률',icon:'✨',desc:'합성 시 2레벨 상승 확률 단계당 +3%'},{key:'center',name:'센터 레벨',icon:'🏢',desc:'센터 체력 및 다른 연구 상한 증가'},{key:'mine',name:'채굴 효율',icon:'⛏️',desc:'일용직 채굴 속도 +8%'},{key:'troopAtk',name:'사원 공격력',icon:'⚔️',desc:'사원 공격 피해 +8%'},{key:'troopHp',name:'사원 체력',icon:'❤️',desc:'사원 최대 체력 +10%'},{key:'troopSpeed',name:'사원 공격속도',icon:'⚡',desc:'사원 공격속도 +3%'},{key:'capacity',name:'사원 수용 한도',icon:'👥',desc:'최대 사원 +8명'},{key:'wall',name:'방벽 내구도',icon:'🛡️',desc:'방벽 체력 +12%'},{key:'turretDmg',name:'포탑 공격력',icon:'🎯',desc:'포탑 공격 피해 +10%'},{key:'turretSpeed',name:'포탑 공격속도',icon:'💥',desc:'포탑 공격속도 +4%'}];
