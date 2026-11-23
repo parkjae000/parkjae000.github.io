@@ -10,3 +10,5 @@
 /* Keep the center scene; the only header control is its battle log. */
 .expedition-heading{justify-content:flex-end;min-height:40px}.expedition-heading .expedition-log{font-size:13px;min-height:38px;padding:8px 13px;border-color:#c5a584;box-shadow:0 3px 8px #6b526b26}.expedition-home{justify-content:flex-start;padding-top:12px}.expedition-home img{max-height:calc(100% - 90px)}
 @media(min-width:900px){.expedition-home{padding-top:12px;justify-content:center}.expedition-heading .expedition-log{font-size:15px}}
+
+.expedition-hub.prep-hub .expedition-mode{height:auto;min-height:174px;padding:8px 6px 12px;justify-content:flex-start;gap:6px}.prep-hub .expedition-mode img{flex:0 0 auto;height:64px}.prep-hub .expedition-mode .mode-description{display:block;font-size:14px;line-height:1.45;font-weight:500;color:#725d48;word-break:keep-all;overflow-wrap:anywhere}.expedition-intro{margin:12px 0 16px;padding:12px 14px;border:1px solid #dfc99d;border-radius:12px;background:#fff8e9;color:#68513b;font-size:16px;line-height:1.6}@media(min-width:760px){.prep-hub .expedition-mode img{height:94px}}
