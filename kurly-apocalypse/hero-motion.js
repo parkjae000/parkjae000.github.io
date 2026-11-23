@@ -1,4 +1,4 @@
-import {HEROES} from './hero-design.js?v=20261123-v204-shields';
+import {HEROES} from './hero-design.js?v=20261123-v210-ranks';
 const TAU=Math.PI*2,clamp=x=>Math.max(0,Math.min(1,x)),mix=(a,b,q)=>a+(b-a)*q;
 const def=id=>HEROES.find(h=>h.id===id)||HEROES[0];
 export const SKILL_DURATION=6,SKILL_COOLDOWN=12;
