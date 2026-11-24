@@ -1,4 +1,4 @@
-import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261124-v225-mining-smooth-r2';
+import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261124-v226-mining-economy';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let assetsPromise;
 function loadAssets(){return assetsPromise??=Promise.all(Object.entries(BOSS_ASSETS).map(([key,path])=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve([key,i]);i.onerror=()=>reject(Error('보스 이미지를 불러오지 못했어요.'));i.src=path;}))).then(Object.fromEntries).catch(e=>{assetsPromise=null;throw e;});}
@@ -49,3 +49,4 @@ export function mountBossEvent({api,getState,toast}){
  window.addEventListener('resize',resize);window.visualViewport?.addEventListener('resize',resize);
  return {setVisible(on){visible=on;root.hidden=!on;if(on){view.meId=getState()?.me.id;resize();loadAssets().then(a=>{A=a;if(!raf)raf=requestAnimationFrame(tick);}).catch(e=>toast(e.message,true));if(Date.now()-lastRefresh>10000)refresh();}else{cancelAnimationFrame(raf);raf=0;fullscreen(false);}},view};
 }
+

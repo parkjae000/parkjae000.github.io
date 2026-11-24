@@ -1,3 +1,4 @@
+import {workerMiningDps,adjacentMiningTarget} from './balance.js?v=20261124-v226-mining-economy';
 // Display projection only. Rewards, merge outcomes and valid moves remain server-owned.
 export const miningMultiplier=(game,now)=>Number(game?.shop?.boostUntil)>now?2:1;
 export function miningHp(hp,rate,from,now,boostUntil=0){
@@ -44,4 +45,23 @@ function patchChildren(current,next){
 export function patchMiningMarkup(element,markup,{reset=false}={}){
  if(reset||!element.firstElementChild){element.innerHTML=markup;return;}
  const template=element.ownerDocument.createElement('template');template.innerHTML=markup;patchChildren(element,template.content);
+}
+
+
+export function miningTargetRate(w,g,idx,now){
+ if(w.parked||w.target===null)return 0;
+ const forklift=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>now);
+ if(!forklift||w.target==='gate')return w.target===idx?workerMiningDps(w,g):0;
+ const targets=g.mine.nodes.map((n,i)=>({n,i})).filter(({n,i})=>!n.done&&Math.abs(i%5-w.x)+Math.abs(Math.floor(i/5)-w.y)===1).map(v=>v.i);
+ return targets.includes(idx)?workerMiningDps(w,g)*1.5/targets.length:0;
+}
+// Predict position/animation/HP only. Never complete a node, award currency or roll a merge.
+export function previewMiningDrop(game,type,params,from,now){
+ if(!['mine/move','mine/dispatch','mine/gate'].includes(type))return null;
+ const cell=miningLanding(game,type,params);if(!cell)return null;
+ const g=structuredClone(game);
+ for(let i=0;i<g.mine.nodes.length;i++){const n=g.mine.nodes[i];if(n.done)continue;const rate=game.workers.reduce((s,w)=>s+miningTargetRate(w,game,i,from),0);n.hp=miningHp(n.hp,rate,from,now,game.shop.boostUntil);}
+ if(g.mine.gate&&!g.mine.gate.done){const rate=game.workers.reduce((s,w)=>s+miningTargetRate(w,game,'gate',from)*(game.forklift?.workerId===w.id&&(game.forklift.permanent||game.forklift.until>from)?1.5:1),0);g.mine.gate.hp=miningHp(g.mine.gate.hp,rate,from,now,game.shop.boostUntil);}
+ const w=g.workers.find(w=>w.id===params.worker);w.x=cell.x;w.y=cell.y;w.parked=false;w.target=type==='mine/gate'?'gate':type==='mine/dispatch'?Number(params.idx):adjacentMiningTarget(g,w);
+ return {game:g,at:now};
 }

@@ -5,7 +5,7 @@ export const WORKER_MAX_LEVEL=20;
 export const SUMMON_MAX_LEVEL=6;
 export const WORKER_LEVEL_MULTIPLIER=2.4;
 export const workerBaseDps=level=>5*Math.pow(WORKER_LEVEL_MULTIPLIER,level-1);
-export function workerMiningDps(worker,g){if(worker.parked)return 0;return workerBaseDps(worker.level)*Math.pow(1.08,(g.levels.mine||1)-1)*(1+.03*(g.captures||[]).length)*(1+.02*(g.miningMastery||0));}
+export function workerMiningDps(worker,g){if(worker.parked)return 0;return workerBaseDps(worker.level)*Math.pow(1.2,(g.levels.mine||1)-1)*(1+.03*(g.captures||[]).length)*(1+.02*(g.miningMastery||0));}
 export const canMergeWorkers=(a,b)=>!!a&&!!b&&a.id!==b.id&&a.level===b.level&&a.level<WORKER_MAX_LEVEL;
 export const OFFLINE_MINING_MS=8*3600000;
 export const RESEARCH_PREPARED_LEVEL=20;
@@ -28,9 +28,9 @@ export const researchMax=key=>key==='careerLevel'?SUMMON_MAX_LEVEL:RESEARCH_PREP
 export const researchLimitKind=key=>key==='careerLevel'?'system':'prepared';
 export const researchLimitLabel=key=>researchLimitKind(key)==='system'?`최대 Lv.${researchMax(key)}`:'추가 연구 준비 중';
 export function miningEconomy(g){const l=g.levels||{};return {costMultiplier:Math.max(.24,Math.min(1,1-.04*((l.laborCost||1)-1))),rewardMultiplier:1+.10*((l.lossDiscovery||1)-1),maxWorkerLevel:WORKER_MAX_LEVEL,maxSummonLevel:SUMMON_MAX_LEVEL,summonLevel:Math.min(SUMMON_MAX_LEVEL,l.careerLevel||1),mergeChance:.03*((l.mergeLuck||1)-1)};}
-export function workerSummonCost(g){return g.onboarding?.stage==='summon'?0:Math.round(80*Math.pow(1.4,Math.min(g.summons,42))*miningEconomy(g).costMultiplier);}
+export function workerSummonCost(g){const n=Math.max(0,Math.min(Number(g.summons)||0,42));return g.onboarding?.stage==='summon'?0:Math.round(80*Math.pow(1.4,Math.min(n,12))*Math.pow(1.04,Math.max(0,n-12))*miningEconomy(g).costMultiplier);}
 export const miningReward=(g,base)=>Math.floor(base*miningEconomy(g).rewardMultiplier);
-export function miningResearchEffect(key,level){const n=(level||1)-1;return {laborCost:`소환 비용 ${Math.min(76,Math.max(0,Math.round(n*4)))}% 감소`,lossDiscovery:`자원 획득량 +${Math.round(n*10)}%`,careerLevel:`기본 소환 Lv.${Math.min(SUMMON_MAX_LEVEL,level||1)}`,mergeLuck:`2레벨 상승 확률 ${Math.round(n*3)}%`}[key]||'';}
+export function miningResearchEffect(key,level){const n=(level||1)-1;return {mine:`채굴 속도 ${Math.pow(1.2,n).toFixed(2)}배`,laborCost:`소환 비용 ${Math.min(76,Math.max(0,Math.round(n*4)))}% 감소`,lossDiscovery:`자원 획득량 +${Math.round(n*10)}%`,careerLevel:`기본 소환 Lv.${Math.min(SUMMON_MAX_LEVEL,level||1)}`,mergeLuck:`2레벨 상승 확률 ${Math.round(n*3)}%`}[key]||'';}
 
 export const CLASS_TRAINING=[{"key": "rangedDamage", "group": "ranged", "name": "총병 공격력", "icon": "🔫", "desc": "탄환 피해 단계당 +6%"}, {"key": "rangedHp", "group": "ranged", "name": "총병 체력", "icon": "❤️", "desc": "체력 단계당 +7%"}, {"key": "rangedSpeed", "group": "ranged", "name": "총병 연사속도", "icon": "⚡", "desc": "공격 속도 단계당 +2.5%"}, {"key": "rangedPrecision", "group": "ranged", "name": "정밀 조준", "icon": "🎯", "desc": "치명타 확률 단계당 +1.5%p"}, {"key": "rangedCritDmg", "group": "ranged", "name": "급소 사격", "icon": "💥", "desc": "치명타 피해 단계당 +10%p"}, {"key": "spearDamage", "group": "spear", "name": "창병 공격력", "icon": "🔱", "desc": "창 피해 단계당 +6%"}, {"key": "spearHp", "group": "spear", "name": "창병 체력", "icon": "❤️", "desc": "체력 단계당 +7%"}, {"key": "spearSpeed", "group": "spear", "name": "연속 찌르기", "icon": "⚡", "desc": "공격 속도 단계당 +2.5%"}, {"key": "spearLeech", "group": "spear", "name": "전투 회복", "icon": "💚", "desc": "가한 피해의 회복 비율 단계당 +1%p"}, {"key": "shieldDamage", "group": "shield", "name": "방패병 공격력", "icon": "🛡", "desc": "방패 타격 피해 단계당 +6%"}, {"key": "shieldHp", "group": "shield", "name": "방패병 체력", "icon": "❤️", "desc": "체력 단계당 +7%"}, {"key": "shieldSpeed", "group": "shield", "name": "방패 타격속도", "icon": "⚡", "desc": "공격 속도 단계당 +2.5%"}, {"key": "shieldGuard", "group": "shield", "name": "방패 방어술", "icon": "🛡", "desc": "받는 피해 단계당 2% 감소"}];
 export const CLASS_RESEARCH=CLASS_TRAINING.map(v=>v.key);
@@ -74,3 +74,12 @@ export function troopClasses(base,levels={}){
  return {engineer:make('engineer',.8*Math.pow(1.07,n('rangedHp')),Math.pow(1.06,n('rangedDamage'))*Math.pow(1.025,n('rangedSpeed')),1/Math.pow(1.025,n('rangedSpeed')),{critChance:Math.min(.6,(base.critChance||0)+.015*n('rangedPrecision')),critDamage:(base.critDamage||1.5)+.1*n('rangedCritDmg')}),assault:make('assault',Math.pow(1.07,n('spearHp')),Math.pow(1.06,n('spearDamage'))*Math.pow(1.025,n('spearSpeed')),1.1/Math.pow(1.025,n('spearSpeed')),{lifeSteal:(base.lifeSteal||0)+.01*n('spearLeech')}),support:make('support',1.4*Math.pow(1.07,n('shieldHp')),.65/1.35*Math.pow(1.06,n('shieldDamage'))*Math.pow(1.025,n('shieldSpeed')),1.35/Math.pow(1.025,n('shieldSpeed')),{reduction:Math.min(.38,.02*n('shieldGuard'))})};
 }
 export function classResearchEffect(key,level){const n=Math.max(0,Math.min(RESEARCH_PREPARED_LEVEL-1,(level||1)-1)),def=CLASS_TRAINING.find(v=>v.key===key);if(!def)return '';if(key.endsWith('Damage'))return `공격 피해 +${Math.round((Math.pow(1.06,n)-1)*100)}%`;if(key.endsWith('Hp'))return `체력 +${Math.round((Math.pow(1.07,n)-1)*100)}%`;if(key.endsWith('Speed'))return `공격 속도 +${Math.round((Math.pow(1.025,n)-1)*1000)/10}%`;return {rangedPrecision:`치명타 확률 +${(n*1.5).toFixed(1)}%p`,rangedCritDmg:`치명타 피해 +${n*10}%p`,spearLeech:`피해 회복 ${n}%`,shieldGuard:`받는 피해 ${n*2}% 감소`}[key]||'';}
+
+
+// A manual placement starts adjacent work immediately; it never triggers paid auto-travel.
+export function adjacentMiningTarget(g,w){
+ if(w.parked)return null;const options=[];
+ for(const [dx,dy]of [[0,1],[-1,0],[1,0],[0,-1]]){const x=w.x+dx,y=w.y+dy;if(x<0||x>=5||y<0||y>=8)continue;const idx=y*5+x;if(g.mine.nodes[idx]&&!g.mine.nodes[idx].done)options.push({idx,x,y});}
+ options.sort((a,b)=>b.y-a.y||a.x-b.x);
+ return options[0]?.idx??(w.y===0&&w.x>=1&&w.x<=3&&g.mine.nodes.every(n=>n.done)&&!g.mine.gate?.done?'gate':null);
+}

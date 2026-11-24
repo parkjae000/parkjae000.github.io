@@ -1,5 +1,5 @@
-import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v225-mining-smooth-r2';
-import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v225-mining-smooth-r2';
+import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v226-mining-economy';
+import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v226-mining-economy';
 export const HEALTH_KINDS=[['C','센터','🏢','center'],['W','방벽','🛡','wall'],['T','포탑','🎯','turret']];
 
 export function battleHealthMarkup(side,frame,maxima,ready=false,label=null){
@@ -69,3 +69,4 @@ export function paintBattle(canvas,frame,{phase,events=[],maxima={}}={}){
  for(const [si,side]of ['a','b'].entries()){const f=frame[side];round(c,si?950:32,40,298,48,14,'#fff8ecef',si?'#d7b0b6':'#b7cdc1');txt(c,(si?'방어 사원 ':'공격 사원 ')+f.n+'명',si?1099:181,71,23,si?'#a36d7b':'#548c83','center');}
  const active=heroes.filter(h=>h.skill.active).sort((a,b)=>a.skill.age-b.skill.age)[0];if(active){drawSkillBanner(c,active);drawSkillCutIn(c,A,active);}
 }
+

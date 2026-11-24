@@ -1,19 +1,19 @@
-import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v225-mining-smooth-r2';
-import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v225-mining-smooth-r2';
-import {mountBossEvent} from './boss-event.js?v=20261124-v225-mining-smooth-r2';
+import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v226-mining-economy';
+import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v226-mining-economy';
+import {mountBossEvent} from './boss-event.js?v=20261124-v226-mining-economy';
 let bossEventController=null;
-import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v225-mining-smooth-r2';
-import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v225-mining-smooth-r2';
-import {startUpdateMonitor} from './client-update.js?v=20261124-v225-mining-smooth-r2';
-import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding} from './mining-ui.js?v=20261124-v225-mining-smooth-r2';
-import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v225-mining-smooth-r2';
-import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v225-mining-smooth-r2';
-import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v225-mining-smooth-r2';
-import {chatNotification} from './social.js?v=20261124-v225-mining-smooth-r2';
-import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v225-mining-smooth-r2';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v225-mining-smooth-r2';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v225-mining-smooth-r2';
-const RELEASE='20261124-v225-mining-smooth-r2';
+import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v226-mining-economy';
+import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v226-mining-economy';
+import {startUpdateMonitor} from './client-update.js?v=20261124-v226-mining-economy';
+import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding,previewMiningDrop,miningTargetRate} from './mining-ui.js?v=20261124-v226-mining-economy';
+import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v226-mining-economy';
+import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v226-mining-economy';
+import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v226-mining-economy';
+import {chatNotification} from './social.js?v=20261124-v226-mining-economy';
+import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v226-mining-economy';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v226-mining-economy';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v226-mining-economy';
+const RELEASE='20261124-v226-mining-economy';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -25,7 +25,7 @@ const number=v=>new Intl.NumberFormat('ko-KR').format(Math.round(Number(v)||0));
 const h=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const timeLeft=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;};
 const ago=ms=>{const t=new Date(ms);return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
-let introTimers=[],warPlaybackSpeed=1,miningDragging=null,miningSettling=null,spawnedWorkerId=null,warPanelOpen=false,warScrollLeft=0;
+let introTimers=[],warPlaybackSpeed=1,miningDragging=null,miningSettling=null,miningForecast=null,spawnedWorkerId=null,warPanelOpen=false,warScrollLeft=0;
 let state=null,selectedTab='center',selectedWorker='w1',authMode='register',rankMode='total',warMode='raid',conquestFilter='all',warTarget='',warCount=12,showOnboard=false,onboardStep=0,animation=null,animating=false, lastSnapshot=0,serverOffset=0,toastTimer=null,lastPageRendered='';
 let introAdvanceBusy=false,guidePending=false,guideAccount='',guideStage='',guidePaintKey='';
 let stateLoadSequence=0,miningActionsPending=0;
@@ -116,16 +116,18 @@ function openPowerDetails(){const p=state.me.power,g=state.me.game;showModal(`${
 function battleReportMarkup(b){const mode=b.mode==='conquest'?'정복전':b.mode==='npc'?'거점전':'약탈전',success=b.success??(b.result==='win'&&!b.retreated),a=b.remaining?.attacker||{},d=b.remaining?.defender||{},left=x=>x.percent!==null&&x.percent!==undefined?x.percent+'%':x.initial===0?'병력 없음':'기록 없음',counts=x=>x.initial===null||x.initial===undefined?'투입 인원 미기록':x.remaining===null||x.remaining===undefined?`투입 ${number(x.initial)}명 · 잔존 미기록`:`${number(x.remaining)} / ${number(x.initial)}명`,power=v=>v===null||v===undefined?'기록 없음':number(v);return `<article class="battle-report ${success?'attack-success':'attack-failure'}"><header><span class="battle-mode">${mode}</span><strong class="report-result">공격 ${success?'성공':'실패'}${b.retreated?' · 후퇴':b.result==='draw'?' · 무승부':''}</strong><small>${ago(b.at)}</small></header><h3>${h(b.attackerName||'이름 미기록')} <span>→</span> ${h(b.defenderName||b.defender_name||'이름 미기록')}</h3>${b.areaName?`<p class="report-area">${h(b.areaName)}</p>`:''}<div class="report-matchup"><div><small>공격 투입 전투력</small><b>${power(b.attackerPower)}</b></div><span>VS</span><div><small>방어 투입 전투력</small><b>${power(b.defenderPower)}</b></div></div><div class="report-matchup report-survivors"><div><small>공격 잔존 병력</small><strong>${left(a)}</strong><small>${counts(a)}</small></div><span>VS</span><div><small>방어 잔존 병력</small><strong>${left(d)}</strong><small>${counts(d)}</small></div></div><footer><small>${b.mode==='conquest'?'정복지 공격':`📦 ${number(b.loot)}개 획득`}${b.powerSource==='reconstructed'?' · 이전 기록: 저장 능력치로 전투력 계산':b.powerSource==='unknown'?' · 일부 능력치 미기록':''}</small><button class="btn btn-outline" data-replay="${h(b.id)}">보기</button></footer></article>`;}
 
 const SHOP_DETAILS={auto:{icon:'⚙️',image:'worker-cute',description:'아래쪽 자원부터 이동하며 자동 채굴합니다.'},bot:{icon:'🛠',image:'panel-workshop',description:'스탭 2 합류 · 연구 2개를 동시에 진행합니다.'},boost:{icon:'⚡',image:'ore-money',description:'10분 동안 채굴 속도 2배'},forklift:{icon:'🔒',image:'forklift-cute',description:'추후 업데이트 예정'}};
-const UPGRADES=[...CLASS_TRAINING,{key:'wallReflect',name:'방벽 반사 피해',icon:'🛡',desc:'방벽이 받은 피해의 일부를 공격자에게 반사'},{key:'wallRepair',name:'방벽 자가 수리',icon:'🧱',desc:'첫 연구 시 시간당 최대 방벽 HP의 1% 수리'},{key:'troopCritChance',name:'사원 치명타 확률',icon:'🎯',desc:'단계당 치명타 확률 +2%p'},{key:'troopCritDmg',name:'사원 치명타 피해',icon:'💥',desc:'단계당 치명타 피해 +10%p'},{key:'troopLeech',name:'사원 피흡',icon:'💚',desc:'단계당 사원이 가한 피해의 1% 회복'},{key:'laborCost',name:'일용직 인건비 감소',icon:'👷',desc:'단계당 소환 비용 4% 감소'},{key:'lossDiscovery',name:'로스 발견',icon:'📦',desc:'박스·희귀 돈 획득량 단계당 +10%'},{key:'careerLevel',name:'경력 증가',icon:'🎓',desc:`기본 소환 최대 Lv.${SUMMON_MAX_LEVEL} · 합성 최대 Lv.${WORKER_MAX_LEVEL}`},{key:'mergeLuck',name:'경력 확률',icon:'✨',desc:'합성 시 2레벨 상승 확률 단계당 +3%'},{key:'center',name:'센터 레벨',icon:'🏢',desc:'센터 체력 및 다른 연구 상한 증가'},{key:'mine',name:'채굴 효율',icon:'⛏️',desc:'일용직 채굴 속도 +8%'},{key:'troopAtk',name:'사원 공격력',icon:'⚔️',desc:'사원 공격 피해 +8%'},{key:'troopHp',name:'사원 체력',icon:'❤️',desc:'사원 최대 체력 +10%'},{key:'troopSpeed',name:'사원 공격속도',icon:'⚡',desc:'사원 공격속도 +3%'},{key:'capacity',name:'사원 수용 한도',icon:'👥',desc:'최대 사원 +8명'},{key:'wall',name:'방벽 내구도',icon:'🛡️',desc:'방벽 체력 +12%'},{key:'turretDmg',name:'포탑 공격력',icon:'🎯',desc:'포탑 공격 피해 +10%'},{key:'turretSpeed',name:'포탑 공격속도',icon:'💥',desc:'포탑 공격속도 +4%'}];
+const UPGRADES=[...CLASS_TRAINING,{key:'wallReflect',name:'방벽 반사 피해',icon:'🛡',desc:'방벽이 받은 피해의 일부를 공격자에게 반사'},{key:'wallRepair',name:'방벽 자가 수리',icon:'🧱',desc:'첫 연구 시 시간당 최대 방벽 HP의 1% 수리'},{key:'troopCritChance',name:'사원 치명타 확률',icon:'🎯',desc:'단계당 치명타 확률 +2%p'},{key:'troopCritDmg',name:'사원 치명타 피해',icon:'💥',desc:'단계당 치명타 피해 +10%p'},{key:'troopLeech',name:'사원 피흡',icon:'💚',desc:'단계당 사원이 가한 피해의 1% 회복'},{key:'laborCost',name:'일용직 인건비 감소',icon:'👷',desc:'단계당 소환 비용 4% 감소'},{key:'lossDiscovery',name:'로스 발견',icon:'📦',desc:'박스·희귀 돈 획득량 단계당 +10%'},{key:'careerLevel',name:'경력 증가',icon:'🎓',desc:`기본 소환 최대 Lv.${SUMMON_MAX_LEVEL} · 합성 최대 Lv.${WORKER_MAX_LEVEL}`},{key:'mergeLuck',name:'경력 확률',icon:'✨',desc:'합성 시 2레벨 상승 확률 단계당 +3%'},{key:'center',name:'센터 레벨',icon:'🏢',desc:'센터 체력 및 다른 연구 상한 증가'},{key:'mine',name:'채굴 효율',icon:'⛏️',desc:'단계당 일용직 채굴 속도 +20% · 이전 강화에도 적용'},{key:'troopAtk',name:'사원 공격력',icon:'⚔️',desc:'사원 공격 피해 +8%'},{key:'troopHp',name:'사원 체력',icon:'❤️',desc:'사원 최대 체력 +10%'},{key:'troopSpeed',name:'사원 공격속도',icon:'⚡',desc:'사원 공격속도 +3%'},{key:'capacity',name:'사원 수용 한도',icon:'👥',desc:'최대 사원 +8명'},{key:'wall',name:'방벽 내구도',icon:'🛡️',desc:'방벽 체력 +12%'},{key:'turretDmg',name:'포탑 공격력',icon:'🎯',desc:'포탑 공격 피해 +10%'},{key:'turretSpeed',name:'포탑 공격속도',icon:'💥',desc:'포탑 공격속도 +4%'}];
 const storyCaptions=[{"speaker": "복슬이", "head": "“센터가 또 커졌네. 우리가 밤낮없이 옮긴 박스 덕분이지!”", "reply": "동료 사원", "body": "“새 창고에 새 설비까지… 그럼 이번엔 월급도 오르겠지?”"}, {"speaker": "동료 사원", "head": "“또 그대로야. 늘어난 이익은 윗사람들이 전부 챙겼대.”", "reply": "복슬이", "body": "“센터는 이렇게 커졌는데, 우리 월급만 그대로라고? 더는 못 참아!”"}, {"speaker": "복슬이", "head": "“이 센터, 우리가 접수한다! 오늘부터 반란이야!”", "reply": "사원들", "body": "“좋아! 남 좋은 일만 시키던 센터는 이제 끝이야!”"}, {"speaker": "사원들", "head": "“센터 점령 완료! 복슬이, 이제 네가 센터장이야!”", "reply": "복슬이 센터장", "body": "“좋아! 일용직은 박스를 캐고, 사원들은 전투를 준비해!”"}, {"speaker": "복슬이 센터장", "head": "“저쪽 창고에도 우리가 벌어 준 박스가 산더미네?”", "reply": "사원들", "body": "“다른 센터까지 전부 약탈하자! 진격하라!”"}];
 async function api(endpoint,method='GET',body){const r=await fetch(API_BASE+endpoint,{method,credentials:API_BASE?'omit':'same-origin',headers:{...(body?{'Content-Type':'application/json'}:{}),...(localStorage.getItem(endpoint.startsWith('/api/admin/')?ADMIN_KEY:TOKEN_KEY)?{Authorization:'Bearer '+localStorage.getItem(endpoint.startsWith('/api/admin/')?ADMIN_KEY:TOKEN_KEY)}:{})},body:body?JSON.stringify(body):undefined});const v=await r.json().catch(()=>({error:'서버 응답을 읽지 못했어요.'}));if(!r.ok){const error=new Error(v.error||'요청에 실패했어요.');error.status=r.status;error.code=v.code;throw error;}if(v.adminToken)localStorage.setItem(ADMIN_KEY,v.adminToken);if(v.token)localStorage.setItem(TOKEN_KEY,v.token);if(endpoint==='/api/logout')localStorage.removeItem(TOKEN_KEY);return v;}
 function toast(message,error=false){const el=$('toast');el.textContent=message;el.classList.toggle('error',error);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3800);}
-async function loadState({silent=false,resumeBattle=true}={}){const loadId=++stateLoadSequence;try{const v=await api('/api/state');if(loadId!==stateLoadSequence)return null;state=v;lastSocialAt=Date.now();lastSnapshot=Date.now();serverOffset=v.serverTime-Date.now();$('auth').classList.add('hidden');$('app').classList.remove('hidden');if(!v.me.game.storySeen||!v.me.game.tutorialSeen){if(!showOnboard){showOnboard=true;onboardStep=v.me.game.onboarding?.page||0;showTutorial();}else if(v.me.game.onboarding?.stage==='intro'&&onboardStep!==v.me.game.onboarding.page){onboardStep=v.me.game.onboarding.page;renderTutorial();}}render();maybeEventPopup();if(!socialHeartbeatAt)refreshSocial();if(resumeBattle&&v.activeBattle&&!animation&&!showOnboard)playBattle(v.activeBattle,true);if(!$('modalOverlay').classList.contains('hidden')){if($('modalContent').querySelector('[data-mail-read]'))openMail();else if($('modalContent').querySelector('[data-explore-claim]'))openExplore();}return v;}catch(e){if(/로그인이 필요/.test(e.message)){$('auth').classList.remove('hidden');$('app').classList.add('hidden');}else if(!silent)toast(e.message,true);return null;}}
+async function loadState({silent=false,resumeBattle=true}={}){const loadId=++stateLoadSequence;try{const v=await api('/api/state');if(loadId!==stateLoadSequence)return null;miningForecast=null;state=v;lastSocialAt=Date.now();lastSnapshot=Date.now();serverOffset=v.serverTime-Date.now();$('auth').classList.add('hidden');$('app').classList.remove('hidden');if(!v.me.game.storySeen||!v.me.game.tutorialSeen){if(!showOnboard){showOnboard=true;onboardStep=v.me.game.onboarding?.page||0;showTutorial();}else if(v.me.game.onboarding?.stage==='intro'&&onboardStep!==v.me.game.onboarding.page){onboardStep=v.me.game.onboarding.page;renderTutorial();}}render();maybeEventPopup();if(!socialHeartbeatAt)refreshSocial();if(resumeBattle&&v.activeBattle&&!animation&&!showOnboard)playBattle(v.activeBattle,true);if(!$('modalOverlay').classList.contains('hidden')){if($('modalContent').querySelector('[data-mail-read]'))openMail();else if($('modalContent').querySelector('[data-explore-claim]'))openExplore();}return v;}catch(e){if(/로그인이 필요/.test(e.message)){$('auth').classList.remove('hidden');$('app').classList.add('hidden');}else if(!silent)toast(e.message,true);return null;}}
 function serverNow(){return Date.now()+serverOffset;}
+function miningView(){return miningForecast&&miningForecast.actor===state?.me.id&&miningForecast.zone===state.me.game.mine.zone?miningForecast.game:state?.me.game;}
+function miningViewTime(){return miningForecast?.at??state.serverTime;}
 function applyMiningUpdate(out){
  const update=out?.miningUpdate;
  if(!update||!state||update.me?.id!==state.me.id||!Number.isFinite(update.serverTime)||update.serverTime<state.serverTime)return false;
- ++stateLoadSequence;state={...state,...update};lastSnapshot=Date.now();serverOffset=update.serverTime-Date.now();
+ ++stateLoadSequence;miningForecast=null;state={...state,...update};lastSnapshot=Date.now();serverOffset=update.serverTime-Date.now();
  render();maybeEventPopup();return true;
 }
 let statePolling=false;
@@ -184,7 +186,7 @@ function layoutMine(){
 window.addEventListener('resize',layoutMine);
 function renderMine(){
   if(miningDragging||(miningSettling&&!miningSettling.ready))return;
-  const el=$('tabMine'),g=state.me.game,m=g.mine,workers=g.workers;
+  const el=$('tabMine'),g=miningView(),m=g.mine,workers=g.workers;
   // Preserve the last visible position through refreshes, automation and drop confirmation.
   const zoneChanged=el.dataset.zone!==String(m.zone),previous=!zoneChanged?new Map([...el.querySelectorAll('[data-worker]')].map(node=>{const r=node.getBoundingClientRect();return [node.dataset.worker,{x:r.left+r.width/2,y:r.top+r.height/2}];})):new Map();
   el.dataset.zone=String(m.zone);
@@ -347,7 +349,7 @@ function openMerge(){
  showModal(`<div class="modal-header"><h2 class="modal-title">🔀 일용직 합성 · 최대 Lv.${WORKER_MAX_LEVEL}</h2><button class="modal-close" data-close>닫기 ✕</button></div>
  <p class="section-note">같은 레벨 2명을 합쳐 1레벨 올려요. 한 명의 채굴 속도는 이전 레벨의 2.4배로, 두 명의 합계보다 20% 빨라져요.</p>
  <p class="section-note">경력 확률 연구: ${Math.round((state.mineStats.mergeChance||0)*100)}% 확률로 2레벨 상승 · Lv.${WORKER_MAX_LEVEL}을 넘지 않아요. 최대 레벨 직원은 채굴에 계속 사용할 수 있어요.</p>
- <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 이후 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>다음 구역으로 이동하면 직원은 초기화되며, 현재 기본 소환 레벨 직원 1명이 무료 지급돼요. 연구와 채굴 숙련도는 유지돼요.</p></div>
+ <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 이후 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>다음 구역에서도 일용직의 레벨과 인원을 유지해요. 입구 자리가 부족한 직원은 통로가 열리면 배치돼요.</p></div>
  ${pairs.length?pairs.map(([a,b])=>`<div class="shop-item"><span class="si">👷</span><div class="info"><strong>Lv.${a.level} + Lv.${b.level} → Lv.${a.level+1}</strong><small>채굴 속도 합계 ${number(workerDps({...a,parked:false},g)*2)} → ${number(workerDps({...a,parked:false,level:a.level+1},g))} DPS</small></div><button class="btn btn-gold" data-merge="${a.id}|${b.id}">합성</button></div>`).join(''):`<p class="muted">${ws.some(w=>w.level>=WORKER_MAX_LEVEL)?`Lv.${WORKER_MAX_LEVEL} MAX 직원은 추가로 합성할 수 없어요. 그 아래 같은 레벨 2명이 필요해요.`:'합성하려면 같은 레벨 일용직 2명이 필요해요.'}</p>`}
  <details class="miner-level-table"><summary>레벨별 기본 채굴 속도 보기 · Lv.1~${WORKER_MAX_LEVEL}</summary><p>연구·숙련도·정복지·부스트·지게차 효과 적용 전 수치예요.</p><table><thead><tr><th>직원 레벨</th><th>기본 채굴 속도</th></tr></thead><tbody>${Array.from({length:WORKER_MAX_LEVEL},(_,i)=>`<tr><th>Lv.${i+1}${i+1===WORKER_MAX_LEVEL?' MAX':''}</th><td>${new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(workerBaseDps(i+1))} DPS</td></tr>`).join('')}</tbody></table></details>`);
 }
@@ -517,7 +519,9 @@ function paintMineDrag(d){
   if(d.drop!==next){d.drop?.classList.remove('mine-drop');next?.classList.add('mine-drop');d.drop=next;}
 }
 async function settleMineDrop(type,params){
-  miningSettling={ready:false};
+  miningSettling={ready:true};
+  const forecast=previewMiningDrop(state.me.game,type,params,state.serverTime,serverNow());
+  if(forecast)miningForecast={...forecast,actor:state.me.id,zone:state.me.game.mine.zone};
   const cell=miningLanding(state.me.game,type,params),sprite=[...document.querySelectorAll('[data-worker]')].find(el=>el.dataset.worker===(params.worker||params.a));
   if(cell&&sprite){
     const r=sprite.getBoundingClientRect(),board=sprite.offsetParent,bounds=board.getBoundingClientRect(),sx=bounds.width/board.offsetWidth||1,sy=bounds.height/board.offsetHeight||1;
@@ -525,8 +529,9 @@ async function settleMineDrop(type,params){
     const target=sprite.getBoundingClientRect(),dx=(r.left+r.width/2-target.left-target.width/2)/sx,dy=(r.top+r.height/2-target.top-target.height/2)/sy;
     if(!matchMedia('(prefers-reduced-motion: reduce)').matches)sprite.animate([{transform:`translate(-50%,-50%) translate3d(${dx}px,${dy}px,0)`},{transform:'translate(-50%,-50%)'}],{duration:140,easing:'ease-out'});
   }
-  try{await doAction(type,params,{mineDrop:true});}
-  finally{const painted=miningSettling?.painted;miningSettling=null;if(!painted&&selectedTab==='mine'&&!miningDragging)renderMine();}
+  if(forecast)renderMine();
+  try{const out=await doAction(type,params,{mineDrop:true});if(!out)await loadState({silent:true,resumeBattle:false});}
+  finally{miningForecast=null;miningSettling=null;if(selectedTab==='mine'&&!miningDragging)renderMine();}
 }
 function endMineDrag(e,cancelled=false){
   const d=miningDragging;
@@ -596,19 +601,20 @@ setInterval(()=>{
  const now=serverNow(),g=state.me.game;syncEventBadge();let mineDue=false;
  document.querySelectorAll('[data-live-end]').forEach(el=>el.textContent=timeLeft(Number(el.dataset.liveEnd)-now));
  document.querySelectorAll('[data-progress-end]').forEach(el=>{const a=Number(el.dataset.progressStart),b=Number(el.dataset.progressEnd);el.style.width=Math.max(0,Math.min(100,100*(now-a)/Math.max(1,b-a)))+'%';});
- if(selectedTab==='mine'&&!miningDragging&&!miningSettling){
+ if(selectedTab==='mine'&&!miningDragging&&(!miningSettling||miningSettling.ready)){
+   const mining=miningView(),projectionAt=miningViewTime();
    const dps=document.querySelector('[data-mining-dps]'),dpsText='⚒ '+number(state.mineStats.rawDps*miningMultiplier(g,now))+' DPS'+(miningMultiplier(g,now)>1?' · 2배':'');if(dps&&dps.textContent!==dpsText)dps.textContent=dpsText;
    document.querySelectorAll('.mine-tile[data-tile]').forEach(el=>{
-     const idx=Number(el.dataset.tile),n=g.mine.nodes[idx];if(!n||n.done)return;
-     const workers=g.workers.filter(w=>workerTargetRate(w,g,idx)>0),rate=workers.reduce((sum,w)=>sum+workerTargetRate(w,g,idx),0);
-     const hp=miningHp(n.hp,rate,state.serverTime,now,g.shop.boostUntil);
+     const idx=Number(el.dataset.tile),n=mining.mine.nodes[idx];if(!n||n.done)return;
+     const workers=mining.workers.filter(w=>workerTargetRate(w,mining,idx)>0),rate=workers.reduce((sum,w)=>sum+workerTargetRate(w,mining,idx),0);
+     const hp=miningHp(n.hp,rate,projectionAt,now,g.shop.boostUntil);
      if(rate>0&&hp<=0)mineDue=true;
      const bar=el.querySelector('.mine-ore-health i');if(bar)bar.style.width=(100*hp/n.max)+'%';
      const timer=el.querySelector('.mine-ore-timer');if(timer)timer.textContent=hp<=0?'수령 중':timeLeft(miningSeconds(hp,rate,now,g.shop.boostUntil)*1000);
    });
-   const gate=g.mine.gate,rate=g.workers.filter(w=>w.target==='gate').reduce((sum,w)=>sum+workerTargetRate(w,g,'gate')*(g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>serverNow())?1.5:1),0);
+   const gate=mining.mine.gate,rate=mining.workers.filter(w=>w.target==='gate').reduce((sum,w)=>sum+workerTargetRate(w,mining,'gate')*(g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>serverNow())?1.5:1),0);
    if(gate&&!gate.done&&rate){
-    const hp=miningHp(gate.hp,rate,state.serverTime,now,g.shop.boostUntil);
+    const hp=miningHp(gate.hp,rate,projectionAt,now,g.shop.boostUntil);
     const bar=document.querySelector('[data-gate-bar]'),count=document.querySelector('[data-gate-count]'),timer=document.querySelector('[data-gate-timer]');
     if(bar)bar.style.width=100*hp/gate.max+'%';if(count)count.textContent=number(hp)+' / '+number(gate.max);if(timer)timer.textContent=timeLeft(miningSeconds(hp,rate,now,g.shop.boostUntil)*1000);
     if(hp<=0)mineDue=true;
@@ -693,13 +699,7 @@ async function loadAdmin(){try{adminState=await api('/api/admin/state');state=nu
 function renderAdmin(){const a=adminState;$('adminApp').innerHTML=`<div class="admin-header"><h2>센터 운영 관리</h2><button class="btn btn-outline" data-admin-logout>로그아웃</button></div><p>관리자 관찰 · 일반 유저 목록과 랭킹에 표시되지 않습니다.</p><div class="admin-layout"><div class="card"><h3>서버 목록</h3>${a.servers.map(s=>`<button class="btn ${s.world===a.world?'btn-gold':'btn-outline'} btn-wide" data-admin-world="${h(s.world)}">${h(s.world)} · ${s.players}명</button>`).join('')}</div><div class="card"><h3>${h(a.world||'서버를 선택하세요')}</h3>${a.world?`<div class="admin-users">${a.players.map(p=>`<div class="admin-user"><b>${h(p.nickname)}</b><span>${p.suspended?'정지 중':'이용 중'}</span><button class="btn btn-outline" data-admin-action="${p.suspended?'resume':'suspend'}" data-id="${p.id}">${p.suspended?'해제':'정지'}</button><button class="btn btn-outline" data-admin-confirm="deletePlayer" data-id="${p.id}" data-name="${h(p.nickname)}">계정 삭제</button></div>`).join('')}</div><button class="btn btn-danger btn-wide" data-admin-confirm="deleteWorld" data-name="${h(a.world)}">이 서버 전체 삭제</button>`:''}</div></div><div class="card"><h3>관리 이력</h3>${a.audit.map(j=>`<div class="statrow"><span>${h(j.world)} · ${h(j.action)}</span><small>${new Date(Number(j.at)).toLocaleString('ko-KR')}</small></div>`).join('')}</div>`;}
 function handleAdminButton(b){const d=b.dataset;if(d.adminLogout!==undefined){api('/api/admin/logout','POST',{}).finally(()=>{localStorage.removeItem(ADMIN_KEY);location.reload();});return true;}if(d.adminWorld){api('/api/admin/select','POST',{world:d.adminWorld}).then(loadAdmin).catch(e=>toast(e.message,true));return true;}if(d.adminConfirm){showModal(`${modalHead(d.adminConfirm==='deleteWorld'?'서버 전체 삭제':'계정 삭제')}<p><strong>${h(d.name)}</strong> 삭제는 되돌릴 수 없습니다. 대상 이름을 정확히 입력해 주세요.</p><input id="adminConfirmText" autocomplete="off" aria-label="삭제 대상 이름 확인"><button class="btn btn-danger btn-wide" data-admin-action="${d.adminConfirm}" data-id="${d.id||''}">삭제 실행</button>`);return true;}if(d.adminAction){b.disabled=true;api('/api/admin/moderate','POST',{action:d.adminAction,world:adminState.world,target:d.id,confirm:$('adminConfirmText')?.value||''}).then(()=>{closeModal();loadAdmin();}).catch(e=>{toast(e.message,true);b.disabled=false;});return true;}if(adminState&&d.close!==undefined){closeModal();return true;}return false;}
 
-function workerTargetRate(w,g,idx){
- if(w.parked||w.target===null)return 0;
- const forklift=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>serverNow());
- if(!forklift||w.target==='gate')return w.target===idx?workerDps(w,g):0;
- const targets=g.mine.nodes.map((n,i)=>({n,i})).filter(({n,i})=>!n.done&&Math.abs(i%5-w.x)+Math.abs(Math.floor(i/5)-w.y)===1).map(v=>v.i);
- return targets.includes(idx)?workerDps(w,g)*1.5/targets.length:0;
-}
+function workerTargetRate(w,g,idx){return miningTargetRate(w,g,idx,serverNow());}
 
 function puzzleMarkup(id){return `<span class="puzzle-token"><img class="puzzle-piece" src="assets/puzzle-fragment.webp" alt="파트장 퍼즐 조각"><img class="puzzle-identity" src="assets/hero-${h(id)}.webp" alt=""></span>`;}
 function troopPicker(){const available=state.me.game.troops;warCount=available?Math.max(1,Math.min(warCount,available)):0;return `<section class="march-troops"><div class="statrow"><h3>출정 사원</h3><strong id="warCountView">${warCount} / ${available}명</strong></div><div class="march-amount"><button class="btn btn-outline" data-march-adjust="-1" aria-label="출정 사원 1명 줄이기" ${!available?'disabled':''}>−</button><input id="warAmount" type="number" inputmode="numeric" aria-label="출정 사원 수" min="1" max="${available||1}" value="${warCount}" ${!available?'disabled':''}><button class="btn btn-outline" data-march-adjust="1" aria-label="출정 사원 1명 늘리기" ${!available?'disabled':''}>＋</button></div><input id="warSlider" aria-label="출정 인원 조절" type="range" min="1" max="${available||1}" value="${warCount||1}" ${!available?'disabled':''}><div class="march-fractions">${[[.25,'25%'],[.5,'50%'],[.75,'75%'],[1,'전체']].map(([value,label])=>`<button class="btn btn-outline" data-march-fraction="${value}" ${!available?'disabled':''}>${label}</button>`).join('')}</div>${marchPowerMarkup()}<h3>자동 편성 · 총병 / 창병 / 방패병</h3><div class="formation-grid">${FORMATIONS.map(f=>{const roster=buildFormation(warCount,f.id);return `<button class="formation-card ${warFormation===f.id?'chosen':''}" data-formation="${f.id}" aria-pressed="${warFormation===f.id}"><span class="formation-sprites" aria-hidden="true"><i class="ranged"></i><i class="spear"></i><i class="shield"></i></span><strong>${f.name}</strong><span class="formation-counts" data-formation-preview="${f.id}">${formationCountText(roster.roles)}</span>${warFormation===f.id?'<b class="chosen-check">✓</b>':''}</button>`;}).join('')}</div><p class="march-caption">방패병이 앞열, 창병이 중열, 총병이 뒷열로 진격합니다. 앞열부터 피해를 받으며 총병은 긴 사거리에서 공격합니다.</p></section>`;}
@@ -824,7 +824,8 @@ document.addEventListener('keydown',e=>{if(e.target.id==='chatInput'&&e.key==='E
 function resourceify(root){if(!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];while(walker.nextNode()){const n=walker.currentNode;if(!n.parentElement.closest('script,style,textarea,input,option,.story-dialogue')&&/📦|박스\s*\d|\d[\d,]*\s*박스/.test(n.textContent))nodes.push(n);}for(const node of nodes){const parts=node.textContent.split(/(📦|박스\s*[0-9][0-9,]*|[0-9][0-9,]*\s*박스)/g),frag=document.createDocumentFragment();for(const part of parts){if(/^(📦|박스\s*[0-9][0-9,]*|[0-9][0-9,]*\s*박스)$/.test(part)){const img=new Image();img.className='parcel-inline';img.alt='택배 상자';img.src='assets/parcel.webp';frag.append(img);const amount=part.match(/[0-9][0-9,]*/)?.[0];if(amount)frag.append(document.createTextNode(' '+amount));}else frag.append(document.createTextNode(part));}node.replaceWith(frag);}}
 for(const name of ['renderCenter','renderMine','renderWar','renderShop','renderServer']){const fn={renderCenter,renderMine,renderWar,renderShop,renderServer}[name];const wrapped=(...args)=>{const value=fn(...args);resourceify($(name==='renderCenter'?'tabCenter':name==='renderMine'?'tabMine':name==='renderWar'?'tabWar':name==='renderShop'?'tabShop':'tabServer'));return value;};if(name==='renderCenter')renderCenter=wrapped;else if(name==='renderMine')renderMine=wrapped;else if(name==='renderWar')renderWar=wrapped;else if(name==='renderShop')renderShop=wrapped;else renderServer=wrapped;}
 const originalShowModal=showModal;showModal=(content)=>{originalShowModal(content);resourceify($('modalContent'));};
-let lastMinerPaint=0,minerAnimationTime=0;function animateMiners(now){requestAnimationFrame(animateMiners);if(document.hidden||selectedTab!=='mine'||!state||now-lastMinerPaint<1000/30)return;const g=state.me.game;minerAnimationTime+=Math.min(.1,lastMinerPaint?(now-lastMinerPaint)/1000:0)*miningMultiplier(g,serverNow());lastMinerPaint=now;for(const canvas of document.querySelectorAll('[data-miner-motion]')){const w=g.workers.find(v=>v.id===canvas.dataset.minerMotion);if(!w)continue;const forklift=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>serverNow()),dragging=!!canvas.closest('.dragging,.mine-drag-ghost');paintMiner(canvas,w,{mining:!w.parked&&w.target!==null,forklift,dragging,t:minerAnimationTime});}}
+let lastMinerPaint=0,minerAnimationTime=0;function animateMiners(now){requestAnimationFrame(animateMiners);if(document.hidden||selectedTab!=='mine'||!state||now-lastMinerPaint<1000/30)return;const g=miningView();minerAnimationTime+=Math.min(.1,lastMinerPaint?(now-lastMinerPaint)/1000:0)*miningMultiplier(g,serverNow());lastMinerPaint=now;for(const canvas of document.querySelectorAll('[data-miner-motion]')){const w=g.workers.find(v=>v.id===canvas.dataset.minerMotion);if(!w)continue;const forklift=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>serverNow()),dragging=!!canvas.closest('.dragging,.mine-drag-ghost');paintMiner(canvas,w,{mining:!w.parked&&w.target!==null,forklift,dragging,t:minerAnimationTime});}}
 loadSceneAssets().then(()=>{if($('warCanvas'))drawBattle(animation?.current);}).catch(()=>toast('장면 이미지를 불러오지 못했습니다. 새로고침해 주세요.',true));requestAnimationFrame(animateMiners);
 
 function autoPassMarkup(){const g=state.me.game;return `<section class="shield-storage"><h3>자동채굴 이용권</h3><p>${g.shop.auto?'자동채굴 영구 사용 중':g.shop.autoUntil>serverNow()?`남은 시간 <span data-live-end="${g.shop.autoUntil}">${timeLeft(g.shop.autoUntil-serverNow())}</span>`:'보유 이용권을 사용하면 자동채굴이 시작됩니다.'}</p><div class="shield-inventory">${[['autoMine3d','3일'],['autoMine2d','2일'],['autoMine1d','1일'],['autoMine2h','2시간']].map(([id,label])=>`<div class="inventory-card"><span class="supply-item-icon">⚙</span><h4>자동채굴 ${label}권</h4><b>${number(g.inventory[id]||0)}장</b><button class="btn btn-gold" data-boss-pass="${id}" ${!g.inventory[id]?'disabled':''}>사용 · ${label}</button></div>`).join('')}</div><p>사용한 순간부터 시작하며 남아 있는 이용 시간에 추가됩니다.</p><p class="community-note">${AUTO_MINING_NOTE}</p></section>`;}
+

@@ -1,4 +1,4 @@
-import {HEROES} from './hero-design.js?v=20261124-v225-mining-smooth-r2';
+import {HEROES} from './hero-design.js?v=20261124-v226-mining-economy';
 const TAU=Math.PI*2,clamp=x=>Math.max(0,Math.min(1,x)),mix=(a,b,q)=>a+(b-a)*q;
 const def=id=>HEROES.find(h=>h.id===id)||HEROES[0];
 export const SKILL_DURATION=6,SKILL_COOLDOWN=12;
@@ -80,3 +80,4 @@ export function drawSkillCutIn(c,A,h){
  text(c,d.name,x+121,y+32,17,'#a48256','left');text(c,d.skill,x+121,y+74,31,'#88609c','left');
  for(let i=0;i<5;i++)star(c,x+360+i*11,y+22+(i%2)*18,4+(i%2)*2,i%2?'#c59cda':'#dfbc78',age+i);c.restore();
 }
+

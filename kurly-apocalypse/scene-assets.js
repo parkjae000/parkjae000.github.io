@@ -1,4 +1,4 @@
-import atlas from './scene-atlas.js?v=20261124-v225-mining-smooth-r2';
+import atlas from './scene-atlas.js?v=20261124-v226-mining-economy';
 export const FILES={troopRanged:'troop-ranged.webp',troopSpear:'troop-spear.webp',troopShield:'troop-shield.webp',warehouse:'warehouse.webp',miners:'miners.webp',parcel:'parcel.webp',money:'money.webp',yard:'yard.webp',fighters:'fighters.webp',forklift:'forklift.webp',damage:'damage.webp',fortress:'fortress-state.webp',resultWin:'result-win.webp',resultLoss:'result-loss.webp',resultDraw:'result-draw.webp',charge:'chargeSpeech.webp',csMotion:'csMotion.webp',beautyMotion:'beautyMotion.webp',ambientMotion:'ambientMotion.webp',chilledMotion:'chilledMotion.webp',returnsMotion:'returnsMotion.webp',heroFrozen:'hero-frozen.webp',heroChilled:'hero-chilled.webp',heroAmbient:'hero-ambient.webp',heroCs:'hero-cs.webp',heroBeauty:'hero-beauty.webp',heroReturns:'hero-returns.webp'};
 export function prepareAssets(raw,meta,makeCanvas){
  const A={...raw};A.troopFrames={};for(const [role,key]of [['ranged','troopRanged'],['spear','troopSpear'],['shield','troopShield']]){if(!raw[key])continue;const w=raw[key].width/4,h=raw[key].height/2;A.troopFrames[role]=Array.from({length:8},(_,i)=>{const c=makeCanvas(w,h);c.getContext('2d').drawImage(raw[key],i%4*w,Math.floor(i/4)*h,w,h,0,0,w,h);return c;});}for(const name of ['miners','fighters','forklift','damage','fortress'])A[name+'Frames']=meta[name].map(r=>{const c=makeCanvas(r.w,r.h);c.getContext('2d').drawImage(raw[name],r.x,r.y,r.w,r.h,0,0,r.w,r.h);return c;});
@@ -23,3 +23,4 @@ export function paintMiner(canvas,worker,{mining=false,forklift=false,dragging=f
  c.fillStyle='#59432f28';c.beginPath();c.ellipse(W/2,H*.92,W*.32,H*.045,0,0,Math.PI*2);c.fill();c.drawImage(img,(W-width)/2,y-height,width,height);
  if(sparks){c.strokeStyle='#fff0b5';c.lineWidth=2;for(let i=0;i<3;i++){const x=W*.78+Math.cos(i*2.2)*9,y=H*.5+Math.sin(i*2.2)*8;c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}}
 }
+
