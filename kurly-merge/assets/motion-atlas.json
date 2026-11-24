@@ -1,0 +1,188 @@
+{
+  "worker-motion": {
+    "width": 2048,
+    "height": 1024,
+    "columns": 4,
+    "rows": 2,
+    "cell": 512,
+    "frames": [
+      {
+        "index": 0,
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          100,
+          58,
+          441,
+          427
+        ]
+      },
+      {
+        "index": 1,
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          103,
+          58,
+          440,
+          429
+        ]
+      },
+      {
+        "index": 2,
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          106,
+          58,
+          448,
+          433
+        ]
+      },
+      {
+        "index": 3,
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          88,
+          62,
+          456,
+          427
+        ]
+      },
+      {
+        "index": 4,
+        "x": 0,
+        "y": 512,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          88,
+          63,
+          456,
+          429
+        ]
+      },
+      {
+        "index": 5,
+        "x": 512,
+        "y": 512,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          90,
+          67,
+          430,
+          426
+        ]
+      },
+      {
+        "index": 6,
+        "x": 1024,
+        "y": 512,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          71,
+          59,
+          443,
+          421
+        ]
+      },
+      {
+        "index": 7,
+        "x": 1536,
+        "y": 512,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          93,
+          50,
+          430,
+          412
+        ]
+      }
+    ],
+    "alpha_zero_fraction": 0.6616,
+    "source": "/workspace/scratch/41678dbf9514/generated_images/exec-f1ee081b-aafe-4193-97e1-31eb4b6ab258.png",
+    "suggestedAnchor": {
+      "x": 0.5,
+      "y": 0.835
+    }
+  },
+  "forklift-motion": {
+    "width": 2048,
+    "height": 512,
+    "columns": 4,
+    "rows": 1,
+    "cell": 512,
+    "frames": [
+      {
+        "index": 0,
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          36,
+          36,
+          506,
+          482
+        ]
+      },
+      {
+        "index": 1,
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          5,
+          36,
+          492,
+          488
+        ]
+      },
+      {
+        "index": 2,
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          38,
+          36,
+          497,
+          482
+        ]
+      },
+      {
+        "index": 3,
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 512,
+        "visibleAlpha180BBox": [
+          38,
+          36,
+          483,
+          482
+        ]
+      }
+    ],
+    "alpha_zero_fraction": 0.457,
+    "source": "/workspace/scratch/41678dbf9514/generated_images/exec-6796ce27-4286-43a7-ae1c-7acd7528c9ec.png",
+    "suggestedAnchor": {
+      "x": 0.5,
+      "y": 0.94
+    }
+  }
+}
