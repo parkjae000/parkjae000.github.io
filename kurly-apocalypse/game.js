@@ -1,18 +1,19 @@
-import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v222-community';
-import {mountBossEvent} from './boss-event.js?v=20261124-v222-community';
+import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v223-timed-passes';
+import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v223-timed-passes';
+import {mountBossEvent} from './boss-event.js?v=20261124-v223-timed-passes';
 let bossEventController=null;
-import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v222-community';
-import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v222-community';
-import {startUpdateMonitor} from './client-update.js?v=20261124-v222-community';
-import {browserAway} from './presence.js?v=20261124-v222-community';
-import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v222-community';
-import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,lastSeenLabel,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v222-community';
-import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v222-community';
-import {chatNotification} from './social.js?v=20261124-v222-community';
-import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v222-community';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v222-community';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v222-community';
-const RELEASE='20261124-v222-community';
+import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v223-timed-passes';
+import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v223-timed-passes';
+import {startUpdateMonitor} from './client-update.js?v=20261124-v223-timed-passes';
+import {browserAway} from './presence.js?v=20261124-v223-timed-passes';
+import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v223-timed-passes';
+import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,lastSeenLabel,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v223-timed-passes';
+import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v223-timed-passes';
+import {chatNotification} from './social.js?v=20261124-v223-timed-passes';
+import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v223-timed-passes';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v223-timed-passes';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v223-timed-passes';
+const RELEASE='20261124-v223-timed-passes';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -205,7 +206,7 @@ function renderMine(){
        <div class="mine-hud-actions">
         <span class="mine-sector">구역 ${m.zone+1}</span><button data-open-mail class="mine-icon mail-button" title="우편함">✉<b data-mail-badge ${!(g.mailbox||[]).some(m=>!m.readAt)?'hidden':''}>${(g.mailbox||[]).filter(m=>!m.readAt).length}</b></button>
         <button data-events class="mine-icon" title="이벤트">🎁</button><button data-notices class="mine-icon" title="공지사항" aria-label="공지사항">📣</button>
-        <button class="mine-icon forklift-locked" data-forklift title="지게차 탑승"><img src="assets/forklift-cute.webp" alt="지게차"><b>${g.forklift?.permanent||g.forklift?.until>serverNow()?'✓':'🔒'}</b></button>
+        ${timedPassLauncher(g,serverNow())}
        </div>
      </div>
      <div class="mineboard-new" id="mineBoard" aria-label="드래그 기반 택배 채굴 지도">
@@ -310,7 +311,7 @@ function renderShop(){
  if(focusedPool)el.querySelector(`[data-pool-rates="${focusedPool}"] summary`)?.focus({preventScroll:true});
 }
 
-function openProfile(){if(!state)return;const g=state.me.game;showModal(`<div class="modal-header"><h2 class="modal-title">👤 센터장 정보</h2><button data-close class="modal-close">닫기 ✕</button></div><div class="statrow"><span>게임 버전</span><strong>v2.2.2</strong></div><div class="statrow"><span>센터장</span><strong>${h(state.me.nickname)}</strong></div><div class="statrow"><span>서버 코드</span><strong>${h(state.me.world)}</strong></div><div class="statrow"><span>전투력</span><strong>${number(state.me.power.total)}</strong></div><div class="statrow"><span>도달 채굴 구역</span><strong>구역 ${number(g.mine.zone+1)}</strong></div><div class="statrow"><span>승리 / 패배</span><strong>${g.warWins}승 / ${g.warLosses}패</strong></div><button class="btn btn-outline btn-wide" style="margin-top:12px" data-guide>스토리·튜토리얼 다시 보기</button><button class="btn btn-outline btn-wide" style="margin-top:9px" data-logout>로그아웃</button><p class="section-note">PIN 번호는 복구되지 않아요. 다른 기기에서 로그인하려면 서버 코드·닉네임·PIN을 기억해 주세요.</p>`)}
+function openProfile(){if(!state)return;const g=state.me.game;showModal(`<div class="modal-header"><h2 class="modal-title">👤 센터장 정보</h2><button data-close class="modal-close">닫기 ✕</button></div><div class="statrow"><span>게임 버전</span><strong>v2.2.3</strong></div><div class="statrow"><span>센터장</span><strong>${h(state.me.nickname)}</strong></div><div class="statrow"><span>서버 코드</span><strong>${h(state.me.world)}</strong></div><div class="statrow"><span>전투력</span><strong>${number(state.me.power.total)}</strong></div><div class="statrow"><span>도달 채굴 구역</span><strong>구역 ${number(g.mine.zone+1)}</strong></div><div class="statrow"><span>승리 / 패배</span><strong>${g.warWins}승 / ${g.warLosses}패</strong></div><button class="btn btn-outline btn-wide" style="margin-top:12px" data-guide>스토리·튜토리얼 다시 보기</button><button class="btn btn-outline btn-wide" style="margin-top:9px" data-logout>로그아웃</button><p class="section-note">PIN 번호는 복구되지 않아요. 다른 기기에서 로그인하려면 서버 코드·닉네임·PIN을 기억해 주세요.</p>`)}
 function workerDps(w,g){return workerMiningDps(w,g)}
 function openMail(){
  if(!state)return;const mails=state.me.game.mailbox||[],icons={territory:'🚩',upgrade:'🛠',recruit:'👥',battle:'⚔',defense:'🛡',zone:'🚪'};
@@ -597,6 +598,7 @@ setInterval(()=>{
  if((due||mineDue)&&!miningDragging&&!miningSettling&&!animating&&now-timerRefreshAt>1200){timerRefreshAt=now;loadState({silent:true});}
 },150);
 
+const timedPassController=mountTimedPasses({api,getState:()=>state,clock:serverNow,reload:()=>loadState({silent:true,resumeBattle:false}),showModal,closeModal,head:modalHead,toast});
 const communityController=mountCommunity({api,getState:()=>state,reload:()=>loadState({silent:true,resumeBattle:false}),showModal,closeModal,head:modalHead,escape:h,toast,openSupport:openNotice,available:()=>!!state&&!showOnboard&&!isTrainingActive()&&!animation&&!animating&&!recruiting&&!popupPending&&selectedTab!=='event'&&$('modalOverlay').classList.contains('hidden')});
 if(localStorage.getItem(ADMIN_KEY))loadAdmin();else loadState({silent:true});
 
