@@ -1,5 +1,5 @@
 // Shared, server-authoritative game rules. Client imports only for previews and presentation.
-export const VERSION='1.0.0';
+export const VERSION='1.1.0';
 export const COLS=7;
 export const CARDS=[
  {id:'forge',name:'기본 라인 매뉴얼',rarity:'일반',icon:'⚙',desc:'기본 라인의 수입 증가',max:20},
@@ -77,7 +77,7 @@ export function makeBoard(stage,now,event=null){
   const hp=Math.round((k==='exit'?170:k==='chest'?62:38)*scale*Math.pow(1.19,y-3)*(1+((x*7+y*3+stage)%5)*.09));
   cells.push({id:`c${x}_${y}`,kind:k,x,y,hp,max:hp,done:false,tier:Math.min(99,stage+Math.floor((y-3)/2))});
  }
- return {stage,rows,scale,walls,cells,facilities,workers:[{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:2,y:1,target:null},{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:4,y:1,target:null},{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:3,y:1,target:null}],gold:240*scale,hires:0,keys:0,crowns:0,bombs:[],freeAt:now+2400000,barrelAt:now+20000,barrel:null,boostUntil:0,lastAt:now,event,elixir:40,cards:event?cardSet():null,elapsed:0,auto:false,checkpoint:0,claimedKeys:[],cleared:false};
+ return {slotRules:1,supportPos:event?null:{x:1,y:1},stage,rows,scale,walls,cells,facilities,workers:[{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:2,y:1,target:null},{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:4,y:1,target:null},{id:uid(),level:Math.min(30,1+Math.floor((stage-1)/4)),x:3,y:1,target:null}],gold:240*scale,hires:0,keys:0,crowns:0,bombs:[],freeAt:now+2400000,barrelAt:now+20000,barrel:null,boostUntil:0,lastAt:now,event,elixir:40,cards:event?cardSet():null,elapsed:0,auto:false,checkpoint:0,claimedKeys:[],cleared:false};
 }
 export function board(g,mode='main'){if(mode==='main')return g.main;const b=g.events[mode];if(!b)throw fail('먼저 이벤트에 입장해 주세요.');return b;}
 export const cardLevel=(g,b,id)=>(b.event?b.cards:g.cards)?.[id]?.level||0;
@@ -103,15 +103,38 @@ export function reachable(b){
  const seen=new Set(),queue=[[3,0]],blocked=new Set(targets(b).map(c=>`${c.x},${c.y}`));
  for(let i=0;i<queue.length;i++){const [x,y]=queue[i],key=`${x},${y}`;if(seen.has(key)||x<0||x>=COLS||y<0||y>=b.rows||blocked.has(key)||b.walls.includes(y)&&x!==(b.cells.find(z=>z.kind==='gate'&&z.y===y)?.x??3))continue;seen.add(key);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
+// Actors can walk through open lanes, but each standing tile has a single occupant.
+export function standingTiles(b,{worker=null,hero=false}={}){
+ const open=reachable(b);return [...open].map(k=>k.split(',').map(Number)).filter(([x,y])=>
+  !b.facilities.some(f=>f.x===x&&f.y===y)&&!(x===6&&(y===0||y===1))&&
+  (hero||!b.supportPos||b.supportPos.x!==x||b.supportPos.y!==y)&&
+  !b.workers.some(w=>w.id!==worker?.id&&w.x===x&&w.y===y));
+}
 export function destination(b,target,worker=null){
- const r=reachable(b),spots=[[target.x-1,target.y],[target.x+1,target.y],[target.x,target.y-1],[target.x,target.y+1]].filter(([x,y])=>r.has(`${x},${y}`));
- spots.sort((a,z)=>{const occupied=p=>b.workers.some(w=>w.id!==worker?.id&&w.x===p[0]&&w.y===p[1])?100:0;const dist=p=>worker?Math.abs(p[0]-worker.x)+Math.abs(p[1]-worker.y):p[1];return occupied(a)+dist(a)-occupied(z)-dist(z)});
- return spots.length?{x:spots[0][0],y:spots[0][1]}:null;
+ const open=b.slotRules?new Set(standingTiles(b,{worker}).map(p=>p.join(','))):reachable(b);
+ const spots=[[target.x-1,target.y],[target.x+1,target.y],[target.x,target.y-1],[target.x,target.y+1]].filter(([x,y])=>open.has(`${x},${y}`));
+ const score=p=>(b.slotRules?0:b.workers.some(w=>w.id!==worker?.id&&w.x===p[0]&&w.y===p[1])?100:0)+(worker?Math.abs(p[0]-worker.x)+Math.abs(p[1]-worker.y):p[1]);
+ spots.sort((a,z)=>score(a)-score(z));return spots.length?{x:spots[0][0],y:spots[0][1]}:null;
+}
+function repairWorkforce(b){
+ if(b.slotRules)return;
+ const open=reachable(b),claimed=new Set();
+ const legal=([x,y])=>open.has(`${x},${y}`)&&!claimed.has(`${x},${y}`)&&!b.facilities.some(f=>f.x===x&&f.y===y)&&!(x===6&&(y===0||y===1))&&(!b.supportPos||b.supportPos.x!==x||b.supportPos.y!==y);
+ for(const w of b.workers){
+  const t=targets(b).find(t=>t.id===w.target);
+  if(!legal([w.x,w.y])){
+   const spots=[...open].map(k=>k.split(',').map(Number)).filter(legal);
+   spots.sort((a,z)=>{const score=p=>(t&&Math.abs(p[0]-t.x)+Math.abs(p[1]-t.y)===1?-1000:0)+Math.abs(p[0]-w.x)+Math.abs(p[1]-w.y);return score(a)-score(z);});
+   if(!spots.length)throw fail('현장 배치를 복구할 공간이 부족해요.');[w.x,w.y]=spots[0];
+  }
+  claimed.add(`${w.x},${w.y}`);if(!t||Math.abs(w.x-t.x)+Math.abs(w.y-t.y)!==1)w.target=null;
+ }
+ b.slotRules=1;
 }
 export function autoAssign(g,b,w){
- const opts=targets(b).filter(t=>Math.abs(t.x-w.x)+Math.abs(t.y-w.y)===1);
- opts.sort((a,z)=>(a.kind==='gate'?-1:0)-(z.kind==='gate'?-1:0)||a.hp-z.hp);
- w.target=opts[0]?.id||null;
+ const opts=targets(b).map(t=>({t,d:Math.abs(t.x-w.x)+Math.abs(t.y-w.y)===1?{x:w.x,y:w.y}:b.slotRules?destination(b,t,w):null})).filter(o=>o.d&&Math.abs(o.d.x-w.x)+Math.abs(o.d.y-w.y)<=2);
+ opts.sort((a,z)=>(a.t.kind==='gate'?-1:0)-(z.t.kind==='gate'?-1:0)||a.t.hp-z.t.hp);
+ const next=opts[0];w.target=next?.t.id||null;if(next)Object.assign(w,next.d);
 }
 function addStat(g,id,n=1,at=g.lastAt){g.stats[id]=(g.stats[id]||0)+n;if(dayKey(at)===g.daily.day)g.daily.stats[id]=(g.daily.stats[id]||0)+n;}
 export function giveChest(g,b,tier=1){
@@ -145,7 +168,7 @@ function advanceSegment(g,b,seconds,start,recordAt=null){
   }
   for(const {t,dps}of assigned.values())t.hp=Math.max(0,t.hp-dps*step);
   at+=step*1000;remaining-=step;b.elapsed+=step;
-  let completed=false;for(const {t}of assigned.values())if(t.hp<1e-6){destroy(g,b,t,at,recordAt??at);completed=true;for(const w of b.workers.filter(w=>w.target===t.id)){w.target=null;if(b.auto){if(!('active'in t)){w.x=t.x;w.y=t.y;}autoAssign(g,b,w);}}}
+  let completed=false;for(const {t}of assigned.values())if(t.hp<1e-6){destroy(g,b,t,at,recordAt??at);completed=true;for(const w of b.workers.filter(w=>w.target===t.id)){w.target=null;if(b.auto){if(!('active'in t)&&(!b.slotRules||standingTiles(b,{worker:w}).some(([x,y])=>x===t.x&&y===t.y))){w.x=t.x;w.y=t.y;}autoAssign(g,b,w);}}}
   if(!completed)break;
  }
 }
@@ -158,18 +181,24 @@ export function synchronize(g,now=Date.now()){
  if(g.daily.day!==dayKey(now))g.daily={day:dayKey(now),stats:stats(),claimed:[],wheel:false,boost:false};
  let offline={seconds:0,gold:0,boxes:0};
  for(const b of [g.main,...Object.values(g.events)]){
-  const end=b.event?Math.min(now,b.event.end):now;if(end<=b.lastAt)continue;
+  b.supportPos=b.event?null:{...g.foremanPos};
+  const end=b.event?Math.min(now,b.event.end):now;if(end<=b.lastAt){repairWorkforce(b);continue;}
   const elapsed=Math.min(8*3600,(end-b.lastAt)/1000),before=b.gold,boxes=g.stats.boxes;
-  simulate(g,b,elapsed,b.lastAt);b.lastAt=end;
+  simulate(g,b,elapsed,b.lastAt);b.lastAt=end;repairWorkforce(b);
   if(b===g.main)offline={seconds:elapsed,gold:Math.floor(b.gold-before),boxes:g.stats.boxes-boxes};
   if(!b.event||now<b.event.end){
-   if(!b.barrel&&now>=b.barrelAt)b.barrel={id:uid(),at:now};
+   if(!b.barrel&&now>=b.barrelAt)b.barrel={id:uid(),at:now,x:6,y:1};
   }
  }
  g.lastAt=now;g.bestStage=Math.max(g.bestStage,g.main.stage);return offline;
 }
 export function cardCost(c){return {cards:2+c.level*2,elixir:Math.ceil(12*Math.pow(1.55,c.level))};}
-function addWorker(g,b,level=hireLevel(b)){if(b.workers.length>=workerCap(g,b))throw fail('휴게실이 가득 찼어요. 같은 레벨을 합성해 주세요.');const open=reachable(b),positions=[...open].map(v=>v.split(',').map(Number)).sort((a,z)=>a[1]-z[1]||Math.abs(a[0]-3)-Math.abs(z[0]-3));const p=positions.find(([x,y])=>!b.workers.some(w=>w.x===x&&w.y===y)&&!b.facilities.some(f=>f.x===x&&f.y===y))||[3,1];const w={id:uid(),level,x:p[0],y:p[1],target:null};b.workers.push(w);return w;}
+function addWorker(g,b,level=hireLevel(b)){
+ if(b.workers.length>=workerCap(g,b))throw fail('휴게실이 가득 찼어요. 같은 레벨을 합성해 주세요.');
+ const positions=standingTiles(b).sort((a,z)=>a[1]-z[1]||Math.abs(a[0]-3)-Math.abs(z[0]-3)),p=positions[0];
+ if(!p)throw fail('일용직이 설 빈칸이 필요해요. 먼저 합성하거나 길을 열어 주세요.');
+ const w={id:uid(),level,x:p[0],y:p[1],target:null};b.workers.push(w);return w;
+}
 export function readyForNext(b){return b.cleared&&b.facilities.every(f=>f.active);}
 function truckTrack(seed){const a=[];let s=seed;for(let i=0;i<42;i++){s=(Math.imul(s,1664525)+1013904223)>>>0;a.push({at:900+i*660,lane:s%3,type:i%9===8?'gem':i%4===3?'chest':'elixir'});}return a;}
 export {truckTrack};
@@ -179,8 +208,8 @@ export function act(g,type,p={},now=Date.now()){
  let result={};
  switch(type){
  case 'hire':{const cost=hireCost(g,b);if(b.gold<cost)throw fail('운영 골드가 부족해요. 시설 수입을 모아 주세요.');const w=addWorker(g,b);b.gold-=cost;b.hires++;result={worker:w.id};break;}
- case 'move':{const w=b.workers.find(w=>w.id===p.id);if(!w)throw fail('일용직을 찾을 수 없어요.');const x=num(p.x,-1),y=num(p.y,-1);if(!Number.isInteger(x)||!Number.isInteger(y))throw fail('올바른 위치를 선택해 주세요.');const others=b.workers.filter(z=>z.id!==w.id&&z.x===x&&z.y===y);const other=(p.mergeTarget?others.find(z=>z.id===p.mergeTarget):others.find(z=>z.level===w.level)||others[0]);if(other){if(other.level!==w.level)throw fail('같은 레벨끼리 합성할 수 있어요.');if(w.level>=40)throw fail('최대 레벨이에요.');other.level++;other.target=null;b.workers=b.workers.filter(z=>z.id!==w.id);autoAssign(g,b,other);addStat(g,'merges');result={merged:true,id:other.id};break;}
- const target=objectAt(b,x,y);if(target){const d=destination(b,target,w);if(!d)throw fail('먼저 앞쪽 박스를 처리해 길을 열어 주세요.');Object.assign(w,d);w.target=target.id;}else {if(!reachable(b).has(`${x},${y}`))throw fail('아직 갈 수 없는 위치예요.');w.x=x;w.y=y;autoAssign(g,b,w);}break;}
+ case 'move':{const w=b.workers.find(w=>w.id===p.id);if(!w)throw fail('일용직을 찾을 수 없어요.');const x=num(p.x,-1),y=num(p.y,-1);if(!Number.isInteger(x)||!Number.isInteger(y))throw fail('올바른 위치를 선택해 주세요.');const others=b.workers.filter(z=>z.id!==w.id&&z.x===x&&z.y===y);const other=(p.mergeTarget?b.workers.find(z=>z.id===p.mergeTarget&&z.id!==w.id):others.find(z=>z.level===w.level)||others[0]);if(other){if(other.level!==w.level)throw fail('같은 레벨끼리 합성할 수 있어요.');if(w.level>=40)throw fail('최대 레벨이에요.');other.level++;other.target=null;b.workers=b.workers.filter(z=>z.id!==w.id);autoAssign(g,b,other);addStat(g,'merges');result={merged:true,id:other.id};break;}
+ const target=objectAt(b,x,y);if(target){const d=destination(b,target,w);if(!d)throw fail('먼저 앞쪽 박스를 처리해 길을 열어 주세요.');Object.assign(w,d);w.target=target.id;}else {if(!standingTiles(b,{worker:w}).some(p=>p[0]===x&&p[1]===y))throw fail('일용직이 설 수 있는 빈 바닥을 선택해 주세요.');w.x=x;w.y=y;autoAssign(g,b,w);}break;}
  case 'assign':{const w=b.workers.find(w=>w.id===p.id),t=targets(b).find(t=>t.id===p.target);if(!w||!t)throw fail('작업 대상을 다시 선택해 주세요.');const d=destination(b,t,w);if(!d)throw fail('연결된 길이 필요해요.');Object.assign(w,d);w.target=t.id;break;}
  case 'upgrade':{const f=b.facilities.find(f=>f.id===p.id);if(!f?.active)throw fail('먼저 시설을 복구해 주세요.');const count=p.count===10?10:1;let n=0;while(n<count&&f.level<200){const cost=facilityCost(b,f);if(b.gold<cost)break;b.gold-=cost;f.level++;n++;if([5,10,25,50,75,100,125,150,175,200].includes(f.level)){if(b.event)b.elixir+=10;else g.elixir+=10;}}if(!n)throw fail('운영 골드가 부족해요.');addStat(g,'upgrades',n);result={levels:n};break;}
  case 'activate':{const f=b.facilities.find(f=>f.id===p.id);if(!f?.repaired||f.active)throw fail('일용직으로 시설 복구를 완료해 주세요.');f.active=true;giveChest(g,b,1);result={chest:true};break;}
@@ -190,7 +219,7 @@ export function act(g,type,p={},now=Date.now()){
  case 'auto':b.auto=!b.auto;if(b.auto)for(const w of b.workers.filter(w=>!w.target))autoAssign(g,b,w);break;
  case 'freeWorker':{if(now<b.freeAt)throw fail('배달 준비 중이에요.');addWorker(g,b);b.freeAt=now+deliveryInterval(g,b);break;}
  case 'barrel':{if(!b.barrel)throw fail('보급통이 아직 도착하지 않았어요.');const r=rng(g);if(r<.16&&b.workers.length<workerCap(g,b)){addWorker(g,b,Math.max(1,hireLevel(b)-1));result={kind:'worker',text:'일용직 지원!'};}else if(r<.28&&b.bombs.length<4){const lv=Math.max(...b.workers.map(w=>w.level),1);b.bombs.push({id:uid(),level:lv});result={kind:'bomb',text:`Lv.${lv} 돌파 도구!`};}else if(r<.48){const n=8+Math.floor(rng(g)*16);if(b.event)b.elixir+=n;else g.elixir+=n;result={kind:'elixir',text:`연구 포인트 +${n}`};}else {const n=Math.round(b.facilities.filter(f=>f.active&&f.auto).reduce((s,f)=>s+facilityRate(g,b,f,now),0)*25*Math.pow(1.2,cardLevel(g,b,'barrel')));b.gold+=n;result={kind:'gold',text:`골드 +${Math.floor(n)}`};}b.barrel=null;b.barrelAt=now+25000;break;}
- case 'bomb':{const bomb=b.bombs.find(z=>z.id===p.id),t=targets(b).find(z=>z.id===p.target);if(!bomb||!t)throw fail('돌파 도구와 대상을 선택해 주세요.');if(!destination(b,t))throw fail('일용직이 닿을 수 있는 대상에 사용해 주세요.');const d=workerDamage(g,b,{level:bomb.level,x:t.x,y:t.y},t,now)*300*(!b.event&&g.foreman==='returns'?1.5:1);t.hp=Math.max(0,t.hp-d);b.bombs=b.bombs.filter(z=>z.id!==bomb.id);if(t.hp===0)destroy(g,b,t,now);result={damage:d};break;}
+ case 'bomb':{const bomb=b.bombs.find(z=>z.id===p.id),t=targets(b).find(z=>z.id===p.target);if(!bomb||!t)throw fail('돌파 도구와 대상을 선택해 주세요.');if(!destination({...b,slotRules:0},t))throw fail('일용직이 닿을 수 있는 대상에 사용해 주세요.');const d=workerDamage(g,b,{level:bomb.level,x:t.x,y:t.y},t,now)*300*(!b.event&&g.foreman==='returns'?1.5:1);t.hp=Math.max(0,t.hp-d);b.bombs=b.bombs.filter(z=>z.id!==bomb.id);if(t.hp===0)destroy(g,b,t,now);result={damage:d};break;}
  case 'bombMerge':{const a=b.bombs.find(z=>z.id===p.id),z=b.bombs.find(z=>z.id===p.other);if(!a||!z||a===z||a.level!==z.level)throw fail('같은 레벨 도구 2개가 필요해요.');if(a.level>=Math.max(...b.workers.map(w=>w.level),1)+3)throw fail('최고 일용직보다 3레벨 높은 도구까지 합성할 수 있어요.');a.level++;b.bombs=b.bombs.filter(q=>q!==z);break;}
  case 'eventJoin':{const ev=schedule(now).find(z=>z.id===p.id);if(!ev)throw fail('현재 진행 중인 이벤트가 아니에요.');if(!g.events[ev.id])g.events[ev.id]=makeBoard(1,now,ev);g.activeEvent=ev.id;break;}
  case 'eventMilestone':{const thresholds=[1,3,6,10,15],n=num(p.threshold);if(!thresholds.includes(n)||b.keys<n||b.claimedKeys.includes(n))throw fail('아직 수령할 수 없는 보상이에요.');b.claimedKeys.push(n);g.gems+=n*3;g.elixir+=n*25;g.shovels+=Math.ceil(n/3);giveChest(g,g.main,n>=6?2:1);break;}
@@ -206,7 +235,7 @@ export function act(g,type,p={},now=Date.now()){
  case 'treasureNext':{const t=g.treasure,r=t.regions[t.region];if(r.dug.length<15)throw fail('현재 지역을 15칸 이상 발굴해 주세요.');if(t.region<7)t.region++;else {t.loops++;g.gems+=50;g.shovels+=3;t.regions=Array.from({length:8},()=>({dug:[],premium:false}));t.region=0;}break;}
  case 'heroSelect':{const h=g.heroes[p.id];if(!h?.level)throw fail('먼저 파트장을 영입해 주세요.');g.foreman=p.id;break;}
  case 'heroUpgrade':{const h=g.heroes[p.id];if(!h)throw fail('파트장을 찾을 수 없어요.');const need=h.level?2+h.level*2:4,cost=h.level?30*h.level:30;if(h.fragments<need||g.elixir<cost)throw fail('파트장 조각 또는 연구 포인트가 부족해요.');h.fragments-=need;g.elixir-=cost;h.level++;break;}
- case 'heroMove':if(b.event)throw fail('파트장은 본편에서 지원해요.');if(!reachable(b).has(`${p.x},${p.y}`))throw fail('열린 위치에 배치해 주세요.');g.foremanPos={x:Number(p.x),y:Number(p.y)};break;
+ case 'heroMove':if(b.event)throw fail('파트장은 본편에서 지원해요.');if(!standingTiles(b,{hero:true}).some(q=>q[0]===Number(p.x)&&q[1]===Number(p.y)))throw fail('일용직과 시설이 없는 빈 바닥을 선택해 주세요.');g.foremanPos={x:Number(p.x),y:Number(p.y)};b.supportPos={...g.foremanPos};break;
  case 'heroSkill':if(b.event)throw fail('파트장은 본편에서 지원해요.');if(now<g.heroCooldown)throw fail('파트장이 다음 지원을 준비하고 있어요.');if(g.foreman==='cs')addWorker(g,b);else if(g.foreman==='returns'){if(b.bombs.length>=4)throw fail('돌파 도구 보관함이 가득 찼어요.');b.bombs.push({id:uid(),level:Math.max(...b.workers.map(w=>w.level),1)});}else g.heroUntil=now+20000;g.heroCooldown=now+120000;break;
  case 'ancestral':if(g.main.stage<100||g.knowledge<50*(g.ancestral+1))throw fail('100구역과 선조 지식이 필요해요.');g.knowledge-=50*(g.ancestral+1);g.ancestral++;break;
  case 'tutorial':g.tutorial=Math.max(g.tutorial,clamp(num(p.step),0,6));break;
