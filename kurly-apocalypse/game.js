@@ -1,19 +1,19 @@
-import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v226-mining-economy';
-import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v226-mining-economy';
-import {mountBossEvent} from './boss-event.js?v=20261124-v226-mining-economy';
+import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v227-worker-floor';
+import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v227-worker-floor';
+import {mountBossEvent} from './boss-event.js?v=20261124-v227-worker-floor';
 let bossEventController=null;
-import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v226-mining-economy';
-import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v226-mining-economy';
-import {startUpdateMonitor} from './client-update.js?v=20261124-v226-mining-economy';
-import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding,previewMiningDrop,miningTargetRate} from './mining-ui.js?v=20261124-v226-mining-economy';
-import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v226-mining-economy';
-import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v226-mining-economy';
-import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v226-mining-economy';
-import {chatNotification} from './social.js?v=20261124-v226-mining-economy';
-import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v226-mining-economy';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v226-mining-economy';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v226-mining-economy';
-const RELEASE='20261124-v226-mining-economy';
+import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v227-worker-floor';
+import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v227-worker-floor';
+import {startUpdateMonitor} from './client-update.js?v=20261124-v227-worker-floor';
+import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding,previewMiningDrop,miningTargetRate} from './mining-ui.js?v=20261124-v227-worker-floor';
+import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v227-worker-floor';
+import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v227-worker-floor';
+import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v227-worker-floor';
+import {chatNotification} from './social.js?v=20261124-v227-worker-floor';
+import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v227-worker-floor';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v227-worker-floor';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v227-worker-floor';
+const RELEASE='20261124-v227-worker-floor';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -349,7 +349,7 @@ function openMerge(){
  showModal(`<div class="modal-header"><h2 class="modal-title">🔀 일용직 합성 · 최대 Lv.${WORKER_MAX_LEVEL}</h2><button class="modal-close" data-close>닫기 ✕</button></div>
  <p class="section-note">같은 레벨 2명을 합쳐 1레벨 올려요. 한 명의 채굴 속도는 이전 레벨의 2.4배로, 두 명의 합계보다 20% 빨라져요.</p>
  <p class="section-note">경력 확률 연구: ${Math.round((state.mineStats.mergeChance||0)*100)}% 확률로 2레벨 상승 · Lv.${WORKER_MAX_LEVEL}을 넘지 않아요. 최대 레벨 직원은 채굴에 계속 사용할 수 있어요.</p>
- <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 이후 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>다음 구역에서도 일용직의 레벨과 인원을 유지해요. 입구 자리가 부족한 직원은 통로가 열리면 배치돼요.</p></div>
+ <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 보유 일용직도 기본 소환 레벨보다 낮으면 무료로 올라가요. 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>다음 구역에서도 일용직의 레벨과 인원을 유지해요. 입구 자리가 부족한 직원은 통로가 열리면 배치돼요.</p></div>
  ${pairs.length?pairs.map(([a,b])=>`<div class="shop-item"><span class="si">👷</span><div class="info"><strong>Lv.${a.level} + Lv.${b.level} → Lv.${a.level+1}</strong><small>채굴 속도 합계 ${number(workerDps({...a,parked:false},g)*2)} → ${number(workerDps({...a,parked:false,level:a.level+1},g))} DPS</small></div><button class="btn btn-gold" data-merge="${a.id}|${b.id}">합성</button></div>`).join(''):`<p class="muted">${ws.some(w=>w.level>=WORKER_MAX_LEVEL)?`Lv.${WORKER_MAX_LEVEL} MAX 직원은 추가로 합성할 수 없어요. 그 아래 같은 레벨 2명이 필요해요.`:'합성하려면 같은 레벨 일용직 2명이 필요해요.'}</p>`}
  <details class="miner-level-table"><summary>레벨별 기본 채굴 속도 보기 · Lv.1~${WORKER_MAX_LEVEL}</summary><p>연구·숙련도·정복지·부스트·지게차 효과 적용 전 수치예요.</p><table><thead><tr><th>직원 레벨</th><th>기본 채굴 속도</th></tr></thead><tbody>${Array.from({length:WORKER_MAX_LEVEL},(_,i)=>`<tr><th>Lv.${i+1}${i+1===WORKER_MAX_LEVEL?' MAX':''}</th><td>${new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(workerBaseDps(i+1))} DPS</td></tr>`).join('')}</tbody></table></details>`);
 }

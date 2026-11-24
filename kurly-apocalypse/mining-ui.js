@@ -1,4 +1,4 @@
-import {workerMiningDps,adjacentMiningTarget} from './balance.js?v=20261124-v226-mining-economy';
+import {workerMiningDps,adjacentMiningTarget} from './balance.js?v=20261124-v227-worker-floor';
 // Display projection only. Rewards, merge outcomes and valid moves remain server-owned.
 export const miningMultiplier=(game,now)=>Number(game?.shop?.boostUntil)>now?2:1;
 export function miningHp(hp,rate,from,now,boostUntil=0){

@@ -28,6 +28,12 @@ export const researchMax=key=>key==='careerLevel'?SUMMON_MAX_LEVEL:RESEARCH_PREP
 export const researchLimitKind=key=>key==='careerLevel'?'system':'prepared';
 export const researchLimitLabel=key=>researchLimitKind(key)==='system'?`최대 Lv.${researchMax(key)}`:'추가 연구 준비 중';
 export function miningEconomy(g){const l=g.levels||{};return {costMultiplier:Math.max(.24,Math.min(1,1-.04*((l.laborCost||1)-1))),rewardMultiplier:1+.10*((l.lossDiscovery||1)-1),maxWorkerLevel:WORKER_MAX_LEVEL,maxSummonLevel:SUMMON_MAX_LEVEL,summonLevel:Math.min(SUMMON_MAX_LEVEL,l.careerLevel||1),mergeChance:.03*((l.mergeLuck||1)-1)};}
+// Existing and parked workers share the researched starting level, without losing merges.
+export function enforceWorkerSummonFloor(g){
+ const floor=miningEconomy(g).summonLevel;let changed=0;
+ for(const worker of g.workers||[]){if(worker.level<floor){worker.level=floor;changed++;}}
+ return changed;
+}
 export function workerSummonCost(g){const n=Math.max(0,Math.min(Number(g.summons)||0,42));return g.onboarding?.stage==='summon'?0:Math.round(80*Math.pow(1.4,Math.min(n,12))*Math.pow(1.04,Math.max(0,n-12))*miningEconomy(g).costMultiplier);}
 export const miningReward=(g,base)=>Math.floor(base*miningEconomy(g).rewardMultiplier);
 export function miningResearchEffect(key,level){const n=(level||1)-1;return {mine:`채굴 속도 ${Math.pow(1.2,n).toFixed(2)}배`,laborCost:`소환 비용 ${Math.min(76,Math.max(0,Math.round(n*4)))}% 감소`,lossDiscovery:`자원 획득량 +${Math.round(n*10)}%`,careerLevel:`기본 소환 Lv.${Math.min(SUMMON_MAX_LEVEL,level||1)}`,mergeLuck:`2레벨 상승 확률 ${Math.round(n*3)}%`}[key]||'';}
