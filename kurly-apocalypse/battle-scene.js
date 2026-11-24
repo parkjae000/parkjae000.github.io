@@ -1,5 +1,5 @@
-import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v225-mining-smooth';
-import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v225-mining-smooth';
+import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v225-mining-smooth-r2';
+import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v225-mining-smooth-r2';
 export const HEALTH_KINDS=[['C','센터','🏢','center'],['W','방벽','🛡','wall'],['T','포탑','🎯','turret']];
 
 export function battleHealthMarkup(side,frame,maxima,ready=false,label=null){

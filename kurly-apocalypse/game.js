@@ -1,19 +1,19 @@
-import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v225-mining-smooth';
-import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v225-mining-smooth';
-import {mountBossEvent} from './boss-event.js?v=20261124-v225-mining-smooth';
+import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v225-mining-smooth-r2';
+import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v225-mining-smooth-r2';
+import {mountBossEvent} from './boss-event.js?v=20261124-v225-mining-smooth-r2';
 let bossEventController=null;
-import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v225-mining-smooth';
-import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v225-mining-smooth';
-import {startUpdateMonitor} from './client-update.js?v=20261124-v225-mining-smooth';
-import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding} from './mining-ui.js?v=20261124-v225-mining-smooth';
-import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v225-mining-smooth';
-import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v225-mining-smooth';
-import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v225-mining-smooth';
-import {chatNotification} from './social.js?v=20261124-v225-mining-smooth';
-import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v225-mining-smooth';
-import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v225-mining-smooth';
-import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v225-mining-smooth';
-const RELEASE='20261124-v225-mining-smooth';
+import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v225-mining-smooth-r2';
+import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v225-mining-smooth-r2';
+import {startUpdateMonitor} from './client-update.js?v=20261124-v225-mining-smooth-r2';
+import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding} from './mining-ui.js?v=20261124-v225-mining-smooth-r2';
+import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v225-mining-smooth-r2';
+import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v225-mining-smooth-r2';
+import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v225-mining-smooth-r2';
+import {chatNotification} from './social.js?v=20261124-v225-mining-smooth-r2';
+import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v225-mining-smooth-r2';
+import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v225-mining-smooth-r2';
+import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v225-mining-smooth-r2';
+const RELEASE='20261124-v225-mining-smooth-r2';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -709,7 +709,7 @@ function marchPowerMarkup(){const hero=state.progression.heroes.find(v=>v.id===w
 function ownedTerritoriesMarkup(){const owned=(state.territories||[]).filter(v=>v.mine);return `<section class="owned-territories"><h3>내 정복지 ${owned.length} / ${state.territoryCap}</h3>${owned.map(v=>`<div class="owned-area"><div><strong>${h(v.name)}</strong><small>시간당 ${h(territoryRewardText(v))}</small><p class="garrison-status">주둔 ${number(v.troops)}명 · ${h(state.progression.heroes.find(x=>x.id===v.heroId)?.name||'파트장 미편성')}</p><small>주둔 사원은 출정 불가 · 파트장은 약탈·탐사 가능</small></div><button class="btn btn-outline" data-release-area="${v.id}" ${v.busy||state.me.game.pendingBattle?'disabled':''}>포기</button></div>`).join('')||'<p>보유한 정복지가 없습니다.</p>'}</section>`;}
 function confirmReleaseArea(id){const v=state.territories.find(v=>v.id===id&&v.mine);if(!v)return;showModal(`${modalHead('정복지 포기')}<div class="release-confirm"><h3>${h(v.name)}</h3><p>포기하면 주둔 사원 ${number(v.troops)}명이 센터로 복귀하고, 이곳의 시간당 수입이 중단됩니다. 중립지대가 되어 다시 보유하려면 정복전을 치러야 합니다.</p><button class="btn btn-danger btn-wide" data-release-confirm="${v.id}">정복지 포기하기</button><button class="btn btn-outline btn-wide" data-release-cancel>돌아가기</button></div>`);}
 function refreshMarch(){const scroll=$('modalContent').scrollTop;if(marchContext==='explore')openExplore();else openWarChooser();$('modalContent').scrollTop=scroll;}
-function updateMarchCounts(){const available=state?.me.game.troops||0;warCount=available?Math.max(1,Math.min(warCount,available)):0;document.querySelectorAll('[data-march-power]').forEach(el=>el.textContent=number(selectedMarchPower()));document.querySelectorAll('[data-march-summary]').forEach(el=>el.textContent=(state.progression.heroes.find(v=>v.id===warHero)?.name||'파트장 선택 전')+' · 사원 '+warCount+'명');if($('warCountView'))$('warCountView').textContent=warCount+' / '+available+'명';if($('warAmount'))$('warAmount').value=warCount;document.querySelectorAll('[data-formation-preview]').forEach(el=>el.textContent=formationCountText(buildFormation(warCount,el.dataset.formationPreview).roles));document.querySelectorAll('[data-explore-start]').forEach(el=>el.disabled=!warHero||warCount<Number(el.dataset.minTroops)||state.me.game.exploreDaily.count>=3);}
+function updateMarchCounts(){const available=state?.me.game.troops||0;warCount=available?Math.max(1,Math.min(warCount,available)):0;document.querySelectorAll('[data-march-power]').forEach(el=>el.textContent=number(selectedMarchPower()));document.querySelectorAll('[data-march-summary]').forEach(el=>el.textContent=(state.progression.heroes.find(v=>v.id===warHero)?.name||'파트장 선택 전')+' · 사원 '+warCount+'명');if($('warCountView'))$('warCountView').textContent=warCount+' / '+available+'명';if($('warAmount'))$('warAmount').value=warCount;document.querySelectorAll('[data-formation-preview]').forEach(el=>el.textContent=formationCountText(buildFormation(warCount,el.dataset.formationPreview).roles));document.querySelectorAll('[data-explore-start]').forEach(el=>el.disabled=!warHero||warCount<Number(el.dataset.minTroops)||state.me.game.exploreDaily.count>=(state.progression.exploreDailyLimit??5));}
 document.addEventListener('change',e=>{if(e.target.id==='warAmount'){const count=Number(e.target.value);if(Number.isSafeInteger(count)){warCount=count;refreshMarch();}}});
 function workbookMarkup(){return `<div class="workbook-intro"><h3>센터장의 첫걸음</h3><span>${state.progression.quests.filter(q=>q.claimed).length} / ${state.progression.quests.length} 완료</span></div>${state.progression.quests.map(q=>`<div class="mission-card"><h3>${h(q.name)}</h3><p>${q.description||rewardText(q.reward)}</p><button class="btn btn-gold" data-claim-quest="${q.id}" ${!q.ready||q.claimed?'disabled':''}>${q.claimed?'수령 완료':q.ready?'보상 받기':'진행 중'}</button></div>`).join('')}`;}
 function openWorkbook(){openEvents('workbook');}
