@@ -1,5 +1,5 @@
-import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v223-timed-passes';
-import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v223-timed-passes';
+import {sceneAssets,loadSceneAssets} from './scene-assets.js?v=20261124-v224-campaign-rewards';
+import {drawHeroActor,drawHeroEffects,drawSkillBanner,drawSkillCutIn} from './hero-motion.js?v=20261124-v224-campaign-rewards';
 export const HEALTH_KINDS=[['C','센터','🏢','center'],['W','방벽','🛡','wall'],['T','포탑','🎯','turret']];
 
 export function battleHealthMarkup(side,frame,maxima,ready=false,label=null){

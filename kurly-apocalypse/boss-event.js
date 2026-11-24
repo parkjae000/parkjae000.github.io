@@ -1,4 +1,4 @@
-import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261124-v223-timed-passes';
+import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261124-v224-campaign-rewards';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let assetsPromise;
 function loadAssets(){return assetsPromise??=Promise.all(Object.entries(BOSS_ASSETS).map(([key,path])=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve([key,i]);i.onerror=()=>reject(Error('보스 이미지를 불러오지 못했어요.'));i.src=path;}))).then(Object.fromEntries).catch(e=>{assetsPromise=null;throw e;});}
