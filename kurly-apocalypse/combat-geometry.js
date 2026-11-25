@@ -5,3 +5,4 @@ export const firstStructure=hp=>['W','T','C'].find(key=>hp[key]>0)||null;
 export function structureFront(side,key){const x=COMBAT_GEOMETRY.targets[key]??COMBAT_GEOMETRY.targets.C;return side==='a'?x:1-x;}
 export function turretInRange(side,x){return Number.isFinite(x)&&x>=0&&x<=1&&(side==='a'?x<=.5:x>=.5);}
 export function advanceFront(side,x,key,dt){const target=structureFront(side,key),step=COMBAT_GEOMETRY.speed*dt;return side==='a'?Math.min(target,x+step):Math.max(target,x-step);}
+

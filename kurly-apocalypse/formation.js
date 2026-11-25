@@ -21,3 +21,4 @@ export function formationFactors(formation,classes=null){
  const n=formation.amount||1,r=formation.roles;
  return {roles:{...r},hp:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.hpFactor??ROLE_SPECS[k].hp),0)/n,attack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n,siegeAttack:ROLE_ORDER.reduce((v,k)=>v+(r[k]||0)*(classes?.[k]?.dpsFactor??ROLE_SPECS[k].damage/ROLE_SPECS[k].interval),0)/n};
 }
+

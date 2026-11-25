@@ -1,6 +1,6 @@
-import {RESEARCH_PASSES,BOOST_PASSES,FORKLIFT_PASSES,SHIELD_PRICES,HEAL_PRICE} from '../pass-catalog.mjs?v=20261125-v245-forklift-pass';
-import {researchStaffCount} from './research-economy.mjs?v=td-ux-20';
-import {HERO_DEFS} from './progression.mjs?v=td-ux-20';
+import {RESEARCH_PASSES,BOOST_PASSES,FORKLIFT_PASSES,SHIELD_PRICES,SHIELD_SALES_PAUSED,HEAL_PRICE} from '../pass-catalog.mjs?v=20261126-v247-shield-raid';
+import {researchStaffCount} from './research-economy.mjs';
+import {HERO_DEFS} from './progression.mjs';
 export const SHOP_GROUPS={growth:'파트장 성장',research:'연구·채굴',defense:'보호·치료'};
 export const SHOP_ITEMS=[
  {id:'normalTicket',name:'일반 모집권',group:'growth',currency:'boxes',price:500,key:'normalTickets',amount:1,art:'ticketNormal',description:'기존 일반 모집에 사용하는 모집권',existing:true},
@@ -12,7 +12,7 @@ export const SHOP_ITEMS=[
  {id:'bot',name:'연구 스태프 3',group:'research',currency:'cash',price:3600,permanent:true,art:'workerCute',description:'기본 2명 + 추가 1명 · 연구 3개 동시 진행 · 영구 적용',existing:true},
  ...BOOST_PASSES.map(p=>({id:p.key,name:'채굴 2배 가속 · '+p.label,group:'research',currency:'cash',price:p.price,key:p.key,amount:1,art:'miningBoost',description:'이용권 보관 · 사용 시 '+p.label+' 동안 채굴 속도 2배',existing:true})),
  ...FORKLIFT_PASSES.filter(p=>p.shopId).map(p=>({id:p.shopId,name:'지게차 '+p.label+' 이용권',group:'research',currency:'cash',price:p.price,key:p.key,amount:1,art:'forklift',description:'사용 시 '+p.label+' 연장 · 채굴 직원 1명을 탑승시켜요.'})),
- ...[1,4,12,24].map((hours,i)=>({id:'shield'+hours+'h',name:'센터 보호막'+hours+'시간권',group:'defense',currency:'cash',price:SHIELD_PRICES[i],key:'shield'+hours+'h',amount:1,hours,art:'wall',description:'창고 보관 · 출정·교전 중 사용 불가. 침공 출발 시 내 보호 해제',existing:true})),
+ ...[1,4,12,24].map((hours,i)=>({id:'shield'+hours+'h',name:'센터 보호막'+hours+'시간권',group:'defense',currency:'cash',price:SHIELD_PRICES[i],key:'shield'+hours+'h',amount:1,hours,blocked:SHIELD_SALES_PAUSED?'판매 일시 중단':'',art:'wall',description:'창고 보관 · 출정·교전 중 사용 불가. 침공 출발 시 내 보호 해제',existing:true})),
  {id:'healAid',name:'사원 치료권',group:'defense',currency:'cash',price:HEAL_PRICE,key:'healAid',amount:1,art:'medicalKit',description:'회복 대기 중인 사원을 모두 즉시 치료해요.',existing:true}
 ];
 const shopDay=now=>new Date(now+9*3600000).toISOString().slice(0,10);

@@ -1,6 +1,6 @@
 import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-20';
 import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-20';
-import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-20';
+import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-22';
 import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-20';
 import {ReviewUI} from './review-ui.mjs?v=td-ux-20';
 import {growthKind} from './ui-model.mjs?v=td-ux-20';

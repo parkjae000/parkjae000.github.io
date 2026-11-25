@@ -7,3 +7,4 @@ export function chatNotification(messages,actorId,lastRead){
  const latest=messages.reduce((n,m)=>Math.max(n,Number(m.id)||0),0);
  return {latest,unread:messages.filter(m=>Number(m.id)>lastRead&&m.player_id!==actorId).length};
 }
+
