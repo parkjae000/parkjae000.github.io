@@ -1,12 +1,12 @@
-import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs?v=td-ux-12';
-import {freshFortress,reconcileFortress} from './recovery.mjs?v=td-ux-12';
-import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs?v=td-ux-12';
-import {heroResetPreview} from './migration.mjs?v=td-ux-12';
-import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-12';
-import {Replay,battleFromRecord} from './replay.mjs?v=td-ux-12';
-import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs?v=td-ux-12';
-import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs?v=td-ux-12';
-import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-12';
+import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs?v=td-ux-13';
+import {freshFortress,reconcileFortress} from './recovery.mjs?v=td-ux-13';
+import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs?v=td-ux-13';
+import {heroResetPreview} from './migration.mjs?v=td-ux-13';
+import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-13';
+import {Replay,battleFromRecord} from './replay.mjs?v=td-ux-13';
+import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs?v=td-ux-13';
+import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs?v=td-ux-13';
+import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-13';
 export function layoutFor(w,h){const mobile=w<760;const header=mobile?96:82;const footer=mobile?190:122;const side=!mobile&&w>=1180?282:0;return {mobile,header,footer,side,stage:{x:0,y:header,w:w-side,h:Math.max(180,h-header-footer)}};}
 export class Session{
  constructor(storage){this.storage=storage;const initialReset=heroResetPreview(defaultGrowth());this.migrationPreview={rows:initialReset.rows,total:initialReset.total,basis:initialReset.basis};let saved;try{saved=JSON.parse(storage?.getItem(STORAGE_KEY)||'null');}catch{}

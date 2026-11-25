@@ -1,5 +1,5 @@
-import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-12';
-import {legacyCost,BASE_TIME} from './legacy-costs.mjs?v=td-ux-12';
+import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-13';
+import {legacyCost,BASE_TIME} from './legacy-costs.mjs?v=td-ux-13';
 export const FACILITY_DEFS={productionEfficiency:{name:'생산 효율',group:'military',identity:'육·공·해 생산 주기 단축',max:20},
  mine:{name:'채굴 효율',group:'mine',identity:'일용직의 채굴 속도 증가',max:20},
  laborCost:{name:'일용직 인건비 감소',group:'mine',identity:'일용직 소환 비용 감소',max:20},

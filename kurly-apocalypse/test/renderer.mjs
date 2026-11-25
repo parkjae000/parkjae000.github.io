@@ -1,6 +1,7 @@
-import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-12';
-import {WORLD,CATALOG,PADS,ROUTE,clamp} from './engine.mjs?v=td-ux-12';
-import {heroStats,towerStats} from './progression.mjs?v=td-ux-12';
+import {SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-13';
+import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-13';
+import {WORLD,CATALOG,PADS,ROUTE,clamp} from './engine.mjs?v=td-ux-13';
+import {heroStats,towerStats} from './progression.mjs?v=td-ux-13';
 const FONT='"Noto Sans CJK KR","Noto Sans KR",sans-serif';
 export class RendererBase{
  constructor(canvas,art,{width=1280,height=800,pixelRatio=1}={}){this.canvas=canvas;this.c=canvas.getContext('2d');this.art=art;this.buttons=[];this.resize(width,height,pixelRatio);}
@@ -106,8 +107,8 @@ export class RendererBase{
  drawSide(s){const w=this.w,h=this.h,x=w-s.layout.side,y=s.layout.header;this.panel(x,y,s.layout.side,h-y-s.layout.footer,{r:0});this.text('방어 설정',x+20,y+26,22,'#ffe3a4');this.text('타워 '+s.editor.items.filter(p=>CATALOG[p.type].kind==='tower').length+'/6 · 파트장 '+s.editor.items.filter(p=>CATALOG[p.type].kind==='hero').length+'/6',x+20,y+57,16,'#ddcfda');this.button('category','타워',x+16,y+83,116,42,{active:s.category==='tower',data:'tower'});this.button('category','파트장',x+144,y+83,120,42,{active:s.category==='hero',data:'hero'});const types=Object.keys(CATALOG).filter(k=>CATALOG[k].kind===s.category);types.forEach((type,i)=>this.card(s,type,x+16+(i%2)*128,y+140+Math.floor(i/2)*104,116,92));const picked=CATALOG[s.editor.tool],bottom=y+140+Math.ceil(types.length/2)*104;this.text(picked.name+' · '+picked.desc,x+18,bottom+17,16,picked.color);this.text('사거리 '+(picked.globalRange?'전역':Math.round((picked.kind==='hero'?heroStats(s.growth,s.editor.tool):towerStats(s.growth,s.editor.tool))?.range||picked.range)),x+18,bottom+47,15,'#dbced8');if(s.editor.selected)this.button('remove','선택한 배치 제거',x+16,bottom+72,248,44);}
  drawMapControls(s){const v=s.layout.stage,m=s.layout.mobile;const x=v.x+v.w-54;this.button('plus','+',x,v.y+15,44,44,{small:false});this.button('minus','−',x,v.y+65,44,44);this.button('fit',s.expanded?'화면 복귀':'전체보기',x-28,v.y+115,72,44,{small:true});
   const width=m?116:168,height=width*2/3,mapX=v.x+v.w-width-13,mapY=v.y+v.h-height-12,c=this.c;
-  this.panel(mapX-3,mapY-3,width+6,height+6,{r:9,alpha:.95});c.save();this.rect(mapX,mapY,width,height,6);c.clip();c.drawImage(s.battle?.objective==='conquest'||s.mode==='design'&&s.scope!=='home'?this.art.conquestMap:this.art.map,mapX,mapY,width,height);
-  for(const d of s.activeItems){const p=(s.battle?.pads||(s.scope!=='home'?CONQUEST_PADS:PADS)).find(v=>v.id===d.pad);c.fillStyle=CATALOG[d.type].color;c.beginPath();c.arc(mapX+p.x/WORLD.w*width,mapY+p.y/WORLD.h*height,2.2,0,7);c.fill();}
+  this.panel(mapX-3,mapY-3,width+6,height+6,{r:9,alpha:.95});c.save();this.rect(mapX,mapY,width,height,6);c.clip();c.drawImage(isSiegeScene(s)?this.art.siegeMap:s.battle?.objective==='conquest'||s.mode==='design'&&s.scope!=='home'?this.art.conquestMap:this.art.map,mapX,mapY,width,height);
+  for(const d of s.activeItems){const p=(s.battle?.pads||(s.scope!=='home'?SIEGE_PADS:PADS)).find(v=>v.id===d.pad);c.fillStyle=CATALOG[d.type].color;c.beginPath();c.arc(mapX+p.x/WORLD.w*width,mapY+p.y/WORLD.h*height,2.2,0,7);c.fill();}
   if(s.battle){for(const u of s.battle.units){if(u.hp<=0||u.s<0)continue;const p=s.battle.position(u);c.fillStyle='#fff6bd';c.fillRect(mapX+p.x/WORLD.w*width,mapY+p.y/WORLD.h*height,1.2,1.2);}}
   const cam=s.camera,visibleW=v.w/cam.zoom,visibleH=v.h/cam.zoom;c.strokeStyle='#fff6cf';c.lineWidth=1.5;c.strokeRect(mapX+(cam.x-visibleW/2)/WORLD.w*width,mapY+(cam.y-visibleH/2)/WORLD.h*height,visibleW/WORLD.w*width,visibleH/WORLD.h*height);c.restore();this.minimap={x:mapX,y:mapY,w:width,h:height};
   if(s.mode!=='battle'){this.panel(v.x+12,v.y+v.h-43,m?184:300,30,{r:9,alpha:.9});this.text(m?'드래그로 전장 이동':'드래그로 전장 이동 · 휠로 확대',v.x+22,v.y+v.h-28,14,'#fff0cf');}

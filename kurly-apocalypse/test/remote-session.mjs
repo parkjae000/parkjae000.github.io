@@ -1,7 +1,10 @@
-import {Session} from './session.mjs?v=td-ux-12';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-12';
-import {battleFromRecord} from './replay.mjs?v=td-ux-12';
-import {rosterOf} from './production.mjs?v=td-ux-12';
+import {siegeLayout} from './conquest.mjs?v=td-ux-13';
+import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-13';
+import {CATALOG} from './engine.mjs?v=td-ux-13';
+import {Session} from './session.mjs?v=td-ux-13';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-13';
+import {battleFromRecord} from './replay.mjs?v=td-ux-13';
+import {rosterOf} from './production.mjs?v=td-ux-13';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
 export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
@@ -13,8 +16,8 @@ export class RemoteSession extends Session{
  apply(td){if(this.latest&&td.serverTime<this.latest.serverTime)return;
   const previous=this.campaign,oldPending=previous?.pending;this.latest=td;this.serverOffset=td.serverTime-Date.now();this.growth=td.growth;this.campaign=td.campaign;this.amount=this.campaign.pending?.amount||this.campaign.troops;
   for(const role of ['army','air','navy']){const difference=(rosterOf(this.campaign)[role]||0)-(rosterOf(previous)[role]||0);if(difference>0&&!oldPending)this.productionEvents.push({role,count:difference,at:Date.now(),kind:'production'});}this.productionEvents=this.productionEvents.slice(-9);
-  const items=this.scope==='home'?td.items:td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||td.items;this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty){const selected=this.editor.selected,tool=this.editor.tool;this.editor=new DefenseEditor(items);this.editor.tool=tool;if(selected)this.editor.select(selected);}
-  const p=this.campaign.pending;if(p){if(!this.battle||this.liveId!==p.id||this.replay){this.replay=null;this.battle=battleFromRecord(p);this.liveId=p.id;this.lastRecord=null;this.mode='battle';this.resultAt=null;this.follow=true;this.accumulator=0;}this.setViewport(this.width,this.height);}
+  const items=this.scope==='home'?td.items:siegeLayout(td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||[]);this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty){const selected=this.editor.selected,tool=this.editor.tool;this.editor=new DefenseEditor(items);this.editor.tool=tool;if(selected)this.editor.select(selected);}
+  const p=this.campaign.pending;if(p){const fresh=!this.battle||this.liveId!==p.id||this.replay;if(fresh){this.replay=null;this.battle=battleFromRecord(p);this.liveId=p.id;this.lastRecord=null;this.mode='battle';this.resultAt=null;this.follow=true;this.accumulator=0;}this.setViewport(this.width,this.height);if(fresh&&this.battle.variant==='open-siege'){if(this.layout.mobile){this.camera={x:400,y:520,zoom:.55,initialized:true};this.clampCamera();}else this.fit();}}
   else if(oldPending){const r=this.campaign.history.find(x=>x.id===oldPending.id);if(r){this.lastRecord=r;if(!this.battle||this.liveId!==r.id)this.battle=battleFromRecord(r);while(this.battle.status==='running'&&this.battle.ticks<r.endTick)this.battle.step(1/30);if(r.status==='retreated'&&this.battle.status==='running')this.battle.retreat();this.resultAt=this.elapsed;this.mode='battle';}}
   this.uiVersion++;this.onRemoteUpdate?.();
  }
@@ -27,6 +30,7 @@ export class RemoteSession extends Session{
  save(){const editor=this.editor,items=structuredClone(editor.items),scope=this.scope;this.send('td/layout',{scope,items}).then(()=>{if(this.editor===editor&&JSON.stringify(editor.items)===JSON.stringify(items))editor.dirty=false;}).catch(()=>{});return true;}
  finishBattle(){if(this.remote)this.poll(true);}
  action(id,data){
+  if(id==='pad'&&this.scope!=='home'){const kind=CATALOG[this.editor.items.find(i=>i.id===this.editor.selected)?.type||this.editor.tool]?.kind;if(!siegeSlotAccepts(data,kind)){this.notify('포탑은 센터 위아래 발판, 파트장은 중앙 지원 발판에 배치해요.');return;}}
   if(id==='amount'||id==='defend'){this.notify('시험 서버에서는 실제 보유 병력을 사용해요.');return;}
   if(id==='retreat'&&!this.replay){if(this.retreatPending||!this.campaign.pending)return;this.retreatPending=true;this.notify('후퇴 요청 중… 생존 병력을 귀환시킵니다.');this.send('td/retreat').catch(()=>{}).finally(()=>{this.retreatPending=false;this.uiVersion++;});return;}
   if(id==='save')return this.save();

@@ -8,7 +8,7 @@ export function gameAPI(base,endpoint,{body,sessionWorld='',requestedWorld=''}={
 }
 export function mergeTDState(state,td){
  if(!state||state.me?.world!=='TEST'||td?.world!=='TEST'||td.me.id!==state.me.id)return false;
- if(state.td?.serverTime>td.serverTime)return false;state.td=td;const g=state.me.game;g.boxes=td.growth.boxes;g.cash=td.campaign.cash;g.troops=td.campaign.troops;g.heroes=structuredClone(td.growth.heroes);g.inventory=structuredClone(td.growth.inventory);g.shieldUntil=td.campaign.shieldUntil;state.me.shieldUntil=td.campaign.shieldUntil;g.upgrades=td.growth.researchJobs.map(j=>({...j,key:j.item||j.kind}));g.wounded=td.campaign.wounded.map(w=>({...w,amount:Object.values(w.counts).reduce((a,b)=>a+b,0)}));Object.assign(g.levels,td.growth.facilityLevels,{wall:td.growth.wallLevel});return true;
+ if(state.td?.serverTime>td.serverTime)return false;state.td=td;if(td.power)state.me.power=structuredClone(td.power);const g=state.me.game;g.boxes=td.growth.boxes;g.cash=td.campaign.cash;g.troops=td.campaign.troops;g.heroes=structuredClone(td.growth.heroes);g.inventory=structuredClone(td.growth.inventory);g.shieldUntil=td.campaign.shieldUntil;state.me.shieldUntil=td.campaign.shieldUntil;g.upgrades=td.growth.researchJobs.map(j=>({...j,key:j.item||j.kind}));g.wounded=td.campaign.wounded.map(w=>({...w,amount:Object.values(w.counts).reduce((a,b)=>a+b,0)}));Object.assign(g.levels,td.growth.facilityLevels,{wall:td.growth.wallLevel});return true;
 }
 export function tdAction(type,params={}){
  if(type==='hero/level'||type==='hero/star')return {type:'td/upgrade',params:{kind:type==='hero/level'?'hero-level':'hero-star',item:params.hero,steps:1}};

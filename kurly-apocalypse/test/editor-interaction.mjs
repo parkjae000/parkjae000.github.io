@@ -1,6 +1,7 @@
-import {PADS,CATALOG} from './engine.mjs?v=td-ux-12';
-import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-12';
-export const editorPads=session=>session.scope==='home'?PADS:CONQUEST_PADS;
+import {SIEGE_PADS,siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-13';
+import {PADS,CATALOG} from './engine.mjs?v=td-ux-13';
+import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-13';
+export const editorPads=session=>session.scope==='home'?PADS:SIEGE_PADS;
 export function hitDefense(items,pads,point){
  return [...items].map(item=>({...item,position:pads.find(p=>p.id===item.pad)})).filter(item=>item.position&&Math.abs(point.x-item.position.x)<=58&&point.y>=item.position.y-140&&point.y<=item.position.y+38).sort((a,b)=>b.position.y-a.position.y||Math.abs(point.x-a.position.x)-Math.abs(point.x-b.position.x))[0]||null;
 }
@@ -17,7 +18,7 @@ export class EditorInteraction{
   if(this.pointers.size===2&&this.pinch){const [a,b]=this.pointers.values();this.s.camera.zoom=this.pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(10,this.pinch.distance);this.s.follow=false;this.s.clampCamera();return;}
   const g=this.gesture;if(!g||g.id!==id)return;const distance=Math.hypot(point.x-g.start.x,point.y-g.start.y);if(distance>=9)g.moved=true;
   if(g.moved&&g.itemId&&this.s.mode==='design'){
-   const p=this.r.toWorld(this.s,point.x,point.y),world={x:p.x+g.offset.x,y:p.y+g.offset.y},nearest=editorPads(this.s).map(pad=>({pad,distance:Math.hypot(pad.x-world.x,pad.y-world.y)})).sort((a,b)=>a.distance-b.distance)[0];
+   const p=this.r.toWorld(this.s,point.x,point.y),world={x:p.x+g.offset.x,y:p.y+g.offset.y},nearest=editorPads(this.s).filter(p=>this.s.scope==='home'||siegeSlotAccepts(p.id,CATALOG[this.s.editor.items.find(i=>i.id===g.itemId)?.type]?.kind)).map(pad=>({pad,distance:Math.hypot(pad.x-world.x,pad.y-world.y)})).sort((a,b)=>a.distance-b.distance)[0];
    this.s.editorDrag={id:g.itemId,world,pad:nearest?.distance<=78?nearest.pad:null};this.s.uiVersion++;this.changed();
   }else if(g.moved)this.s.pan(point.x-g.last.x,point.y-g.last.y);
   g.last=point;

@@ -1,5 +1,5 @@
-import {FACILITY_DEFS,facilityStats} from './research.mjs?v=td-ux-12';
-import {TOWER_DEFS,HERO_DEFS,FORCES,TOWER_IDS,FORCE_IDS,towerStats,heroStats,forceStats,wallStats,capacity,upgradeQuote,rangeLabel,damageMultiplier} from './progression.mjs?v=td-ux-12';
+import {FACILITY_DEFS,facilityStats} from './research.mjs?v=td-ux-13';
+import {TOWER_DEFS,HERO_DEFS,FORCES,TOWER_IDS,FORCE_IDS,towerStats,heroStats,forceStats,wallStats,capacity,upgradeQuote,rangeLabel,damageMultiplier} from './progression.mjs?v=td-ux-13';
 export function growthItem(g,category,id){if(category==='facility'||category==='mine'||category==='military')return facilityStats(g,id);if(category==='tower')return towerStats(g,id);if(category==='hero')return heroStats(g,id);if(category==='force')return forceStats(g,id);if(category==='wall')return {...wallStats(g),name:'센터 방벽',identity:'센터 진입을 막는 첫 번째 방어선'};return {name:'출격 한도',level:g.capacityLevel,capacity:capacity(g),identity:'강화 1회마다100명 증원'};}
 export function growthKind(category,heroMode='level'){return {tower:'tower',hero:heroMode==='star'?'hero-star':'hero-level',force:'force',wall:'wall',capacity:'capacity',facility:'facility',mine:'facility',military:'facility'}[category];}
 export function comparisonRows(g,category,id,quote){const a=growthItem(g,category,id),b=quote.nextGrowth?growthItem(quote.nextGrowth,category,id):a;if(!a)return [];
