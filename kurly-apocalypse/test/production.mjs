@@ -1,0 +1,39 @@
+import {FORCE_IDS,forceComposition,capacity} from './progression.mjs';
+export const PRODUCTION_DEFS={army:{name:'육군',facility:'육군 훈련장',unit:'명',seconds:30,unitCost:45,color:'#ffcd73'},air:{name:'공군',facility:'공군 격납고',unit:'기',seconds:45,unitCost:60,color:'#8ee9ff'},navy:{name:'해군',facility:'해군 조선소',unit:'척',seconds:60,unitCost:75,color:'#b3c2ff'}};
+export const rosterTotal=counts=>FORCE_IDS.reduce((n,id)=>n+(counts?.[id]||0),0);
+export function validRoster(counts){return counts&&FORCE_IDS.every(id=>Number.isSafeInteger(counts[id])&&counts[id]>=0)&&rosterTotal(counts)<=100000000;}
+export function rosterOf(c){const result=c.roster?{...c.roster}:forceComposition(c.troops||0);if(!validRoster(result))throw Error('병과별 보유량을 확인해 주세요.');return result;}
+export function setRoster(c,counts){if(!validRoster(counts))throw Error('병과별 보유량을 확인해 주세요.');c.roster={...counts};c.troops=rosterTotal(counts);}
+export function ensureProduction(c){if(!c.roster)setRoster(c,rosterOf(c));c.production ||= {army:[],air:[],navy:[]};c.productionReceipts ||= {};c.productionSequence ||= 0;c.wounded ||= [];c.productionGoal ||= 'balanced';return c;}
+export const productionBatch=g=>Math.max(100,Math.floor(capacity(g)/10000)*100);
+export const productionCycle=(g,role)=>PRODUCTION_DEFS[role].seconds*1000*(1-Math.min(.5,.03*((g.facilityLevels?.productionEfficiency||1)-1)));
+export function roleReservations(c,role){return (c.pending?.forceTotals?.[role]??(c.pending?forceComposition(c.pending.amount,c.pending.composition)[role]:0))+(c.wounded||[]).reduce((n,w)=>n+(w.counts?.[role]||0),0)+(c.production?.[role]||[]).reduce((n,j)=>n+j.remaining,0)+(c.external?.[role]||0);}
+export const capacityUsed=c=>rosterTotal(rosterOf(c))+FORCE_IDS.reduce((n,id)=>n+roleReservations(c,id),0);
+export function productionQuote(g,c,role,cycles=1,now=Date.now()){
+ const def=PRODUCTION_DEFS[role];if(!def)return {enabled:false,reason:'병과를 선택하세요.'};const batch=productionBatch(g),free=Math.max(0,capacity(g)-capacityUsed(c));const amount=cycles==='max'?Math.floor(free/100)*100:typeof cycles==='object'?cycles.amount:batch*Number(cycles),valid=typeof cycles==='object'?Number.isSafeInteger(amount)&&amount>=100&&amount%100===0:cycles==='max'||Number.isSafeInteger(cycles)&&cycles>=1&&cycles<=10000,cost=amount*def.unitCost,cycleMs=productionCycle(g,role),queue=c.production?.[role]||[];
+ const last=queue.at(-1),startAt=last?Math.max(now,last.nextAt+(Math.ceil(last.remaining/last.batch)-1)*last.cycleMs):now,endAt=startAt+Math.ceil(amount/batch)*cycleMs;
+ const reason=!valid?'생산 횟수를 확인하세요.':amount<100||free<100?'수용 한도에 여유가 없어요.':amount>free?'수용 한도가 부족해요.':queue.length>=5?'이 병과는5개 주문까지 예약할 수 있어요.':!Number.isSafeInteger(cost)||cost>g.boxes?'박스가 부족해요.':'';
+ return {enabled:!reason,reason,role,batch,amount,cost,free,cycleMs,startAt,endAt,seconds:(endAt-now)/1000,nextSeconds:(startAt+cycleMs-now)/1000};
+}
+export function startProduction(g,c,role,cycles=1,requestId,now=Date.now()){
+ if(!requestId)throw Error('생산 요청 ID가 필요해요.');const previous=c.productionReceipts?.[requestId];if(previous){if(previous.role!==role||JSON.stringify(previous.cycles)!==JSON.stringify(cycles))throw Error('동일 요청에 다른 생산을 지정할 수 없어요.');return {duplicate:true,receipt:previous};}
+ const q=productionQuote(g,c,role,cycles,now);if(!q.enabled)throw Error(q.reason);ensureProduction(c);g.boxes-=q.cost;const job={id:'production-'+(++c.productionSequence),role,batch:q.batch,cycleMs:q.cycleMs,amount:q.amount,remaining:q.amount,completed:0,unitCost:PRODUCTION_DEFS[role].unitCost,paid:q.cost,nextAt:q.startAt+q.cycleMs,queuedAt:now};c.production[role].push(job);const receipt={role,cycles,jobId:job.id,amount:q.amount,cost:q.cost};c.productionReceipts[requestId]=receipt;return {job,receipt,duplicate:false};
+}
+export function settleProduction(g,c,now=Date.now()){
+ ensureProduction(c);const counts=rosterOf(c),events=[];
+ for(const role of FORCE_IDS){const queue=c.production[role];let added=0;while(queue.length&&queue[0].nextAt<=now){const job=queue[0],cycles=Math.min(Math.ceil(job.remaining/job.batch),Math.floor((now-job.nextAt)/job.cycleMs)+1),amount=Math.min(job.remaining,cycles*job.batch);counts[role]+=amount;job.remaining-=amount;job.completed+=amount;job.nextAt+=cycles*job.cycleMs;added+=amount;if(!job.remaining)queue.shift();else break;}if(added)events.push({role,count:added,at:now,kind:'production'});}
+ const recovered=c.wounded.filter(w=>w.endAt<=now);for(const w of recovered)for(const role of FORCE_IDS){const amount=w.counts[role]||0;counts[role]+=amount;if(amount)events.push({role,count:amount,at:now,kind:'recovery'});}c.wounded=c.wounded.filter(w=>w.endAt>now);if(events.length)setRoster(c,counts);return events;
+}
+export function cancelProduction(g,c,role,jobId,now=Date.now()){
+ settleProduction(g,c,now);const queue=c.production?.[role]||[],i=queue.findIndex(j=>j.id===jobId);if(i<0)throw Error('이미 완료되었거나 취소한 주문이에요.');const job=queue[i],refund=job.remaining*job.unitCost;g.boxes+=refund;queue.splice(i,1);let cursor=i?queue[i-1].nextAt+(Math.ceil(queue[i-1].remaining/queue[i-1].batch)-1)*queue[i-1].cycleMs:now;for(let n=i;n<queue.length;n++){queue[n].nextAt=cursor+queue[n].cycleMs;cursor=queue[n].nextAt+(Math.ceil(queue[n].remaining/queue[n].batch)-1)*queue[n].cycleMs;}return {refund,cancelled:job.remaining};
+}
+export function woundedTotal(c){return (c.wounded||[]).reduce((n,w)=>n+rosterTotal(w.counts),0);}
+export function healWounded(g,c){if(!(g.inventory.healAid>0))throw Error('보유 치료권이 없어요.');if(!woundedTotal(c))throw Error('회복 대기 병력이 없어요.');const counts=rosterOf(c);let healed=0;for(const w of c.wounded)for(const role of FORCE_IDS){counts[role]+=w.counts[role];healed+=w.counts[role];}g.inventory.healAid--;c.wounded=[];setRoster(c,counts);return healed;}
+
+export function woundedAllocation(deaths){const result=Object.fromEntries(FORCE_IDS.map(id=>[id,Math.floor(deaths[id]*3/10)])),desired=Math.floor(rosterTotal(deaths)*3/10);let left=desired-rosterTotal(result);for(const id of [...FORCE_IDS].sort((a,b)=>(deaths[b]*3)%10-(deaths[a]*3)%10)){if(left>0&&result[id]<deaths[id]){result[id]++;left--;}}return result;}
+export function productionGoalQuote(g,c,goal='balanced',now=Date.now()){
+ const desired=forceComposition(capacity(g),goal),owned=rosterOf(c),free=Math.floor(Math.max(0,capacity(g)-capacityUsed(c))/100)*100,missing=Object.fromEntries(FORCE_IDS.map(id=>[id,Math.floor(Math.max(0,desired[id]-owned[id]-roleReservations(c,id))/100)*100])),need=rosterTotal(missing),budget=Math.min(free,need),allocation=Object.fromEntries(FORCE_IDS.map(id=>[id,need?Math.floor(missing[id]*budget/need/100)*100:0]));let remaining=budget-rosterTotal(allocation);for(const id of [...FORCE_IDS].sort((a,b)=>missing[b]-allocation[b]-missing[a]+allocation[a])){if(remaining>=100&&allocation[id]+100<=missing[id]){allocation[id]+=100;remaining-=100;}}
+ const orders=FORCE_IDS.filter(id=>allocation[id]>0).map(id=>productionQuote(g,c,id,{amount:allocation[id]},now)),cost=orders.reduce((n,q)=>n+q.cost,0);
+ const blocked=!orders.length?'현재 목표에 필요한 생산이 없어요.':orders.find(q=>!q.enabled)?.reason||(g.boxes<cost?'박스가 부족해요.':'');return {orders,allocation,cost,enabled:!blocked,reason:blocked,goal};
+}
+export function reserveProductionGoal(g,c,goal,requestId,now=Date.now()){const previous=c.productionGoalReceipts?.[requestId];if(previous){if(previous.goal!==goal)throw Error('동일 요청에 다른 목표를 사용할 수 없어요.');return {growth:g,campaign:c,duplicate:true};}const q=productionGoalQuote(g,c,goal,now);if(!q.enabled)throw Error(q.reason);const nextG=structuredClone(g),nextC=structuredClone(c);for(const order of q.orders)startProduction(nextG,nextC,order.role,{amount:order.amount},requestId+'-'+order.role,now);nextC.productionGoal=goal;nextC.productionGoalReceipts ||= {};nextC.productionGoalReceipts[requestId]={goal,cost:q.cost};return {growth:nextG,campaign:nextC,quote:q,duplicate:false};}

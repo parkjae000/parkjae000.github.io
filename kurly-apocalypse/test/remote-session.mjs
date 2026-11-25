@@ -1,0 +1,42 @@
+import {Session} from './session.mjs';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs';
+import {battleFromRecord} from './replay.mjs';
+import {rosterOf} from './production.mjs';
+export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
+export const TEST_TOKEN_KEY='ka_game_test_session_v1';
+export async function testApi(path,{token,body}={}){const r=await fetch(API+path,{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
+export class RemoteSession extends Session{
+ constructor(td,token){
+  super({getItem:key=>key===STORAGE_KEY?JSON.stringify({version:7,items:td.items,growth:td.growth,campaign:{...td.campaign,pending:null}}):null,setItem(){}});
+  this.remote=true;this.token=token;this.scope='home';this.requestChain=Promise.resolve();this.lastPoll=0;this.polling=false;this.busy=false;this.latest=null;this.apply(td);
+ }
+ apply(td){
+  const previous=this.campaign,oldPending=previous?.pending;this.latest=td;this.serverOffset=td.serverTime-Date.now();this.growth=td.growth;this.campaign=td.campaign;this.amount=this.campaign.pending?.amount||this.campaign.troops;
+  for(const role of ['army','air','navy']){const difference=(rosterOf(this.campaign)[role]||0)-(rosterOf(previous)[role]||0);if(difference>0&&!oldPending)this.productionEvents.push({role,count:difference,at:Date.now(),kind:'production'});}this.productionEvents=this.productionEvents.slice(-9);
+  const items=this.scope==='home'?td.items:td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||td.items;this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty)this.editor=new DefenseEditor(items);
+  const p=this.campaign.pending;if(p){if(!this.battle||this.liveId!==p.id||this.replay){this.replay=null;this.battle=battleFromRecord(p);this.liveId=p.id;this.lastRecord=null;this.mode='battle';this.resultAt=null;this.follow=true;this.accumulator=0;}this.setViewport(this.width,this.height);}
+  else if(oldPending){const r=this.campaign.history.find(x=>x.id===oldPending.id);if(r){this.lastRecord=r;if(!this.battle||this.liveId!==r.id)this.battle=battleFromRecord(r);while(this.battle.status==='running'&&this.battle.ticks<r.endTick)this.battle.step(1/30);if(r.status==='retreated'&&this.battle.status==='running')this.battle.retreat();this.resultAt=this.elapsed;this.mode='battle';}}
+  this.uiVersion++;this.onRemoteUpdate?.();
+ }
+ persist(){return true;}
+ async send(type,params={}){params=structuredClone(params);
+  const run=async()=>{this.busy=true;try{const r=await testApi('/api/action',{token:this.token,body:{type,...params,requestId:crypto.randomUUID()}});if(r.td)this.apply(r.td);this.notify(r.message||'저장했어요.');return r;}catch(e){this.notify(e.message);throw e;}finally{this.busy=false;}};
+  const request=this.requestChain.then(run);this.requestChain=request.catch(()=>{});return request;
+ }
+ async poll(force=false){if(this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?1600:5000))return;this.polling=true;this.lastPoll=Date.now();try{const r=await testApi('/api/td-state',{token:this.token});this.apply(r.td);}catch(e){this.notify(e.message);}finally{this.polling=false;}}
+ save(){this.send('td/layout',{scope:this.scope,items:this.editor.items}).then(()=>{this.editor.dirty=false;}).catch(()=>{});return true;}
+ finishBattle(){if(this.remote)this.poll(true);}
+ action(id,data){
+  if(id==='amount'||id==='defend'){this.notify('시험 서버에서는 실제 보유 병력을 사용해요.');return;}
+  if(id==='retreat'&&!this.replay){this.send('td/retreat').catch(()=>{});return;}
+  if(id==='save')return this.save();
+  if(id==='upgrade'){this.send('td/upgrade',{kind:data.kind,item:data.id,steps:data.steps||1}).catch(()=>{});return;}
+  return super.action(id,data);
+ }
+ chooseScope(scope){if(this.campaign.pending)return;this.scope=scope;this.editor.dirty=false;this.apply(this.latest);this.mode='design';this.battle=null;this.replay=null;this.lastRecord=null;this.uiVersion++;}
+ tick(dt){
+  this.elapsed+=dt;this.poll();if(this.replay){this.replay.tick(dt);if(this.replay.finished&&this.resultAt===null){this.resultAt=this.elapsed;this.uiVersion++;}}
+  else if(this.battle&&this.campaign.pending){const target=Math.max(0,Math.floor((Date.now()+this.serverOffset-this.campaign.pending.startedAt)*30/1000));let budget=240;while(this.battle.status==='running'&&this.battle.ticks<target&&budget-->0)this.battle.step(1/30);if(this.battle.status!=='running')this.poll();}
+  if(this.mode==='battle'&&this.battle&&this.follow&&this.layout?.mobile){const front=this.battle.units.filter(u=>u.hp>0&&u.s>=0).sort((a,b)=>b.s-a.s)[8]||this.battle.units.find(u=>u.hp>0);if(front){const p=this.battle.position(front),k=1-Math.exp(-dt*2.3);this.camera.x+=(p.x-this.camera.x)*k;this.camera.y+=(p.y-this.camera.y)*k;this.clampCamera();}}
+ }
+}

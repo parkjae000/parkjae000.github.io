@@ -1,0 +1,10 @@
+import {wallStats} from './progression.mjs';
+const reviewCenterMax=g=>Math.round(100000*1.18**((g.facilityLevels?.center||1)-1));
+export function freshFortress(g,now=Date.now()){return {wallHp:wallStats(g).hp,wallMax:wallStats(g).hp,centerHp:reviewCenterMax(g),centerMax:reviewCenterMax(g),at:now,centerRepair:null};}
+export function reconcileFortress(g,state,now=Date.now(),busy=false){
+ const wall=wallStats(g).hp,center=reviewCenterMax(g);if(state)now=Math.max(now,state.at||0);if(!state)return freshFortress(g,now);if(state.wallMax!==wall){state.wallHp=wall*state.wallHp/state.wallMax;state.wallMax=wall;}if(state.centerMax!==center){state.centerHp=center*state.centerHp/state.centerMax;state.centerMax=center;}
+ if(!busy){const elapsed=Math.max(0,now-state.at),repairRate=.01*((g.facilityLevels?.wallRepair||1)-1);state.wallHp=Math.min(wall,state.wallHp+wall*repairRate*elapsed/3600000);const r=state.centerRepair;if(r){const t=Math.max(0,Math.min(1,(now-r.startAt)/(r.endAt-r.startAt)));state.centerHp=center*(r.fraction+(1-r.fraction)*t);if(t===1)state.centerRepair=null;}}state.at=now;return state;
+}
+export function damageFortress(g,old,wallHp,centerHp,now=Date.now()){const state=old||freshFortress(g,now),previousHp=state.centerHp;state.wallHp=Math.max(0,Math.min(state.wallMax,wallHp));state.centerHp=Math.max(0,Math.min(state.centerMax,centerHp));state.at=now;if(state.centerHp>=state.centerMax)state.centerRepair=null;else if(state.centerHp<previousHp-1e-8||!state.centerRepair)state.centerRepair={fraction:state.centerHp/state.centerMax,startAt:now,endAt:now+6*3600000};return state;}
+export function repairQuote(g,c){const s=c.fortress||freshFortress(g),missingWall=1-s.wallHp/s.wallMax,missingCenter=1-s.centerHp/s.centerMax,cost=Math.ceil(10000*(1+.2*(g.wallLevel-1))*(missingWall+missingCenter));return {cost,enabled:cost>0&&g.boxes>=cost&&!c.pending,reason:c.pending?'출정 중에는 복구할 수 없어요.':cost<=0?'모든 시설이 복구되어 있어요.':g.boxes<cost?'박스가 부족해요.':''};}
+export function repairFortress(g,c,now=Date.now()){const q=repairQuote(g,c);if(!q.enabled)throw Error(q.reason);g.boxes-=q.cost;c.fortress=freshFortress(g,now);return q.cost;}
