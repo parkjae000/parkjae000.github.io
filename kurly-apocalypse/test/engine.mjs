@@ -1,4 +1,4 @@
-import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-13';
+import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-14';
 export const WORLD={w:1536,h:1024};
 export const STORAGE_KEY='kurly-tower-defense-review-v7';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -119,7 +119,7 @@ export class Battle{
   if(e.type==='laser'&&e.beamEnd){const dx=e.beamEnd.x-e.fromX,dy=e.beamEnd.y-e.fromY,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;near=visible.map(u=>{const p=point(u),x=p.x-e.fromX,y=p.y-e.fromY;return {u,along:x*ux+y*uy,side:Math.abs(x*uy-y*ux)};}).filter(q=>q.along>=0&&q.along<=length&&q.side<=e.beamWidth).sort((a,b)=>a.along-b.along||a.u.id-b.u.id).map(q=>q.u);}
   if(e.type==='tesla'||e.type==='cs'&&e.skill){
    const first=visible.find(u=>u.id===e.targetId)||near[0];near=[];let current=first;
-   while(current&&near.length<(e.skill?10:7)){near.push(current);const p=point(current);current=visible.filter(u=>!near.includes(u)).map(u=>({u,p:point(u)})).filter(q=>Math.hypot(q.p.x-p.x,q.p.y-p.y)<145).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-p.y)-Math.hypot(b.p.x-p.x,b.p.y-p.y))[0]?.u;}
+   while(current&&near.length<(e.skill?10:st.chainTargets??7)){near.push(current);const p=point(current);current=visible.filter(u=>!near.includes(u)).map(u=>({u,p:point(u)})).filter(q=>Math.hypot(q.p.x-p.x,q.p.y-p.y)<(st.chainRange??145)).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-p.y)-Math.hypot(b.p.x-p.x,b.p.y-p.y))[0]?.u;}
   }
   let budget=Math.ceil(st.hits*(e.skill?2.6:1)*this.density),hits=0;const hitUnits=[];
   near.forEach((u,i)=>{const victims=Math.min(this.members(u),Math.ceil(budget/(near.length-i)));if(victims<=0)return;this.damage(u,(e.skill?st.skillDamage:st.damage)*this.strength*victims,e.type);this.applyStatus(u,e.type,e.skill,e.control);hits+=victims;budget-=victims;hitUnits.push(u);});

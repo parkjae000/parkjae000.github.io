@@ -1,13 +1,13 @@
-import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs?v=td-ux-13';
-import {ProductionScene} from './production-scene.mjs?v=td-ux-13';
-import {rosterOf} from './production.mjs?v=td-ux-13';
-import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs?v=td-ux-13';
-import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-13';
-import {targetEconomy} from './campaign-review.mjs?v=td-ux-13';
-import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs?v=td-ux-13';
-import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs?v=td-ux-13';
-import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-13';
-import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs?v=td-ux-13';
+import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs?v=td-ux-14';
+import {ProductionScene} from './production-scene.mjs?v=td-ux-14';
+import {rosterOf} from './production.mjs?v=td-ux-14';
+import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs?v=td-ux-14';
+import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-14';
+import {targetEconomy} from './campaign-review.mjs?v=td-ux-14';
+import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs?v=td-ux-14';
+import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs?v=td-ux-14';
+import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-14';
+import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs?v=td-ux-14';
 const escapeUI=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const uiNumber=n=>Number(n).toLocaleString('ko-KR',{maximumFractionDigits:Math.abs(n)>0&&Math.abs(n)<.1?3:2});
 export class ReviewUI{

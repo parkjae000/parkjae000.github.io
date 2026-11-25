@@ -1,4 +1,4 @@
-import {clamp,CATALOG} from './engine.mjs?v=td-ux-13';
+import {clamp,CATALOG} from './engine.mjs?v=td-ux-14';
 const TAU=Math.PI*2;
 const hash=n=>{const x=Math.sin(n*127.1+31.7)*43758.5453;return x-Math.floor(x);};
 export class CombatVFX{
@@ -24,7 +24,7 @@ export class CombatVFX{
     prev=p;});return;
   }
   if(e.type==='laser'){
-   const a={x:e.fromX,y:e.fromY},b=e.beamEnd||{x:e.x,y:e.y};if(age<.40){const alpha=Math.max(0,1-age/.4);c.save();c.globalAlpha=alpha;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);for(const [w,col]of [[24,'#5ddfff30'],[10,'#42cfff'],[3,'#efffff']]){c.lineWidth=w;c.strokeStyle=col;c.stroke();}c.restore();this.glow(b.x,b.y,50,'#5bdfff',alpha);for(const p of e.targets)this.glow(p.x,p.y,26,'#c6faff',alpha);}
+   const a={x:e.fromX,y:e.fromY},b=e.beamEnd||{x:e.x,y:e.y};if(age<.40){const alpha=Math.max(0,1-age/.4);c.save();c.globalAlpha=alpha;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);for(const [w,col]of [[Math.max(24,(e.beamWidth||36)*.67),'#5ddfff30'],[Math.max(10,(e.beamWidth||36)*.28),'#42cfff'],[3,'#efffff']]){c.lineWidth=w;c.strokeStyle=col;c.stroke();}c.restore();this.glow(b.x,b.y,50,'#5bdfff',alpha);for(const p of e.targets)this.glow(p.x,p.y,26,'#c6faff',alpha);}
    return;
   }
   if(e.type==='returns'&&e.skill){

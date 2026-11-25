@@ -1,6 +1,6 @@
-import {Battle} from './engine.mjs?v=td-ux-13';
-import {FORCES,FORCE_IDS} from './progression.mjs?v=td-ux-13';
-import {CONQUEST_ROUTES,CONQUEST_PADS,conquestPoint,splitConquestRoster,LANE_NAMES} from './conquest-geometry.mjs?v=td-ux-13';
+import {Battle} from './engine.mjs?v=td-ux-14';
+import {FORCES,FORCE_IDS} from './progression.mjs?v=td-ux-14';
+import {CONQUEST_ROUTES,CONQUEST_PADS,conquestPoint,splitConquestRoster,LANE_NAMES} from './conquest-geometry.mjs?v=td-ux-14';
 export class ConquestBattle extends Battle{
  constructor(layout,options){
   super(layout,{...options,pads:CONQUEST_PADS});this.objective='conquest';this.plan=options.routePlan||'balanced';this.facilitiesDisabled=[];this.routes=CONQUEST_ROUTES;this.laneTotals=splitConquestRoster(this.forceTotals,this.plan);this.walls=this.routes.map((r,i)=>({lane:i,name:LANE_NAMES[i],hp:options.fortressProfile?.wallMax||this.wallMax,max:options.fortressProfile?.wallMax||this.wallMax,brokenAt:null,...r.wallPoint}));this.wallMax=this.walls.reduce((n,w)=>n+w.max,0);this.wallHp=this.wallMax;this.units=[];

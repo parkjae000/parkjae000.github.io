@@ -1,15 +1,14 @@
-import {Battle} from './engine.mjs?v=td-ux-13';
-import {FORCES} from './progression.mjs?v=td-ux-13';
-import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-13';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-14';
+import {siegeLayout} from './conquest.mjs?v=td-ux-14';
+import {Battle} from './engine.mjs?v=td-ux-14';
+import {FORCES} from './progression.mjs?v=td-ux-14';
+import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-14';
 export class ConquestBattle extends Battle{
  constructor(layout,options={}){
-  super(layout,{...options,pads:SIEGE_PADS});this.objective='conquest';this.variant='open-siege';this.support=structuredClone(options.support||null);
+  super(siegeLayout(layout),{...options,pads:SIEGE_PADS});this.siegeVersion=11;this.objective='conquest';this.variant='open-siege';this.support=structuredClone(options.support||null);
   // Exact army counts use bounded cohorts, spread over a broad open formation.
   for(const u of this.units){const row=u.id%20;u.y=SIEGE.top+25+row*(SIEGE.bottom-SIEGE.top-50)/19;u.baseLane=u.lane;u.s=-18-Math.floor(u.id/20)*18-(u.id%4)*1.3;u.hqY=SIEGE.centerY+(row-9.5)*8;}
-  for(const d of this.defenders)if(d.stats.kind==='tower'){
-   d.baseStats=structuredClone(d.stats);d.stats.damage*=1+(this.support?.towerDamage||0);d.stats.skillDamage=(d.stats.skillDamage||0)*(1+(this.support?.towerDamage||0));d.stats.interval/=1+(this.support?.towerRate||0);
-   d.supportBonus={damage:d.stats.damage-d.baseStats.damage,rate:this.support?.towerRate||0};
-  }
+  for(const d of this.defenders){d.stats=conquestTowerStats(this.growth,d.type,this.support);d.baseStats=structuredClone(d.stats.baseStats);d.supportBonus={damage:d.stats.damage-d.baseStats.damage,rate:this.support?.towerRate||0,range:d.stats.range-d.baseStats.range,area:this.support?.towerArea||0};}
   this.log('siege','넓은 전선 동시 돌격 · 방벽 → 센터 · 포탑은 공격 대상에서 제외');
  }
  position(u){return {x:SIEGE.spawnX+u.s,y:u.y+(u.lane-u.baseLane),angle:this.wallHp>0?0:Math.atan2(u.hqY-u.y,Math.max(35,SIEGE.centerX-SIEGE.spawnX-u.s))};}
@@ -29,5 +28,5 @@ export class ConquestBattle extends Battle{
   }else if(this.time-this.wallBrokenAt>=.9)this.centerHp=Math.max(0,this.centerHp-damage);
   this.attackClock+=dt;if(this.attackClock>.2){this.attackClock=0;for(let i=0;i<Math.min(9,atGoal.length);i++){const u=atGoal[(i*13+Math.floor(this.time*7))%atGoal.length],p=this.position(u);this.effects.push({type:'siege',x:blocked?SIEGE.wallX:SIEGE.centerX-25,y:blocked?p.y:SIEGE.centerY-50+(i%4)*24,fromX:p.x,fromY:p.y,at:this.time,duration:.3,radius:30});}}
  }
- summary(){return {...super.summary(),objective:'conquest',variant:this.variant,support:structuredClone(this.support),attackOrder:['wall','center']};}
+ summary(){return {...super.summary(),objective:'conquest',variant:this.variant,rulesVersion:11,support:structuredClone(this.support),attackOrder:['wall','center']};}
 }

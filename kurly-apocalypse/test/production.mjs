@@ -1,4 +1,4 @@
-import {FORCE_IDS,forceComposition,capacity} from './progression.mjs?v=td-ux-13';
+import {FORCE_IDS,forceComposition,capacity} from './progression.mjs?v=td-ux-14';
 export const PRODUCTION_DEFS={army:{name:'육군',facility:'육군 훈련장',unit:'명',seconds:30,unitCost:45,color:'#ffcd73'},air:{name:'공군',facility:'공군 격납고',unit:'기',seconds:45,unitCost:60,color:'#8ee9ff'},navy:{name:'해군',facility:'해군 조선소',unit:'척',seconds:60,unitCost:75,color:'#b3c2ff'}};
 export const rosterTotal=counts=>FORCE_IDS.reduce((n,id)=>n+(counts?.[id]||0),0);
 export function validRoster(counts){return counts&&FORCE_IDS.every(id=>Number.isSafeInteger(counts[id])&&counts[id]>=0)&&rosterTotal(counts)<=100000000;}

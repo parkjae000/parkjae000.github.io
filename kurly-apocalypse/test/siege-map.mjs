@@ -1,11 +1,11 @@
-import {WORLD} from './engine.mjs?v=td-ux-13';
-import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-13';
-export function makeSiegeMap(floor,makeCanvas){
+import {WORLD} from './engine.mjs?v=td-ux-14';
+import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-14';
+export function makeSiegeMap(floor,makeCanvas,pads=SIEGE_PADS){
  const canvas=makeCanvas(WORLD.w,WORLD.h),c=canvas.getContext('2d');c.drawImage(floor,0,0,WORLD.w,WORLD.h);
  const g=c.createLinearGradient(230,0,SIEGE.wallX,0);g.addColorStop(0,'#223c7830');g.addColorStop(.7,'#35284100');g.addColorStop(1,'#be644b25');c.fillStyle=g;c.fillRect(170,145,940,750);
  // A broad unobstructed courtyard: no lanes, route lines, or invisible chokepoints.
  c.fillStyle='#3a283b8a';c.fillRect(SIEGE.wallX+30,170,335,675);
- for(const pad of SIEGE_PADS){c.fillStyle=pad.kind==='tower'?'#e3bb6d':'#bfa1dd';c.strokeStyle='#533c61';c.lineWidth=5;c.beginPath();c.ellipse(pad.x,pad.y,59,30,0,0,Math.PI*2);c.fill();c.stroke();}
+ for(const pad of pads){c.fillStyle=pad.kind==='tower'?'#e3bb6d':'#bfa1dd';c.strokeStyle='#533c61';c.lineWidth=5;c.beginPath();c.ellipse(pad.x,pad.y,59,30,0,0,Math.PI*2);c.fill();c.stroke();}
  return canvas;
 }
 // One continuous barrier. Combat uses one shared HP pool across its entire length.
