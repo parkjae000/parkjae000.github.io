@@ -1,6 +1,6 @@
 import {gameAPI,isTDWorld,tdTab,mergeTDState,tdAction} from './td-routing.js?v=20261125-v228-test-integrated';
 import {mountTimedPasses,timedPassLauncher} from './timed-passes.js?v=20261124-v227-worker-floor';
-import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261124-v227-worker-floor';
+import {mountCommunity,AUTO_MINING_NOTE} from './community.js?v=20261125-v229-review-dismiss';
 import {mountBossEvent} from './boss-event.js?v=20261124-v227-worker-floor';
 let bossEventController=null;
 import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v227-worker-floor';
@@ -14,7 +14,7 @@ import {chatNotification} from './social.js?v=20261124-v227-worker-floor';
 import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v227-worker-floor';
 import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v227-worker-floor';
 import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v227-worker-floor';
-const RELEASE='20261125-v228-test-integrated';
+const RELEASE='20261125-v229-review-dismiss';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -640,7 +640,7 @@ setInterval(()=>{
 },150);
 
 const timedPassController=mountTimedPasses({api,getState:()=>state,clock:serverNow,reload:out=>applyMiningUpdate(out)?Promise.resolve(state):loadState({silent:true,resumeBattle:false}),showModal,closeModal,head:modalHead,toast});
-const communityController=mountCommunity({api,getState:()=>state,reload:()=>loadState({silent:true,resumeBattle:false}),showModal,closeModal,head:modalHead,escape:h,toast,openSupport:openNotice,available:()=>!!state&&!showOnboard&&!isTrainingActive()&&!animation&&!animating&&!recruiting&&!popupPending&&selectedTab!=='event'&&$('modalOverlay').classList.contains('hidden')});
+const communityController=mountCommunity({api,autoReview:()=>!isTDWorld(state),getState:()=>state,reload:()=>loadState({silent:true,resumeBattle:false}),showModal,closeModal,head:modalHead,escape:h,toast,openSupport:openNotice,available:()=>!!state&&!showOnboard&&!isTrainingActive()&&!animation&&!animating&&!recruiting&&!popupPending&&selectedTab!=='event'&&$('modalOverlay').classList.contains('hidden')});
 if(localStorage.getItem(ADMIN_KEY)&&requestedWorld!=='TEST')loadAdmin();else loadState({silent:true});
 
 $('enterSignup').addEventListener('click',()=>{$('auth').classList.add('auth-open');$('signupTab').click();});
