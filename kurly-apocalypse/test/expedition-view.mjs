@@ -1,7 +1,7 @@
-import {defensePower,attackPower} from './combat-power.mjs?v=td-ux-16';
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-16';
-import {CATALOG} from './engine.mjs?v=td-ux-16';
-import {homeDefenseTarget,defensePreviewModel,drawDefensePreview} from './defense-preview.mjs?v=td-ux-16';
+import {defensePower,attackPower} from './combat-power.mjs?v=td-ux-17';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-17';
+import {CATALOG} from './engine.mjs?v=td-ux-17';
+import {homeDefenseTarget,defensePreviewModel,drawDefensePreview} from './defense-preview.mjs?v=td-ux-17';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n=v=>Number(v||0).toLocaleString('ko-KR');
 const parcel=new URL('../assets/parcel.webp',import.meta.url).href;

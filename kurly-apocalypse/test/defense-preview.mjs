@@ -1,9 +1,9 @@
-import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-16';
-import {paintSiegeWall} from './siege-map.mjs?v=td-ux-16';
-import {siegeLayout} from './conquest.mjs?v=td-ux-16';
-import {PADS,WALL_POINT,WORLD} from './engine.mjs?v=td-ux-16';
-import {CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-16';
-import {HERO_DEFS,TOWER_DEFS} from './progression.mjs?v=td-ux-16';
+import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-17';
+import {paintSiegeWall} from './siege-map.mjs?v=td-ux-17';
+import {siegeLayout} from './conquest.mjs?v=td-ux-17';
+import {PADS,WALL_POINT,WORLD} from './engine.mjs?v=td-ux-17';
+import {CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-17';
+import {HERO_DEFS,TOWER_DEFS} from './progression.mjs?v=td-ux-17';
 export function homeDefenseTarget(session){return {id:session.latest.me.id,name:'내 센터',mine:true,home:true,snapshot:{items:session.latest.items,growth:session.growth}};}
 export function defensePreviewModel(session,target,conquest=false){
  if(!target?.snapshot)return null;

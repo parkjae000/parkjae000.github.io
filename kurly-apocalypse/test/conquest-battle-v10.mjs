@@ -1,6 +1,6 @@
-import {Battle} from './engine.mjs?v=td-ux-16';
-import {FORCES} from './progression.mjs?v=td-ux-16';
-import {SIEGE,SIEGE_PADS} from './siege-geometry-v10.mjs?v=td-ux-16';
+import {Battle} from './engine.mjs?v=td-ux-17';
+import {FORCES} from './progression.mjs?v=td-ux-17';
+import {SIEGE,SIEGE_PADS} from './siege-geometry-v10.mjs?v=td-ux-17';
 export class ConquestBattle extends Battle{
  constructor(layout,options={}){
   super(layout,{...options,pads:SIEGE_PADS});this.objective='conquest';this.variant='open-siege';this.support=structuredClone(options.support||null);

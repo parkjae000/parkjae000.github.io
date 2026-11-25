@@ -1,4 +1,4 @@
-import {FORCE_IDS,FORCES,damageMultiplier} from './progression.mjs?v=td-ux-16';
+import {FORCE_IDS,FORCES,damageMultiplier} from './progression.mjs?v=td-ux-17';
 const n=v=>Number(v).toLocaleString('ko-KR',{maximumFractionDigits:2});
 export function affinityInfo(type,role){
  const multiplier=damageMultiplier(type,role),percent=Math.round((multiplier-1)*100);

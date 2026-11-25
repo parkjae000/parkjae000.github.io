@@ -1,9 +1,10 @@
-import {ConquestBattle as ConquestBattleV10} from './conquest-battle-v10.mjs?v=td-ux-16';
-import {ConquestBattle as LegacyConquestBattle} from './conquest-battle-legacy.mjs?v=td-ux-16';
-import {ConquestBattle} from './conquest-battle.mjs?v=td-ux-16';
-import {Battle} from './engine.mjs?v=td-ux-16';
-import {TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-16';
-export function battleFromRecord(record){if(!['td-test-8','td-test-9','td-test-10',TD_ENGINE_VERSION].includes(record.engineVersion))throw Error('이 기록은 이전 버전 전투 재생기가 필요해요.');return new (record.mode==='conquest'?(record.engineVersion===TD_ENGINE_VERSION?ConquestBattle:record.engineVersion==='td-test-10'?ConquestBattleV10:LegacyConquestBattle):Battle)(record.snapshot.items,{combatVersion:record.engineVersion==='td-test-8'?8:9,amount:record.amount,seed:record.seed,growth:record.snapshot.growth,attackerGrowth:record.attackerGrowth,composition:record.composition,forceTotals:record.forceTotals,initialState:record.initialState,strength:record.snapshot.strength??1,fortressProfile:record.snapshot.fortressProfile,support:record.snapshot.support,routePlan:record.routePlan||'balanced'});}
+import {ConquestBattle as ConquestBattleV10} from './conquest-battle-v10.mjs?v=td-ux-17';
+import {ConquestBattle as LegacyConquestBattle} from './conquest-battle-legacy.mjs?v=td-ux-17';
+import {ConquestBattle} from './conquest-battle.mjs?v=td-ux-17';
+import {ConquestBattle as ConquestBattleV11} from './conquest-battle-v11.mjs?v=td-ux-17';
+import {Battle} from './engine.mjs?v=td-ux-17';
+import {TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-17';
+export function battleFromRecord(record){if(!['td-test-8','td-test-9','td-test-10','td-test-11',TD_ENGINE_VERSION].includes(record.engineVersion))throw Error('이 기록은 이전 버전 전투 재생기가 필요해요.');return new (record.mode==='conquest'?(record.engineVersion===TD_ENGINE_VERSION?ConquestBattle:record.engineVersion==='td-test-11'?ConquestBattleV11:record.engineVersion==='td-test-10'?ConquestBattleV10:LegacyConquestBattle):Battle)(record.snapshot.items,{combatVersion:record.engineVersion===TD_ENGINE_VERSION?12:record.engineVersion==='td-test-8'?8:9,amount:record.amount,seed:record.seed,growth:record.snapshot.growth,attackerGrowth:record.attackerGrowth,composition:record.composition,forceTotals:record.forceTotals,initialState:record.initialState,strength:record.snapshot.strength??1,fortressProfile:record.snapshot.fortressProfile,support:record.snapshot.support,routePlan:record.routePlan||'balanced'});}
 export class Replay{
  constructor(record){this.record=structuredClone(record);this.battle=battleFromRecord(record);this.endTick=record.endTick;this.finished=false;this.speed=1;this.accumulator=0;this.elapsed=0;this.timelapse=false;this.paused=false;}
  setSpeed(speed){this.timelapse=false;this.speed=speed;this.paused=false;}

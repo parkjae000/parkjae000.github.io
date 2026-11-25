@@ -1,6 +1,6 @@
-import {LEGACY_RESEARCH} from './research-review.mjs?v=td-ux-16';
-import {legacyCost} from './legacy-costs.mjs?v=td-ux-16';
-import {HERO_DEFS,STAR_COST} from './progression.mjs?v=td-ux-16';
+import {LEGACY_RESEARCH} from './research-review.mjs?v=td-ux-17';
+import {legacyCost} from './legacy-costs.mjs?v=td-ux-17';
+import {HERO_DEFS,STAR_COST} from './progression.mjs?v=td-ux-17';
 export const HERO_RESET_VERSION='td-hero-reset-1';
 const nonnegative=(n,label)=>{if(!Number.isSafeInteger(n)||n<0)throw Error(label+' 원본 수치 확인 필요');return n;};
 // Dry-run only. Ownership and unlock investment are retained; no new unlock refund.

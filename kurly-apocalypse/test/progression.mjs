@@ -1,3 +1,4 @@
+import {researchCost} from './research-economy.mjs?v=td-ux-17';
 export const MAX_ARMY=100_000_000;
 export const CAPACITY_BASE=1000;
 export const CAPACITY_STEP=100;
@@ -33,9 +34,9 @@ export const HERO_DEFS={
 };
 export const COMPOSITIONS={balanced:{name:'균형',ratios:[.4,.3,.3]},army:{name:'육군 중심',ratios:[.7,.15,.15]},air:{name:'공군 중심',ratios:[.15,.7,.15]},navy:{name:'해군 중심',ratios:[.15,.15,.7]}};
 export function forceComposition(amount,key='balanced'){const r=(COMPOSITIONS[key]||COMPOSITIONS.balanced).ratios,a=Math.floor(amount*r[0]),b=Math.floor(amount*r[1]);return {army:a,air:b,navy:amount-a-b};}
-export function forceStats(g,id,level=g.forceLevels[id]){const d=FORCES[id];return {...d,level,hp:Math.round(d.hp*(1+.08*(level-1))),siege:Number((d.siege*(1+.07*(level-1))).toFixed(2))};}
+export function forceStats(g,id,level=g.forceLevels[id]){const d=FORCES[id];return {...d,level,hp:Math.round(d.hp*5*1.3**(level-1)*(1+.2*(level-1))),siege:Number((d.siege*3*1.2**(level-1)).toFixed(2))};}
 export const STAR_COST=[0,20,40,80,160];
-export function defaultGrowth(){return {boxes:3_000_000_000_000,capacityLevel:91,towerLevels:{cannon:5,tesla:5,ice:5,laser:5},wallLevel:5,forceLevels:{army:5,air:5,navy:5},heroes:Object.fromEntries(Object.keys(HERO_DEFS).map(id=>[id,{level:12,star:3,xp:200,shards:500}])),facilityLevels:{mine:1,laborCost:1,lossDiscovery:1,careerLevel:1,mergeLuck:1,center:1,wallRepair:1,wallReflect:1},staffCount:1,researchJobs:[],inventory:{normalHeroXp:50000,rareHeroXp:50000,researchAid:2,researchHourAid:1}};}
+export function defaultGrowth(){return {boxes:3_000_000_000_000,capacityLevel:91,towerLevels:{cannon:5,tesla:5,ice:5,laser:5},wallLevel:5,forceLevels:{army:5,air:5,navy:5},heroes:Object.fromEntries(Object.keys(HERO_DEFS).map(id=>[id,{level:12,star:3,xp:200,shards:500}])),facilityLevels:{mine:1,laborCost:1,lossDiscovery:1,careerLevel:1,mergeLuck:1,center:1,wallRepair:1,wallReflect:1},staffCount:2,staffPolicyVersion:2,researchJobs:[],inventory:{normalHeroXp:50000,rareHeroXp:50000,researchAid:2,researchHourAid:1}};}
 export const capacity=g=>Math.min(MAX_ARMY,CAPACITY_BASE+CAPACITY_STEP*((g.capacityLevel||1)-1));
 export function towerStats(g,id,level=g.towerLevels[id]){const d=TOWER_DEFS[id],n=Math.max(0,level-1);return {...d,level,damage:Math.round(d.damage*1.3**n),interval:d.interval/Math.min(1.8,1+n*.025),range:d.range+Math.min(55,n*2),hits:d.hits+n*2,splash:d.splash+n*1.1,...(id==='laser'?{beamWidth:72}:{})};}
 export function heroStats(g,id,override){const d=HERO_DEFS[id],h=override||g.heroes[id];if(!h?.star)return null;const mult=(d.rarity==='희귀'?1.25:1)*(1+.12*(h.level-1))*(1+.3*(h.star-1));const damage=Math.round(d.damage*mult),control=100+(h.level-1)*3+(h.star-1)*18;return {...d,level:h.level,star:h.star,xp:h.xp,damage,control,skillDamage:Math.round(damage*d.skillMultiplier*(1+.08*(h.star-1))),range:d.globalRange?0:d.range+(h.star-1)*7,splash:d.splash+(h.level-1)*.7+(h.star-1)*5,hits:d.hits+Math.floor(h.level/3)+h.star*3,interval:d.interval/(1+.025*(h.star-1)),cooldown:d.cooldown/(1+.045*(h.star-1)),skillRadius:(d.splash+(h.level-1)*.7+(h.star-1)*5)*1.8,fieldDuration:4.4*control/169,duration:1.8*control/100};}
@@ -47,9 +48,9 @@ export function upgradeGrowth(g,kind,id,steps=1){
  if(!Number.isSafeInteger(steps)||steps<1)throw Error('강화 횟수를 확인해 주세요.');
  let cost=0,level,target;
  if(kind==='capacity'){level=g.capacityLevel;target=level+steps;if(target>MAX_CAPACITY_LEVEL)throw Error('병력은 최대 1억 명까지 준비돼요.');cost=steps*(200+4*level)+2*steps*(steps-1);}
- else if(kind==='tower'){if(!TOWER_IDS.includes(id))throw Error('포탑을 선택해 주세요.');level=g.towerLevels[id];target=level+steps;if(target>40)throw Error('포탑은 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=Math.round(1200*1.55**(n-1));}
- else if(kind==='force'){if(!FORCE_IDS.includes(id))throw Error('병력을 선택해 주세요.');level=g.forceLevels[id];target=level+steps;if(target>40)throw Error('병력 연구는 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=Math.round(1000*1.5**(n-1));}
- else if(kind==='wall'){level=g.wallLevel;target=level+steps;if(target>40)throw Error('방벽은 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=Math.round(1200*1.55**(n-1));}
+ else if(kind==='tower'){if(!TOWER_IDS.includes(id))throw Error('포탑을 선택해 주세요.');level=g.towerLevels[id];target=level+steps;if(target>40)throw Error('포탑은 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=researchCost(kind,id,n+1);}
+ else if(kind==='force'){if(!FORCE_IDS.includes(id))throw Error('병력을 선택해 주세요.');level=g.forceLevels[id];target=level+steps;if(target>40)throw Error('병력 연구는 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=researchCost(kind,id,n+1);}
+ else if(kind==='wall'){level=g.wallLevel;target=level+steps;if(target>40)throw Error('방벽은 최대 Lv.40이에요.');for(let n=level;n<target;n++)cost+=researchCost(kind,id,n+1);}
  else if(kind==='hero-level'){const h=g.heroes[id];if(!h?.star||h.level>=100)throw Error('파트장 레벨을 확인해 주세요.');const key=HERO_DEFS[id].rarity==='희귀'?'rareHeroXp':'normalHeroXp',needed=50*h.level;if(h.xp+(g.inventory[key]||0)<needed)throw Error('경험치 교본이 부족해요.');const personal=Math.min(h.xp,needed);h.xp-=personal;g.inventory[key]-=needed-personal;h.level++;return {message:HERO_DEFS[id].name+' Lv.'+h.level};}
  else if(kind==='hero-star'){const h=g.heroes[id],needed=STAR_COST[h?.star];if(!needed||h.star>=5||h.shards<needed)throw Error('성급 강화에 필요한 조각을 확인해 주세요.');h.shards-=needed;h.star++;return {message:HERO_DEFS[id].name+' '+h.star+'성 달성'};}
  else throw Error('강화 항목을 확인해 주세요.');

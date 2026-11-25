@@ -1,4 +1,4 @@
-import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-16';
+import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,forceStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-17';
 export const WORLD={w:1536,h:1024};
 export const STORAGE_KEY='kurly-tower-defense-review-v7';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -63,12 +63,12 @@ export const WALL_POINT=lanePoint(WALL_S);
 export const MAX_COHORTS=192;
 const rng=seed=>{let v=seed>>>0;return()=>((v=(Math.imul(v,1664525)+1013904223)>>>0)/4294967296);};
 export class Battle{
- constructor(layout,{amount=1_000_000,seed=426,growth=defaultGrowth(),attackerGrowth=growth,composition='balanced',forceTotals=null,initialState=null,strength=1,fortressProfile=null,pads=PADS,combatVersion=9}={}){
+ constructor(layout,{amount=1_000_000,seed=426,growth=defaultGrowth(),attackerGrowth=growth,composition='balanced',forceTotals=null,initialState=null,strength=1,fortressProfile=null,pads=PADS,combatVersion=12}={}){
   if(!validateLayout(layout))throw Error('Invalid saved defense layout');
   if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ARMY)throw Error('보유 병력은 1명부터 최대 1억 명까지 출정해요.');
   this.objective='raid';this.combatVersion=combatVersion;this.pads=pads;this.layout=structuredClone(layout);this.growth=structuredClone(growth);this.attackerGrowth=structuredClone(attackerGrowth);this.total=amount;this.seed=seed;this.ticks=0;this.time=0;this.centerMax=fortressProfile?.centerMax??Math.round(100000*1.18**((growth.facilityLevels?.center||1)-1));this.centerHp=this.centerMax;this.wallMax=fortressProfile?.wallMax??wallStats(growth).hp;this.wallHp=initialState?clamp(initialState.wallHp,0,this.wallMax):this.wallMax;this.centerHp=initialState?clamp(initialState.centerHp,0,this.centerMax):this.centerMax;this.wallBrokenAt=this.wallHp===0?-10:null;this.strength=strength;this.composition=composition;this.status='running';this.won=false;this.kills=0;this.events=[];this.effects=[];this.fields=[];this.shots=[];this.projectiles=[];this.castId=0;this.chainJumps=0;this.maxKnockback=0;this.attackClock=0;this.peakVisible=0;this.goalAttackers=0;this.killedBy={};this.deathsByRole={army:0,air:0,navy:0};
   this.density=Math.max(1,(amount/10000)**.80);const random=rng(seed);this.forceTotals=forceTotals?{...forceTotals}:forceComposition(amount,composition);if(FORCE_IDS.some(id=>!Number.isSafeInteger(this.forceTotals[id])||this.forceTotals[id]<0)||Object.values(this.forceTotals).reduce((a,b)=>a+b,0)!==amount)throw Error('병과별 출정 인원을 확인해 주세요.');const amounts=FORCE_IDS.map(id=>this.forceTotals[id]);
-  const groups=FORCE_IDS.map((id,r)=>{const n=Math.min(64,amounts[r]);return Array.from({length:n},(_,i)=>{const count=Math.floor(amounts[r]/n)+(i<amounts[r]%n?1:0),level=attackerGrowth.forceLevels[id],perHp=FORCES[id].hp*(1+.08*(level-1));return {role:id,count,hp:perHp*count,maxHp:perHp*count,perHp,level};});});
+  const groups=FORCE_IDS.map((id,r)=>{const n=Math.min(64,amounts[r]);return Array.from({length:n},(_,i)=>{const count=Math.floor(amounts[r]/n)+(i<amounts[r]%n?1:0),level=attackerGrowth.forceLevels[id],perHp=combatVersion>=12?forceStats(attackerGrowth,id).hp:FORCES[id].hp*(1+.08*(level-1));return {role:id,count,hp:perHp*count,maxHp:perHp*count,perHp,level};});});
   this.units=[];for(let index=0;index<64;index++)for(let r=0;r<3;r++){if(!groups[r][index])continue;const i=this.units.length;this.units.push({...groups[r][index],id:i,s:-18-Math.floor(i/8)*31-(i%8)*.55,lane:(i%8-3.5)*8.4,speed:FORCES[FORCE_IDS[r]].speed+random()*4,slowUntil:0,freezeUntil:0,stunUntil:0,burnUntil:0,vulnerableUntil:0,hitAt:-10,hitKind:null,phase:random()*6.28,controlLoad:0,resolveUntil:0,nextKnockAt:0,knockFrom:0,knockAt:-10,knockUntil:-10,goal:false,sieging:false});}
   this.defenders=layout.map((p,i)=>({...p,...pads.find(v=>v.id===p.pad),id:p.id,stats:CATALOG[p.type].kind==='hero'?heroStats(growth,p.type):towerStats(growth,p.type),cooldown:.25+i*.13,skillCooldown:2+i*.38,lastShot:-10,lastSkill:-10,shots:0,skills:0,target:null})).filter(d=>d.stats);
   this.log('deploy',short(amount)+'명 육·공·해군 일괄 출격');
@@ -84,8 +84,8 @@ export class Battle{
  }
  resolveSiege(visible,dt){const gateClosed=this.wallHp>0||this.wallBrokenAt!==null&&this.time-this.wallBrokenAt<.9;
   const atGoal=visible.filter(u=>u.sieging&&u.hp>0);this.goalAttackers=atGoal.reduce((n,u)=>n+this.members(u),0);
-  if(atGoal.length){const damage=atGoal.reduce((n,u)=>n+Math.sqrt(this.members(u))*FORCES[u.role].siege*(1+.07*(u.level-1)),0)*dt;
-   if(this.wallHp>0){this.wallHp=Math.max(0,this.wallHp-damage);const reflected=Math.min(.38,.02*((this.growth.facilityLevels?.wallReflect||1)-1));if(reflected)for(const u of atGoal)this.damage(u,Math.sqrt(this.members(u))*FORCES[u.role].siege*(1+.07*(u.level-1))*dt*reflected,'wallReflect');if(this.wallHp===0){this.wallBrokenAt=this.time;this.log('wall','방벽 돌파 · 센터 진입');this.effects.push({type:'wall-break',x:WALL_POINT.x,y:WALL_POINT.y,at:this.time,duration:1.6,radius:125});}}
+  if(atGoal.length){const damage=atGoal.reduce((n,u)=>n+Math.sqrt(this.members(u))*(this.combatVersion>=12?forceStats(this.attackerGrowth,u.role).siege:FORCES[u.role].siege*(1+.07*(u.level-1))),0)*dt;
+   if(this.wallHp>0){this.wallHp=Math.max(0,this.wallHp-damage);const reflected=Math.min(.38,.02*((this.growth.facilityLevels?.wallReflect||1)-1));if(reflected)for(const u of atGoal)this.damage(u,Math.sqrt(this.members(u))*(this.combatVersion>=12?forceStats(this.attackerGrowth,u.role).siege:FORCES[u.role].siege*(1+.07*(u.level-1)))*dt*reflected,'wallReflect');if(this.wallHp===0){this.wallBrokenAt=this.time;this.log('wall','방벽 돌파 · 센터 진입');this.effects.push({type:'wall-break',x:WALL_POINT.x,y:WALL_POINT.y,at:this.time,duration:1.6,radius:125});}}
    else if(!gateClosed)this.centerHp=Math.max(0,this.centerHp-damage);
    this.attackClock+=dt;if(this.attackClock>.20){this.attackClock=0;this.effects.push({type:'siege',x:gateClosed?WALL_POINT.x:1380,y:gateClosed?WALL_POINT.y-35:455,fromX:gateClosed?WALL_POINT.x-90:1300,fromY:495,at:this.time,duration:.3,radius:40});}
   }
@@ -148,6 +148,7 @@ export class Battle{
   this.effects=this.effects.filter(e=>this.time-e.at<e.duration).slice(-110);this.shots=this.shots.filter(e=>this.time-e.at<1).slice(-80);
   if(this.centerHp<=0){this.status='victory';this.won=true;this.log('result','센터 붕괴 · 공격 승리');}
   else if(!this.alive){this.status='defeat';this.log('result','전 병력 격파 · 방어 승리');}
+  else if(this.combatVersion>=12&&this.time>=300){this.status='defeat';this.log('result','5분 제한시간 종료 · 방어 성공 · 생존 병력 귀환');}
  }
  retreat(){if(this.status!=='running')return false;this.status='retreated';this.won=false;this.log('result','후퇴 · 생존 병력 전원 귀환');return true;}
  skip(){for(let i=0;i<1800*30&&this.status==='running';i++)this.step(1/30);if(this.status==='running')throw Error('모의 계산이 길어졌어요. 진행 상태 확인이 필요해요.');return this.status;}

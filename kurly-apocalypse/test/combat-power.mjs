@@ -1,7 +1,7 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-16';
-import {FORCE_IDS,FORCES,TOWER_DEFS,HERO_DEFS,towerStats,heroStats,MATCHUPS} from './progression.mjs?v=td-ux-16';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-17';
+import {FORCE_IDS,FORCES,TOWER_DEFS,HERO_DEFS,towerStats,heroStats,MATCHUPS,forceStats} from './progression.mjs?v=td-ux-17';
 export function attackPower(growth,roster={}){
- const branches=FORCE_IDS.map(id=>{const count=Math.max(0,Number(roster[id])||0),level=growth.forceLevels[id]||1,hp=FORCES[id].hp*(1+.08*(level-1)),siege=FORCES[id].siege*(1+.07*(level-1)),perUnit=hp*.18+siege*8+FORCES[id].speed*.1;return {id,name:FORCES[id].name,count,level,hp,siege,perUnit,power:Math.round(count*perUnit)};});
+ const branches=FORCE_IDS.map(id=>{const count=Math.max(0,Number(roster[id])||0),level=growth.forceLevels[id]||1,hp=forceStats(growth,id).hp,siege=forceStats(growth,id).siege,perUnit=hp*.18+siege*8+FORCES[id].speed*.1;return {id,name:FORCES[id].name,count,level,hp,siege,perUnit,power:Math.round(count*perUnit)};});
  return {attack:branches.reduce((n,b)=>n+b.power,0),branches,count:branches.reduce((n,b)=>n+b.count,0)};
 }
 export function defensePower(growth,items=[],support=null,strength=1,conquest=false){
