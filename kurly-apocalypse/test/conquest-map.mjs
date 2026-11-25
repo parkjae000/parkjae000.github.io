@@ -1,5 +1,5 @@
-import {WORLD} from './engine.mjs';
-import {CONQUEST_ROUTES,conquestPoint,LANE_NAMES} from './conquest-geometry.mjs';
+import {WORLD} from './engine.mjs?v=td-ux-11';
+import {CONQUEST_ROUTES,conquestPoint,LANE_NAMES} from './conquest-geometry.mjs?v=td-ux-11';
 export function makeConquestMap(floor,makeCanvas){
  const canvas=makeCanvas(WORLD.w,WORLD.h),c=canvas.getContext('2d');c.drawImage(floor,0,0,WORLD.w,WORLD.h);c.lineCap='round';c.lineJoin='round';
  for(const [i,r] of CONQUEST_ROUTES.entries()){

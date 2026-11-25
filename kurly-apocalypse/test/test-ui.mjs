@@ -1,8 +1,8 @@
-import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs';
-import {ReviewUI} from './review-ui.mjs?v=td-ux-10';
-import {growthKind} from './ui-model.mjs';
-import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs';
-import {PADS,CATALOG} from './engine.mjs';
+import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-11';
+import {ReviewUI} from './review-ui.mjs?v=td-ux-11';
+import {growthKind} from './ui-model.mjs?v=td-ux-11';
+import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs?v=td-ux-11';
+import {PADS,CATALOG} from './engine.mjs?v=td-ux-11';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const remaining=until=>Math.max(0,Math.ceil((until-Date.now())/60000))+'분';
 export class TestUI extends ReviewUI{

@@ -1,7 +1,7 @@
-import {Session} from './session.mjs?v=td-ux-10';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-10';
-import {battleFromRecord} from './replay.mjs';
-import {rosterOf} from './production.mjs';
+import {Session} from './session.mjs?v=td-ux-11';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-11';
+import {battleFromRecord} from './replay.mjs?v=td-ux-11';
+import {rosterOf} from './production.mjs?v=td-ux-11';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
 export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
@@ -28,7 +28,7 @@ export class RemoteSession extends Session{
  finishBattle(){if(this.remote)this.poll(true);}
  action(id,data){
   if(id==='amount'||id==='defend'){this.notify('시험 서버에서는 실제 보유 병력을 사용해요.');return;}
-  if(id==='retreat'&&!this.replay){this.send('td/retreat').catch(()=>{});return;}
+  if(id==='retreat'&&!this.replay){if(this.retreatPending||!this.campaign.pending)return;this.retreatPending=true;this.notify('후퇴 요청 중… 생존 병력을 귀환시킵니다.');this.send('td/retreat').catch(()=>{}).finally(()=>{this.retreatPending=false;this.uiVersion++;});return;}
   if(id==='save')return this.save();
   if(id==='upgrade'){this.send('td/upgrade',{kind:data.kind,item:data.id,steps:data.steps||1}).catch(()=>{});return;}
   return super.action(id,data);

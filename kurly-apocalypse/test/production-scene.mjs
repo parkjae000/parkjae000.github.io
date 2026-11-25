@@ -1,5 +1,5 @@
-import {PRODUCTION_DEFS} from './production.mjs';
-import {short} from './progression.mjs';
+import {PRODUCTION_DEFS} from './production.mjs?v=td-ux-11';
+import {short} from './progression.mjs?v=td-ux-11';
 export class ProductionScene{
  constructor(art){this.art=art;}
  sprite(c,img,x,y,height){const width=img.width/img.height*height;c.drawImage(img,x-width/2,y-height,width,height);}

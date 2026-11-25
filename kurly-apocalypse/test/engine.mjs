@@ -1,12 +1,13 @@
-import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs';
+import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-11';
 export const WORLD={w:1536,h:1024};
 export const STORAGE_KEY='kurly-tower-defense-review-v7';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const CATALOG={...TOWER_DEFS,...HERO_DEFS};
 export const PADS=[
  [400,360],[400,630],[600,360],[600,630],[800,360],[800,630],[1000,360],[1000,700],
- [1195,700],[800,700],[1195,400],[1195,255],[1000,535],[180,750],[400,215],[600,755]
-].map(([x,y],i)=>({id:'pad-'+i,x,y}));
+ [1195,700],[800,700],[1195,400],[1195,255],[1000,535],[180,750],[400,215],[600,755],
+ [500,120],[700,120],[900,120],[1100,120],[500,910],[700,910],[900,910],[1100,910]
+].map(([x,y],i)=>({id:'pad-'+i,x,y,...(i>=16?{laserLane:true}:{} )}));
 // Six switchbacks use the inner courtyard. Rendering and movement share this exact curve.
 const segments=[['M',205,495],['L',245,495],['Q',300,495,300,550],['L',300,740],['Q',300,800,360,800],['L',440,800],['Q',500,800,500,740],['L',500,270],['Q',500,210,560,210],['L',640,210],['Q',700,210,700,270],['L',700,740],['Q',700,800,760,800],['L',840,800],['Q',900,800,900,740],['L',900,270],['Q',900,210,960,210],['L',1040,210],['Q',1100,210,1100,270],['L',1100,740],['Q',1100,800,1160,800],['L',1230,800],['Q',1290,800,1290,740],['L',1290,565],['Q',1290,495,1360,495],['L',1380,495]];
 const points=[];let current;
@@ -62,10 +63,10 @@ export const WALL_POINT=lanePoint(WALL_S);
 export const MAX_COHORTS=192;
 const rng=seed=>{let v=seed>>>0;return()=>((v=(Math.imul(v,1664525)+1013904223)>>>0)/4294967296);};
 export class Battle{
- constructor(layout,{amount=1_000_000,seed=426,growth=defaultGrowth(),attackerGrowth=growth,composition='balanced',forceTotals=null,initialState=null,strength=1,fortressProfile=null,pads=PADS}={}){
+ constructor(layout,{amount=1_000_000,seed=426,growth=defaultGrowth(),attackerGrowth=growth,composition='balanced',forceTotals=null,initialState=null,strength=1,fortressProfile=null,pads=PADS,combatVersion=9}={}){
   if(!validateLayout(layout))throw Error('Invalid saved defense layout');
   if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ARMY)throw Error('보유 병력은 1명부터 최대 1억 명까지 출정해요.');
-  this.objective='raid';this.pads=pads;this.layout=structuredClone(layout);this.growth=structuredClone(growth);this.attackerGrowth=structuredClone(attackerGrowth);this.total=amount;this.seed=seed;this.ticks=0;this.time=0;this.centerMax=fortressProfile?.centerMax??Math.round(100000*1.18**((growth.facilityLevels?.center||1)-1));this.centerHp=this.centerMax;this.wallMax=fortressProfile?.wallMax??wallStats(growth).hp;this.wallHp=initialState?clamp(initialState.wallHp,0,this.wallMax):this.wallMax;this.centerHp=initialState?clamp(initialState.centerHp,0,this.centerMax):this.centerMax;this.wallBrokenAt=this.wallHp===0?-10:null;this.strength=strength;this.composition=composition;this.status='running';this.won=false;this.kills=0;this.events=[];this.effects=[];this.fields=[];this.shots=[];this.projectiles=[];this.castId=0;this.chainJumps=0;this.maxKnockback=0;this.attackClock=0;this.peakVisible=0;this.goalAttackers=0;this.killedBy={};this.deathsByRole={army:0,air:0,navy:0};
+  this.objective='raid';this.combatVersion=combatVersion;this.pads=pads;this.layout=structuredClone(layout);this.growth=structuredClone(growth);this.attackerGrowth=structuredClone(attackerGrowth);this.total=amount;this.seed=seed;this.ticks=0;this.time=0;this.centerMax=fortressProfile?.centerMax??Math.round(100000*1.18**((growth.facilityLevels?.center||1)-1));this.centerHp=this.centerMax;this.wallMax=fortressProfile?.wallMax??wallStats(growth).hp;this.wallHp=initialState?clamp(initialState.wallHp,0,this.wallMax):this.wallMax;this.centerHp=initialState?clamp(initialState.centerHp,0,this.centerMax):this.centerMax;this.wallBrokenAt=this.wallHp===0?-10:null;this.strength=strength;this.composition=composition;this.status='running';this.won=false;this.kills=0;this.events=[];this.effects=[];this.fields=[];this.shots=[];this.projectiles=[];this.castId=0;this.chainJumps=0;this.maxKnockback=0;this.attackClock=0;this.peakVisible=0;this.goalAttackers=0;this.killedBy={};this.deathsByRole={army:0,air:0,navy:0};
   this.density=Math.max(1,(amount/10000)**.80);const random=rng(seed);this.forceTotals=forceTotals?{...forceTotals}:forceComposition(amount,composition);if(FORCE_IDS.some(id=>!Number.isSafeInteger(this.forceTotals[id])||this.forceTotals[id]<0)||Object.values(this.forceTotals).reduce((a,b)=>a+b,0)!==amount)throw Error('병과별 출정 인원을 확인해 주세요.');const amounts=FORCE_IDS.map(id=>this.forceTotals[id]);
   const groups=FORCE_IDS.map((id,r)=>{const n=Math.min(64,amounts[r]);return Array.from({length:n},(_,i)=>{const count=Math.floor(amounts[r]/n)+(i<amounts[r]%n?1:0),level=attackerGrowth.forceLevels[id],perHp=FORCES[id].hp*(1+.08*(level-1));return {role:id,count,hp:perHp*count,maxHp:perHp*count,perHp,level};});});
   this.units=[];for(let index=0;index<64;index++)for(let r=0;r<3;r++){if(!groups[r][index])continue;const i=this.units.length;this.units.push({...groups[r][index],id:i,s:-18-Math.floor(i/8)*31-(i%8)*.55,lane:(i%8-3.5)*8.4,speed:FORCES[FORCE_IDS[r]].speed+random()*4,slowUntil:0,freezeUntil:0,stunUntil:0,burnUntil:0,vulnerableUntil:0,hitAt:-10,hitKind:null,phase:random()*6.28,controlLoad:0,resolveUntil:0,nextKnockAt:0,knockFrom:0,knockAt:-10,knockUntil:-10,goal:false,sieging:false});}
@@ -104,8 +105,9 @@ export class Battle{
   const st=d.stats,target=candidates[0],delay=d.type==='cannon'?.07:d.type==='tesla'?.16:d.type==='laser'?.12:skill&&d.type==='returns'?1.15:skill&&d.type==='frozen'?.30:skill?.6:d.type==='ambient'?.58:.50;
   const canMove=target.freezeUntil<=this.time&&target.stunUntil<=this.time;
   const lead=canMove?target.speed*delay*.65:0,p=this.aimPosition(target,lead);
-  const radius=st.splash*(skill?1.8:1),fromX=d.x+(d.type==='cannon'?(p.x>d.x?34:-34):d.type==='laser'?-18:10),fromY=d.y-(d.type==='tesla'?116:st.kind==='hero'?65:71);
+  const radius=st.splash*(skill?1.8:1),fromX=d.x+(d.type==='cannon'?(p.x>d.x?34:-34):d.type==='laser'?(this.combatVersion>=9?0:-18):10),fromY=d.y-(d.type==='tesla'?116:st.kind==='hero'?65:71);
   const e={id:++this.castId,type:d.type,skill,x:p.x,y:p.y,angle:p.angle,fromX,fromY,at:this.time,delay,impactAt:this.time+delay,duration:delay+(skill?2.1:.65),radius,control:st.control||100,stats:st,targetId:target.id,targets:[],resolved:false};
+  if(d.type==='laser'&&this.combatVersion>=9){const length=Math.hypot(p.x-fromX,p.y-fromY)||1;e.beamEnd={x:fromX+(p.x-fromX)/length*st.range,y:fromY+(p.y-fromY)/length*st.range};e.beamWidth=st.beamWidth/2;}
   this.projectiles.push(e);this.projectiles=this.projectiles.slice(-80);
   d.lastShot=this.time;d.target={...p};d.shots++;
   if(skill){d.lastSkill=this.time;d.skills++;this.log('skill',st.name+' · '+st.desc,{hero:d.type});}
@@ -114,6 +116,7 @@ export class Battle{
  resolveImpact(e){
   const st=e.stats,visible=this.units.filter(u=>u.hp>0&&u.s>=0),point=u=>this.position(u);
   let near=visible.filter(u=>{const p=point(u);return Math.hypot(p.x-e.x,p.y-e.y)<=e.radius;});
+  if(e.type==='laser'&&e.beamEnd){const dx=e.beamEnd.x-e.fromX,dy=e.beamEnd.y-e.fromY,length=Math.hypot(dx,dy),ux=dx/length,uy=dy/length;near=visible.map(u=>{const p=point(u),x=p.x-e.fromX,y=p.y-e.fromY;return {u,along:x*ux+y*uy,side:Math.abs(x*uy-y*ux)};}).filter(q=>q.along>=0&&q.along<=length&&q.side<=e.beamWidth).sort((a,b)=>a.along-b.along||a.u.id-b.u.id).map(q=>q.u);}
   if(e.type==='tesla'||e.type==='cs'&&e.skill){
    const first=visible.find(u=>u.id===e.targetId)||near[0];near=[];let current=first;
    while(current&&near.length<(e.skill?10:7)){near.push(current);const p=point(current);current=visible.filter(u=>!near.includes(u)).map(u=>({u,p:point(u)})).filter(q=>Math.hypot(q.p.x-p.x,q.p.y-p.y)<145).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-p.y)-Math.hypot(b.p.x-p.x,b.p.y-p.y))[0]?.u;}

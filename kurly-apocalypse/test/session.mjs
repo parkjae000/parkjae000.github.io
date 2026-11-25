@@ -1,12 +1,12 @@
-import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs';
-import {freshFortress,reconcileFortress} from './recovery.mjs';
-import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs';
-import {heroResetPreview} from './migration.mjs';
-import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs';
-import {Replay,battleFromRecord} from './replay.mjs';
-import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs';
-import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs';
-import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-10';
+import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs?v=td-ux-11';
+import {freshFortress,reconcileFortress} from './recovery.mjs?v=td-ux-11';
+import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs?v=td-ux-11';
+import {heroResetPreview} from './migration.mjs?v=td-ux-11';
+import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-11';
+import {Replay,battleFromRecord} from './replay.mjs?v=td-ux-11';
+import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs?v=td-ux-11';
+import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs?v=td-ux-11';
+import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-11';
 export function layoutFor(w,h){const mobile=w<760;const header=mobile?96:82;const footer=mobile?190:122;const side=!mobile&&w>=1180?282:0;return {mobile,header,footer,side,stage:{x:0,y:header,w:w-side,h:Math.max(180,h-header-footer)}};}
 export class Session{
  constructor(storage){this.storage=storage;const initialReset=heroResetPreview(defaultGrowth());this.migrationPreview={rows:initialReset.rows,total:initialReset.total,basis:initialReset.basis};let saved;try{saved=JSON.parse(storage?.getItem(STORAGE_KEY)||'null');}catch{}
@@ -15,7 +15,7 @@ export class Session{
  }
  setViewport(w,h){const changed=this.width!==w||this.height!==h;this.width=w;this.height=h;this.layout=layoutFor(w,h);if(this.mode!=='design'){this.layout.stage.w+=this.layout.side;this.layout.side=0;}if(this.mode==='battle'&&this.layout.mobile){this.layout.header=72;this.layout.footer=164;this.layout.stage.y=72;this.layout.stage.h=Math.max(180,h-236);}if(!this.camera.initialized){this.camera.initialized=true;if(this.layout.mobile){this.camera={x:470,y:430,zoom:.98,initialized:true};}else this.fit();}if(changed)this.clampCamera();}
  notify(message){this.toast={message,until:this.elapsed+2.5};this.uiVersion++;}
- fit(){const v=this.layout?.stage||layoutFor(this.width,this.height).stage;this.camera.zoom=Math.min(v.w/WORLD.w,v.h/(this.layout?.mobile?WORLD.h:780));this.camera.x=WORLD.w/2;this.camera.y=this.layout?.mobile?WORLD.h/2:500;this.uiVersion++;}
+ fit(){const v=this.layout?.stage||layoutFor(this.width,this.height).stage;this.follow=false;this.camera={zoom:Math.min(v.w/WORLD.w,v.h/WORLD.h),x:WORLD.w/2,y:WORLD.h/2,initialized:true};this.uiVersion++;}
  clampCamera(){const v=(this.layout||layoutFor(this.width,this.height)).stage,c=this.camera;const minFit=Math.min(v.w/WORLD.w,v.h/WORLD.h);c.zoom=clamp(c.zoom,minFit,1.65);const hw=v.w/(2*c.zoom),hh=v.h/(2*c.zoom);c.x=hw>=WORLD.w/2?WORLD.w/2:clamp(c.x,hw,WORLD.w-hw);c.y=hh>=WORLD.h/2?WORLD.h/2:clamp(c.y,hh,WORLD.h-hh);}
  zoom(factor){this.camera.zoom*=factor;this.follow=false;this.clampCamera();this.uiVersion++;}
  pan(dx,dy){this.camera.x-=dx/this.camera.zoom;this.camera.y-=dy/this.camera.zoom;this.follow=false;this.clampCamera();}
@@ -46,7 +46,7 @@ export class Session{
   if(id==='hero-page'){this.heroPage=(this.heroPage+1)%3;this.uiVersion++;return;}
   if(id==='upgrade'){if(this.mode==='battle')return;try{const result=upgradeMode(data.kind)==='staff'?{message:'스탭 연구를 시작했어요.',job:startResearch(this.growth,data.kind,data.id,data.steps||1)}:upgradeGrowth(this.growth,data.kind,data.id,data.steps||1);this.amount=capacity(this.growth);this.editor.dirty=true;this.notify(result.message);}catch(error){this.notify(error.message);}return;}
   if(id==='composition'){this.composition=data;this.uiVersion++;return;}
-  if(id==='perspective'){this.perspective=this.perspective==='attack'?'defense':'attack';this.uiVersion++;return;}
+  if(id==='perspective'){this.perspective=this.perspective==='attack'?'defense':'attack';this.follow=false;this.camera.x=this.perspective==='defense'?1320:240;this.camera.y=495;this.camera.zoom=Math.max(this.camera.zoom,.65);this.clampCamera();this.notify(this.perspective==='defense'?'방어 센터 시점':'공격 진입 시점');this.uiVersion++;return;}
   if(id==='defend'){this.reviewTarget=null;this.perspective='defense';this.amount=10000;this.growth.capacityLevel=91;this.prepare();this.launch({practice:true});return;}
 
   if(id==='tool'){this.editor.choose(data);this.uiVersion++;return;}
@@ -56,7 +56,7 @@ export class Session{
   if(id==='remove'){this.editor.remove();this.uiVersion++;return;}if(id==='undo'){this.editor.undo();this.uiVersion++;return;}
   if(id==='edit'){return this.edit();}if(id==='fit'){this.fit();return;}
   if(id==='plus'){this.zoom(1.2);return;}if(id==='minus'){this.zoom(1/1.2);return;}
-  if(id==='follow'){this.follow=!this.follow;this.uiVersion++;return;}if(id==='speed'&&this.replay){this.replay.setSpeed(this.replay.speed===1?2:1);this.speed=this.replay.speed;this.paused=false;this.uiVersion++;return;}
+  if(id==='follow'){this.follow=!this.follow;if(this.follow){this.camera.zoom=Math.max(this.camera.zoom,.65);const u=this.battle?.units.filter(u=>u.hp>0&&u.s>=0).sort((a,b)=>b.s-a.s)[0];if(u){const p=this.battle.position(u);this.camera.x=p.x;this.camera.y=p.y;}this.clampCamera();}this.notify(this.follow?'병력 자동 추적을 켰어요.':'병력 자동 추적을 껐어요.');this.uiVersion++;return;}if(id==='speed'&&this.replay){this.replay.setSpeed(this.replay.speed===1?2:1);this.speed=this.replay.speed;this.paused=false;this.uiVersion++;return;}
   if(id==='amount'&&[10000,1000000,100000000].includes(data)){if(this.campaign.pending)return;this.amount=data;setRoster(this.campaign,forceComposition(data,this.composition));this.growth.capacityLevel=1+(data-1000)/100;this.editor.dirty=true;this.persist();this.uiVersion++;return;}
   if(id==='pause'&&this.replay){this.replay.paused=!this.replay.paused;this.paused=this.replay.paused;this.uiVersion++;return;}
   if(id==='skip'&&this.replay){this.replay.skip();this.resultAt=this.elapsed;this.uiVersion++;return;}

@@ -1,13 +1,13 @@
-import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs';
-import {ProductionScene} from './production-scene.mjs?v=td-ux-10';
-import {rosterOf} from './production.mjs';
-import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs';
-import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-10';
-import {targetEconomy} from './campaign-review.mjs';
-import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs';
-import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs';
-import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs';
-import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs';
+import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs?v=td-ux-11';
+import {ProductionScene} from './production-scene.mjs?v=td-ux-11';
+import {rosterOf} from './production.mjs?v=td-ux-11';
+import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs?v=td-ux-11';
+import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-11';
+import {targetEconomy} from './campaign-review.mjs?v=td-ux-11';
+import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs?v=td-ux-11';
+import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs?v=td-ux-11';
+import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-11';
+import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs?v=td-ux-11';
 const escapeUI=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const uiNumber=n=>Number(n).toLocaleString('ko-KR',{maximumFractionDigits:Math.abs(n)>0&&Math.abs(n)<.1?3:2});
 export class ReviewUI{
@@ -25,7 +25,7 @@ export class ReviewUI{
  button(action,label,value='',cls='',disabled=false){return `<button type="button" class="ui-button ${cls}" data-ui="${action}" data-value="${escapeUI(value)}" ${disabled?'disabled':''}>${label}</button>`;}
  open(page='management',category='tower'){if(this.s.campaign.pending){this.s.notify('진행 중인 전투로 돌아갑니다.');return;}this.plan.amount=this.s.campaign.troops;this.plan.shieldActive=this.s.campaign.shieldUntil>Date.now();this.s.growthOpen=false;this.page=page;this.category=category;this.selected=GROWTH_CATEGORIES[category].ids[0];this.detail=false;this.expDetail=false;this.shopDetail=false;this.receipt=null;this.notice='';this.render(false);}
  close(){this.page=null;this.root.hidden=true;document.querySelector('#controls').inert=false;this.root.innerHTML='';}
- dispatchCanvasAction(id,data){if(id==='history')return this.open('history');if(this.s.campaign.pending&&['growth','army','prepare','again'].includes(id)){this.s.notify('출정 중에는 후퇴 후 관리할 수 있어요.');return;}if(id==='growth')return this.open('management','tower');if(id==='army')return this.open('production');if(id==='prepare'||id==='again')return this.open('expedition');this.s.action(id,data);}
+ dispatchCanvasAction(id,data){if(id==='exit-battle'){if(this.s.campaign.pending){this.s.notify('전투 결과를 저장 중이에요. 잠시 후 나갈 수 있어요.');return;}this.s.edit();this.open('expedition');return;}if(id==='history')return this.open('history');if(this.s.campaign.pending&&['growth','army','prepare','again'].includes(id)){this.s.notify('출정 중에는 후퇴 후 관리할 수 있어요.');return;}if(id==='growth')return this.open('management','tower');if(id==='army')return this.open('production');if(id==='prepare'||id==='again')return this.open('expedition');this.s.action(id,data);}
  action(id,value){
   if(productionAction(this,id,value))return;
   if(id==='close'){this.close();return;}
