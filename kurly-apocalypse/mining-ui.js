@@ -49,19 +49,25 @@ export function patchMiningMarkup(element,markup,{reset=false}={}){
 
 
 export function miningTargetRate(w,g,idx,now){
- if(w.parked||w.target===null)return 0;
+ if(w.parked||w.pendingMerge||w.target===null)return 0;
  const forklift=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>now);
  if(!forklift||w.target==='gate')return w.target===idx?workerMiningDps(w,g):0;
  const targets=g.mine.nodes.map((n,i)=>({n,i})).filter(({n,i})=>!n.done&&Math.abs(i%5-w.x)+Math.abs(Math.floor(i/5)-w.y)===1).map(v=>v.i);
  return targets.includes(idx)?workerMiningDps(w,g)*1.5/targets.length:0;
 }
-// Predict position/animation/HP only. Never complete a node, award currency or roll a merge.
+export function miningRates(g,now){const rates=Array(40).fill(0),workers=Array.from({length:40},()=>[]);let gate=0;
+ for(const w of g.workers){if(w.parked||w.pendingMerge||w.target===null)continue;const dps=workerMiningDps(w,g),fork=g.forklift?.workerId===w.id&&(g.forklift.permanent||g.forklift.until>now);if(w.target==='gate'){gate+=dps*(fork?1.5:1);continue;}
+  const targets=fork?[[w.x-1,w.y],[w.x+1,w.y],[w.x,w.y-1],[w.x,w.y+1]].filter(([x,y])=>x>=0&&x<5&&y>=0&&y<8&&!g.mine.nodes[y*5+x].done).map(([x,y])=>y*5+x):[w.target];
+  for(const idx of targets){if(!Number.isInteger(idx)||idx<0||idx>=40)continue;rates[idx]+=dps*(fork?1.5/targets.length:1);workers[idx].push(w);}
+ }return {rates,workers,gate};}
+export function projectMiningTime(game,from,now){
+ const g={...game,workers:game.workers.map(w=>({...w})),mine:{...game.mine,nodes:game.mine.nodes.map(n=>({...n})),gate:game.mine.gate?{...game.mine.gate}:null},forklift:{...game.forklift}},r=miningRates(game,from);
+ for(let i=0;i<g.mine.nodes.length;i++){const n=g.mine.nodes[i];if(!n.done)n.hp=miningHp(n.hp,r.rates[i],from,now,game.shop.boostUntil);}
+ if(g.mine.gate&&!g.mine.gate.done)g.mine.gate.hp=miningHp(g.mine.gate.hp,r.gate,from,now,game.shop.boostUntil);return g;
+}
+// Project movement and HP only; completion, rewards and actual merge levels remain server-owned.
 export function previewMiningDrop(game,type,params,from,now){
  if(!['mine/move','mine/dispatch','mine/gate'].includes(type))return null;
- const cell=miningLanding(game,type,params);if(!cell)return null;
- const g=structuredClone(game);
- for(let i=0;i<g.mine.nodes.length;i++){const n=g.mine.nodes[i];if(n.done)continue;const rate=game.workers.reduce((s,w)=>s+miningTargetRate(w,game,i,from),0);n.hp=miningHp(n.hp,rate,from,now,game.shop.boostUntil);}
- if(g.mine.gate&&!g.mine.gate.done){const rate=game.workers.reduce((s,w)=>s+miningTargetRate(w,game,'gate',from)*(game.forklift?.workerId===w.id&&(game.forklift.permanent||game.forklift.until>from)?1.5:1),0);g.mine.gate.hp=miningHp(g.mine.gate.hp,rate,from,now,game.shop.boostUntil);}
- const w=g.workers.find(w=>w.id===params.worker);w.x=cell.x;w.y=cell.y;w.parked=false;w.target=type==='mine/gate'?'gate':type==='mine/dispatch'?Number(params.idx):adjacentMiningTarget(g,w);
- return {game:g,at:now};
+ const cell=miningLanding(game,type,params);if(!cell)return null;const g=projectMiningTime(game,from,now);
+ const w=g.workers.find(w=>w.id===params.worker);w.x=cell.x;w.y=cell.y;w.parked=false;w.target=w.pendingMerge?null:type==='mine/gate'?'gate':type==='mine/dispatch'?Number(params.idx):adjacentMiningTarget(g,w);return {game:g,at:now};
 }

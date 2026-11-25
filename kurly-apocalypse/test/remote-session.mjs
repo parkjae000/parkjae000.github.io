@@ -24,7 +24,7 @@ export class RemoteSession extends Session{
  }
  persist(){return true;}
  async send(type,params={}){params=structuredClone(params);
-  const run=async()=>{this.busy=true;try{const r=await testApi('/api/action',{token:this.token,body:{type,...params,requestId:crypto.randomUUID()}});if(r.td)this.apply(r.td);if(!['td/upgrade','td/speed','td/control','td/repair'].includes(type))this.notify(r.message||'저장했어요.');return r;}catch(e){this.notify(e.message);throw e;}finally{this.busy=false;}};
+  const run=async()=>{this.busy=true;try{const r=await testApi('/api/action',{token:this.token,body:{type,...params,requestId:crypto.randomUUID()}});if(r.td)this.apply(r.td);if(!['td/upgrade','td/speed','td/control','td/repair'].includes(type)&&!String(r.message||'').includes('서버에 적용'))this.notify(r.message||'저장했어요.');return r;}catch(e){this.notify(e.message);throw e;}finally{this.busy=false;}};
   const request=this.requestChain.then(run);this.requestChain=request.catch(()=>{});return request;
  }
  async poll(force=false){if(this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?1600:5000))return;this.polling=true;this.lastPoll=Date.now();try{const r=await testApi('/api/td-state',{token:this.token});this.apply(r.td);}catch(e){this.notify(e.message);}finally{this.polling=false;this.lastPoll=Date.now();}}

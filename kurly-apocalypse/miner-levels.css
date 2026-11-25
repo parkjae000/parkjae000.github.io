@@ -7,3 +7,6 @@
 
 /* Keep pointer movement on the compositor; server confirmation reuses each canvas. */
 .mine-worker.dragging,.mine-worker.drop-pending{will-change:transform}.mine-worker.drop-pending{filter:none!important}.mine-worker.just-merged{animation:miner-merge-pop .45s ease-out!important}@keyframes miner-merge-pop{0%{scale:.85}45%{scale:1.16}100%{scale:1}}@media(prefers-reduced-motion:reduce){.mine-worker.just-merged{animation:none!important}}
+
+.mine-worker.merge-pending .worker-avatar{animation:miner-merge-pending .5s ease-in-out infinite!important}.mine-worker.merge-pending .worker-level{background:#f5d57e;color:#654b33}.mine-summon:disabled{opacity:.8}.mine-icon:active,.navitem:active,.mine-summon:active{transform:scale(.97)}@keyframes miner-merge-pending{50%{transform:scale(.88)}}@media(prefers-reduced-motion:reduce){.mine-worker.merge-pending .worker-avatar{animation:none!important}}
+.mine-summon [data-summon-label]{font:inherit;display:inline;margin:0;padding:0;color:inherit}
