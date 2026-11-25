@@ -1,4 +1,4 @@
-import {FORCE_IDS,FORCES,damageMultiplier} from './progression.mjs?v=td-ux-17';
+import {FORCE_IDS,FORCES,damageMultiplier} from './progression.mjs?v=td-ux-18';
 const n=v=>Number(v).toLocaleString('ko-KR',{maximumFractionDigits:2});
 export function affinityInfo(type,role){
  const multiplier=damageMultiplier(type,role),percent=Math.round((multiplier-1)*100);
@@ -23,9 +23,11 @@ export function attackGuide(type,st){
   frozen:'눈보라로 범위 피해·둔화·밀치기를 주고, 짧게 얼린 뒤 눈보라 지대를 남겨요.',
   chilled:'빙하가 솟아 범위 피해·빙결·둔화를 주고, 받는 피해가 증가하는 지대를 남겨요.',
   ambient:'강한 범위 폭발 뒤 화염벽을 남겨 진입한 병력에 지속 피해와 화상을 줘요.',
-  cs:'최대 10개 병력 무리를 잇는 연쇄 번개로 범위 피해와 기절을 줘요.',
-  beauty:'블랙홀이 범위 피해·기절·밀치기를 주고, 병력을 저지하는 지대를 남겨요.',
-  returns:'맵 전체에서 대상을 골라 메테오를 낙하시켜 강한 범위 피해와 밀치기를 줘요.'
+  cs:`최대 ${st.skillChainTargets||10}개 병력 무리를 잇는 연쇄 번개로 범위 피해와 기절을 줘요.`,
+  beauty:st.signature?'더 넓은 블랙홀 지대에서 둔화·기절을 주고 받는 피해를 35% 늘려요.':'블랙홀이 범위 피해·기절·밀치기를 주고 지대를 남겨요.',
+  returns:st.skillEcho?'전역 메테오 뒤 0.45초 후 45% 피해의 추가 폭발이 발생해요.':'전역 메테오로 범위 피해와 밀치기를 줘요.'
  }[type];
- return {basic:{name:st.basic||st.name,description:basic,facts:`피해 ${n(st.damage)} · ${n(st.interval)}초마다 · ${type==='laser'?'관통 길이 '+n(st.range)+' · 폭 '+n(st.beamWidth):n(st.splash)+' 범위'}`},skill:skill?{name:st.desc,description:skill,facts:`피해 ${n(st.skillDamage)} · 재사용 ${n(st.cooldown)}초 · ${n(st.skillRadius)} 범위`,trigger:st.globalRange?'맵 전체의 병력이 대상 · 자동 사용':'사거리 안에 병력이 있을 때 자동 사용',fieldSeconds:['frozen','chilled','ambient','beauty'].includes(type)?st.fieldDuration:null}:null,control};
+ const reach=st.globalRange?'사거리 전역':'사거리 '+n(st.range),area=radius=>'반경 '+n(radius)+' · 지름 '+n(radius*2);
+ const effects=[];if(st.skillEcho)effects.push('추가 폭발 '+area(st.skillRadius*.75));if(st.skillStunSeconds)effects.push('기절 '+n(st.skillStunSeconds)+'초');if(st.freezeSeconds)effects.push('빙결 '+n(st.freezeSeconds)+'초');if(st.slowSeconds)effects.push('둔화 '+n(st.slowSeconds)+'초');if(st.weaknessSeconds)effects.push('받는 피해 +'+n((st.weaknessMultiplier-1)*100)+'% · '+n(st.weaknessSeconds)+'초');
+ return {basic:{name:st.basic||st.name,description:basic,facts:`피해 ${n(st.damage)} · ${n(st.interval)}초마다 · ${reach} · ${type==='laser'?'관통 길이 '+n(st.range)+' · 폭 '+n(st.beamWidth):area(st.splash)} · 기본 타격 인원 ${n(st.hits)}명`},skill:skill?{name:st.signature?.name||st.desc,description:skill,facts:`피해 ${n(st.skillDamage)} · 재사용 ${n(st.cooldown)}초 · ${reach} · ${area(st.skillRadius)}${st.skillChainTargets?' · 최대 '+st.skillChainTargets+'무리 · 연쇄 거리 '+n(st.chainRange):''}`,trigger:st.globalRange?'전장 어디서든 자동 사용':'사거리 안에 병력이 있을 때 자동 사용',fieldSeconds:['frozen','chilled','ambient','beauty'].includes(type)?st.fieldDuration:null,effects:effects.join(' · ')}:null,control};
 }

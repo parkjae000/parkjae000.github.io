@@ -1,5 +1,6 @@
-import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-17';
-import {researchCost,researchSeconds,researchStaffCount,RESEARCH_ECONOMY_VERSION} from './research-economy.mjs?v=td-ux-17';
+import {RESEARCH_MINUTES} from '../pass-catalog.mjs?v=20261125-v243-rare-events';
+import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-18';
+import {researchCost,researchSeconds,researchStaffCount,RESEARCH_ECONOMY_VERSION} from './research-economy.mjs?v=td-ux-18';
 export const FACILITY_DEFS={productionEfficiency:{name:'생산 효율',group:'military',identity:'육·공·해 생산 주기 단축',max:20},
  mine:{name:'채굴 효율',group:'mine',identity:'일용직의 채굴 속도 증가',max:30},
  laborCost:{name:'일용직 인건비 감소',group:'mine',identity:'일용직 소환 비용 감소',max:20},
@@ -36,5 +37,5 @@ export function settleResearch(g,now=Date.now()){
  g.researchJobs=g.researchJobs.filter(j=>j.endAt>now);return finished;
 }
 export function speedResearch(g,jobId,item,now=Date.now()){
- const minutes={researchAid:10,researchHourAid:60}[item],job=(g.researchJobs||[]).find(j=>j.id===jobId);if(!minutes||!job)throw Error('진행 중인 스탭 연구를 선택해 주세요.');if(!(g.inventory[item]>0))throw Error('보유 단축권이 없어요.');if(job.endAt<=now)throw Error('이미 끝난 연구예요.');g.inventory[item]--;job.endAt=Math.max(now,job.endAt-minutes*60000);return settleResearch(g,now);
+ const minutes=RESEARCH_MINUTES[item],job=(g.researchJobs||[]).find(j=>j.id===jobId);if(!minutes||!job)throw Error('진행 중인 스탭 연구를 선택해 주세요.');if(!(g.inventory[item]>0))throw Error('보유 단축권이 없어요.');if(job.endAt<=now)throw Error('이미 끝난 연구예요.');g.inventory[item]--;job.endAt=Math.max(now,job.endAt-minutes*60000);return settleResearch(g,now);
 }

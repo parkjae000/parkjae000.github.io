@@ -19,3 +19,5 @@
 
 .td-research-summary{min-height:38px;flex-shrink:0;margin:4px 10px 6px!important;background:#fff0c1!important;color:#704b16!important;border-color:#d6ae60!important;font-weight:800}
 .td-research-active progress{appearance:none;border:0;border-radius:8px;overflow:hidden;background:#e4d4ac}.td-research-active progress::-webkit-progress-bar{background:#e4d4ac;border-radius:8px}.td-research-active progress::-webkit-progress-value{background:#9870ad;border-radius:8px}.td-research-active progress::-moz-progress-bar{background:#9870ad;border-radius:8px}
+
+.td-owned-label{color:#427557!important;background:#e5efda;padding:6px 8px;border-radius:9px;white-space:nowrap}.td-rare-signature{background:#f2e4fa;border:1px solid #b58ccc;border-radius:13px;padding:11px;margin-bottom:12px}.td-rare-signature b{color:#79508c}.td-control-help{margin:12px 0;padding:10px;border:1px solid #d8c6b3;border-radius:10px;font-size:14px;line-height:1.6}.td-control-help summary{font-weight:750;cursor:pointer}.td-control-help p{margin:8px 0}

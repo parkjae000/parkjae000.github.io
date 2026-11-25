@@ -1,5 +1,5 @@
-import {FORCE_IDS,capacity} from './progression.mjs?v=td-ux-17';
-import {rosterOf,rosterTotal,capacityUsed,PRODUCTION_DEFS,productionQuote} from './production.mjs?v=td-ux-17';
+import {FORCE_IDS,capacity} from './progression.mjs?v=td-ux-18';
+import {rosterOf,rosterTotal,capacityUsed,PRODUCTION_DEFS,productionQuote} from './production.mjs?v=td-ux-18';
 export function productionAvailability(g,c){
  const ready=rosterOf(c),limit=capacity(g),used=capacityUsed(c),free=Math.max(0,limit-used),space=Math.floor(free/100)*100;
  const roles=Object.fromEntries(FORCE_IDS.map(role=>{

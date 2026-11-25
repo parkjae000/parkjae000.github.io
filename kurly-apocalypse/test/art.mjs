@@ -1,8 +1,8 @@
-import {SIEGE_PADS as V10_PADS} from './siege-geometry-v10.mjs?v=td-ux-17';
-import {makeSiegeMap} from './siege-map.mjs?v=td-ux-17';
-import {makeConquestMap} from './conquest-map.mjs?v=td-ux-17';
+import {SIEGE_PADS as V10_PADS} from './siege-geometry-v10.mjs?v=td-ux-18';
+import {makeSiegeMap} from './siege-map.mjs?v=td-ux-18';
+import {makeConquestMap} from './conquest-map.mjs?v=td-ux-18';
 import atlas from './atlas.js';
-import {makeBattleMap} from './battle-map.mjs?v=td-ux-17';
+import {makeBattleMap} from './battle-map.mjs?v=td-ux-18';
 export const ASSET_PATHS={armyHD:'army-hd-v2.webp',miningBoost:'mining-boost-v2.webp',productionFacilities:'production-facilities.png',ticketNormal:'ticket-normal.webp',ticketRare:'ticket-rare.webp',bookNormal:'book-normal.webp',bookRare:'book-rare.webp',researchVoucher:'research-voucher.webp',medicalKit:'medical-kit.webp',workerCute:'worker-cute.webp',fxMeteor:'fx-meteor.webp',fxFireball:'fx-fireball.webp',fxSnowball:'fx-snowball.webp',fxCrystal:'fx-crystal.webp',fxFlame:'fx-flame.webp',fxExplosion:'fx-explosion.webp',fxBlizzard:'fx-blizzard.webp',fxElectric:'fx-electric.webp',air0:'air-0.webp',air1:'air-1.webp',navy0:'navy-0.webp',navy1:'navy-1.webp',gate0:'wall-intact.webp',gate1:'wall-cracked.webp',gate2:'wall-open.webp',gatling0:'gatling-0.webp',gatling1:'gatling-1.webp',gatling2:'gatling-2.webp',gatling3:'gatling-3.webp',map:'courtyard.webp',hq:'headquarters.webp',cannon:'cannon.webp',tesla:'tesla.webp',ice:'ice.webp',laser:'laser.webp',fighters:'fighters.webp',cs:'csMotion.webp',beauty:'beautyMotion.webp',ambient:'ambientMotion.webp',chilled:'chilledMotion.webp',returns:'returnsMotion.webp',ranged:'troop-ranged.webp',spear:'troop-spear.webp',shield:'troop-shield.webp',win:'battle-victory.webp',loss:'battle-defeat.webp'};
 export function prepareArt(raw,makeCanvas){
  const art={...raw,floor:raw.map,map:makeBattleMap(raw.map,makeCanvas),conquestMap:makeConquestMap(raw.map,makeCanvas),siegeMap:makeSiegeMap(raw.map,makeCanvas),siegeV10Map:makeSiegeMap(raw.map,makeCanvas,V10_PADS),heroes:{},troops:{}};

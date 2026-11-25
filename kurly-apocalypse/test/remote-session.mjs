@@ -1,10 +1,10 @@
-import {siegeLayout} from './conquest.mjs?v=td-ux-17';
-import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-17';
-import {CATALOG} from './engine.mjs?v=td-ux-17';
-import {Session} from './session.mjs?v=td-ux-17';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-17';
-import {battleFromRecord} from './replay.mjs?v=td-ux-17';
-import {rosterOf} from './production.mjs?v=td-ux-17';
+import {siegeLayout} from './conquest.mjs?v=td-ux-18';
+import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-18';
+import {CATALOG} from './engine.mjs?v=td-ux-18';
+import {Session} from './session.mjs?v=td-ux-18';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-18';
+import {battleFromRecord} from './replay.mjs?v=td-ux-18';
+import {rosterOf} from './production.mjs?v=td-ux-18';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
 export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}

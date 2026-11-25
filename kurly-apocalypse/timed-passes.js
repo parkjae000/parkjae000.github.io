@@ -1,6 +1,7 @@
+import {BOOST_PASSES,FORKLIFT_PASSES} from './pass-catalog.mjs?v=20261125-v243-rare-events';
 export const PASS_ITEMS={
  auto:[['autoMine2h','2시간권'],['autoMine1d','1일권'],['autoMine2d','2일권'],['autoMine3d','3일권']],
- forklift:[['forkliftTickets','7일권']],boost:[['boost10','10분권'],['boost30','30분권']],
+ forklift:FORKLIFT_PASSES.map(p=>[p.key,p.label+'권']),boost:BOOST_PASSES.map(p=>[p.key,p.label+'권']),
  shield:[['shield1h','1시간권'],['shield4h','4시간권'],['shield12h','12시간권'],['shield24h','24시간권']]
 };
 export function passClock(until,now,permanent=false){
@@ -20,7 +21,7 @@ export function passEffects(game,now,shieldUntil=game.shieldUntil||0){
 }
 export function passUse(item){
  if(PASS_ITEMS.auto.some(([id])=>id===item))return {type:'boss/pass',item};
- if(item==='forkliftTickets')return {type:'forklift/activate'};
+ if(FORKLIFT_PASSES.some(p=>p.key===item))return {type:'forklift/activate',...(item==='forkliftTickets'?{}:{item})};
  if(PASS_ITEMS.boost.some(([id])=>id===item))return {type:'item/boost',item};
  if(PASS_ITEMS.shield.some(([id])=>id===item))return {type:'item/shield',item};
  throw Error('사용할 이용권을 확인해 주세요.');
@@ -43,3 +44,4 @@ export function mountTimedPasses({api,getState,clock,reload,showModal,closeModal
  setInterval(()=>{if(document.hidden)return;const now=clock();document.querySelectorAll('[data-pass-clock]').forEach(el=>{const end=Number(el.dataset.passClock),permanent=el.dataset.passPermanent==='true';el.textContent=passClock(end,now,permanent);el.classList.toggle('active',permanent||end>now);});const s=getState(),button=document.querySelector('[data-open-pass-preview]');if(s&&button){const on=passEffects(s.me.game,now,s.me.shieldUntil).some(x=>x.active);button.classList.toggle('pass-on',on);const dot=button.querySelector('.pass-on-dot');if(dot)dot.hidden=!on;}},1000);
  return {open};
 }
+

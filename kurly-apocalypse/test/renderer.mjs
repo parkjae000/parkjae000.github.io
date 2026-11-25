@@ -1,7 +1,7 @@
-import {SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-17';
-import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-17';
-import {WORLD,CATALOG,PADS,ROUTE,clamp} from './engine.mjs?v=td-ux-17';
-import {heroStats,towerStats} from './progression.mjs?v=td-ux-17';
+import {SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-18';
+import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-18';
+import {WORLD,CATALOG,PADS,ROUTE,clamp} from './engine.mjs?v=td-ux-18';
+import {heroStats,towerStats} from './progression.mjs?v=td-ux-18';
 const FONT='"Noto Sans CJK KR","Noto Sans KR",sans-serif';
 export class RendererBase{
  constructor(canvas,art,{width=1280,height=800,pixelRatio=1}={}){this.canvas=canvas;this.c=canvas.getContext('2d');this.art=art;this.buttons=[];this.resize(width,height,pixelRatio);}

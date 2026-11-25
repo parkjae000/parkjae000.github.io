@@ -1,4 +1,4 @@
-import {researchCost} from './research-economy.mjs?v=td-ux-17';
+import {researchCost} from './research-economy.mjs?v=td-ux-18';
 export const MAX_ARMY=100_000_000;
 export const CAPACITY_BASE=1000;
 export const CAPACITY_STEP=100;
@@ -39,7 +39,23 @@ export const STAR_COST=[0,20,40,80,160];
 export function defaultGrowth(){return {boxes:3_000_000_000_000,capacityLevel:91,towerLevels:{cannon:5,tesla:5,ice:5,laser:5},wallLevel:5,forceLevels:{army:5,air:5,navy:5},heroes:Object.fromEntries(Object.keys(HERO_DEFS).map(id=>[id,{level:12,star:3,xp:200,shards:500}])),facilityLevels:{mine:1,laborCost:1,lossDiscovery:1,careerLevel:1,mergeLuck:1,center:1,wallRepair:1,wallReflect:1},staffCount:2,staffPolicyVersion:2,researchJobs:[],inventory:{normalHeroXp:50000,rareHeroXp:50000,researchAid:2,researchHourAid:1}};}
 export const capacity=g=>Math.min(MAX_ARMY,CAPACITY_BASE+CAPACITY_STEP*((g.capacityLevel||1)-1));
 export function towerStats(g,id,level=g.towerLevels[id]){const d=TOWER_DEFS[id],n=Math.max(0,level-1);return {...d,level,damage:Math.round(d.damage*1.3**n),interval:d.interval/Math.min(1.8,1+n*.025),range:d.range+Math.min(55,n*2),hits:d.hits+n*2,splash:d.splash+n*1.1,...(id==='laser'?{beamWidth:72}:{})};}
-export function heroStats(g,id,override){const d=HERO_DEFS[id],h=override||g.heroes[id];if(!h?.star)return null;const mult=(d.rarity==='희귀'?1.25:1)*(1+.12*(h.level-1))*(1+.3*(h.star-1));const damage=Math.round(d.damage*mult),control=100+(h.level-1)*3+(h.star-1)*18;return {...d,level:h.level,star:h.star,xp:h.xp,damage,control,skillDamage:Math.round(damage*d.skillMultiplier*(1+.08*(h.star-1))),range:d.globalRange?0:d.range+(h.star-1)*7,splash:d.splash+(h.level-1)*.7+(h.star-1)*5,hits:d.hits+Math.floor(h.level/3)+h.star*3,interval:d.interval/(1+.025*(h.star-1)),cooldown:d.cooldown/(1+.045*(h.star-1)),skillRadius:(d.splash+(h.level-1)*.7+(h.star-1)*5)*1.8,fieldDuration:4.4*control/169,duration:1.8*control/100};}
+export function heroStatsV12(g,id,override){const d=HERO_DEFS[id],h=override||g.heroes[id];if(!h?.star)return null;const mult=(d.rarity==='희귀'?1.25:1)*(1+.12*(h.level-1))*(1+.3*(h.star-1));const damage=Math.round(d.damage*mult),control=100+(h.level-1)*3+(h.star-1)*18;return {...d,level:h.level,star:h.star,xp:h.xp,damage,control,skillDamage:Math.round(damage*d.skillMultiplier*(1+.08*(h.star-1))),range:d.globalRange?0:d.range+(h.star-1)*7,splash:d.splash+(h.level-1)*.7+(h.star-1)*5,hits:d.hits+Math.floor(h.level/3)+h.star*3,interval:d.interval/(1+.025*(h.star-1)),cooldown:d.cooldown/(1+.045*(h.star-1)),skillRadius:(d.splash+(h.level-1)*.7+(h.star-1)*5)*1.8,fieldDuration:4.4*control/169,duration:1.8*control/100};}
+export const RARE_SIGNATURES={
+ cs:{name:'대공 연쇄 폭풍',description:'강화 연쇄 번개로 최대 14개 병력 무리를 연결하고 더 오래 기절시켜요.'},
+ beauty:{name:'취약 블랙홀',description:'더 넓은 블랙홀 지대로 적을 묶고 받는 피해를 35% 늘려요.'},
+ returns:{name:'이중 메테오',description:'전장 어디든 강한 메테오를 떨어뜨리고 0.45초 뒤 45% 피해의 추가 폭발을 일으켜요.'}
+};
+export function heroStats(g,id,override){
+ const st=heroStatsV12(g,id,override);if(!st)return null;const scale=st.control/100;
+ const next={...st,skillStunSeconds:id==='cs'?.7*Math.sqrt(scale):id==='beauty'?.5*Math.sqrt(scale):0,slowSeconds:id==='frozen'?1.7*scale:id==='chilled'?2.6*scale:0,freezeSeconds:id==='frozen'?.28:id==='chilled'?.85*Math.sqrt(scale):0,weaknessSeconds:id==='chilled'?3*scale:0,weaknessMultiplier:id==='chilled'?1.25:1};
+ if(st.rarity!=='희귀')return next;
+ const damage=Math.round(st.damage*1.32),radiusMult=id==='beauty'?1.2:id==='returns'?1.15:1.1;
+ Object.assign(next,{damage,skillDamage:Math.round(st.skillDamage*1.32*(id==='returns'?1.55:id==='beauty'?1.35:1.25)),interval:st.interval*(id==='cs'?.85:.9),splash:st.splash*radiusMult,hits:Math.ceil(st.hits*(id==='cs'?1.15:id==='beauty'?1.25:1.3)),signature:RARE_SIGNATURES[id]});
+ next.skillRadius=next.splash*(id==='cs'?1.8:id==='beauty'?2.15:2.3);
+ if(id==='cs')Object.assign(next,{skillChainTargets:14,chainRange:190,skillStunSeconds:1.1*Math.sqrt(scale)});
+ if(id==='beauty')Object.assign(next,{skillStunSeconds:.75*Math.sqrt(scale),slowSeconds:2.2*scale,weaknessSeconds:4*scale,weaknessMultiplier:1.35,fieldDuration:st.fieldDuration*1.4});
+ if(id==='returns')Object.assign(next,{skillEcho:.45,echoDelay:.45});return next;
+}
 export const wallStats=g=>({hp:Math.round(44000*1.20**((g.wallLevel||1)-1)),level:g.wallLevel||1});
 // V4 prototype hydration only; never use this automatic research mapping for live migration.
 export function migrateLegacyGrowth(legacy){const g=defaultGrowth();if(!legacy)return g;if(legacy.heroes)for(const id of Object.keys(HERO_DEFS)){if(legacy.heroes[id])g.heroes[id]={...legacy.heroes[id]};}if(legacy.migrations)g.migrations=structuredClone(legacy.migrations);if(legacy.inventory)g.inventory={...legacy.inventory};for(const key of ['facilityLevels','staffCount','researchJobs','researchSeq'])if(legacy[key]!==undefined)g[key]=structuredClone(legacy[key]);if(Number.isFinite(legacy.boxes))g.boxes=legacy.boxes;
