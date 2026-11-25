@@ -1,7 +1,7 @@
-import {TestUI as ReviewUI} from './test-ui.mjs?v=td-ux-15';
-import {RemoteSession,testApi,TEST_TOKEN_KEY} from './remote-session.mjs?v=td-ux-15';
-import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-15';
-import {Session} from './session.mjs?v=td-ux-15';import {Renderer} from './renderer-v2.mjs?v=td-ux-15';import {browserArt} from './art.mjs?v=td-ux-15';import {PADS,WORLD} from './engine.mjs?v=td-ux-15';
+import {TestUI as ReviewUI} from './test-ui.mjs?v=td-ux-16';
+import {RemoteSession,testApi,TEST_TOKEN_KEY} from './remote-session.mjs?v=td-ux-16';
+import {CONQUEST_PADS} from './conquest-geometry.mjs?v=td-ux-16';
+import {Session} from './session.mjs?v=td-ux-16';import {Renderer} from './renderer-v2.mjs?v=td-ux-16';import {browserArt} from './art.mjs?v=td-ux-16';import {PADS,WORLD} from './engine.mjs?v=td-ux-16';
 const canvas=document.querySelector('#screen'),controls=document.querySelector('#controls'),loading=document.querySelector('#loading');
 try{
  const volatileReviewStore=new Map();let reviewStorage;try{reviewStorage=localStorage;}catch{reviewStorage={getItem:k=>volatileReviewStore.get(k),setItem:(k,v)=>volatileReviewStore.set(k,v)};}

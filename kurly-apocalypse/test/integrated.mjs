@@ -1,16 +1,16 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-15';
-import {AttackPreview} from './attack-preview.mjs?v=td-ux-15';
-import {syncCanvasControls} from './canvas-controls.mjs?v=td-ux-15';
-import {RemoteSession} from './remote-session.mjs?v=td-ux-15';
-import {CompactUI} from './compact-ui.mjs?v=td-ux-15';
-import {Renderer} from './renderer-v2.mjs?v=td-ux-15';
-import {browserArt} from './art.mjs?v=td-ux-15';
-import {EditorInteraction,editorPads} from './editor-interaction.mjs?v=td-ux-15';
-import {CATALOG,WORLD} from './engine.mjs?v=td-ux-15';
-import {HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel} from './progression.mjs?v=td-ux-15';
-import {GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-15';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-16';
+import {AttackPreview} from './attack-preview.mjs?v=td-ux-16';
+import {syncCanvasControls} from './canvas-controls.mjs?v=td-ux-16';
+import {RemoteSession} from './remote-session.mjs?v=td-ux-16';
+import {CompactUI} from './compact-ui.mjs?v=td-ux-16';
+import {Renderer} from './renderer-v2.mjs?v=td-ux-16';
+import {browserArt} from './art.mjs?v=td-ux-16';
+import {EditorInteraction,editorPads} from './editor-interaction.mjs?v=td-ux-16';
+import {CATALOG,WORLD} from './engine.mjs?v=td-ux-16';
+import {HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel} from './progression.mjs?v=td-ux-16';
+import {GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-16';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css','compact.css','operations.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-ux-15',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
+async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css','compact.css','operations.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-ux-16',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
 class IntegratedSession extends RemoteSession{
  constructor(td,token,api){super(td,token);this.api=api;this.active=false;}
  async send(type,params={}){params=structuredClone(params);const run=async()=>{this.busy=true;try{const out=await this.api('/api/action','POST',{type,...params,requestId:crypto.randomUUID()});if(out.td)this.apply(out.td);this.notify(out.message||'저장했어요.');return out;}catch(error){this.notify(error.message);throw error;}finally{this.busy=false;}};const pending=this.requestChain.then(run);this.requestChain=pending.catch(()=>{});return pending;}

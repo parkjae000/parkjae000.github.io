@@ -1,7 +1,7 @@
-import {rosterOf,setRoster,ensureProduction,rosterTotal,woundedAllocation} from './production.mjs?v=td-ux-15';
-import {freshFortress,reconcileFortress,damageFortress} from './recovery.mjs?v=td-ux-15';
-import {defaultGrowth,forceComposition} from './progression.mjs?v=td-ux-15';
-import {MAX_ARMY} from './progression.mjs?v=td-ux-15';
+import {rosterOf,setRoster,ensureProduction,rosterTotal,woundedAllocation} from './production.mjs?v=td-ux-16';
+import {freshFortress,reconcileFortress,damageFortress} from './recovery.mjs?v=td-ux-16';
+import {defaultGrowth,forceComposition} from './progression.mjs?v=td-ux-16';
+import {MAX_ARMY} from './progression.mjs?v=td-ux-16';
 export const TD_ENGINE_VERSION='td-test-11';
 export const SHIELD_MS=6*60*60*1000;
 const reviewDay=now=>new Date(now+9*3600000).toISOString().slice(0,10);

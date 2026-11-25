@@ -1,15 +1,20 @@
-import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs?v=td-ux-15';
-import {ProductionScene} from './production-scene.mjs?v=td-ux-15';
-import {rosterOf} from './production.mjs?v=td-ux-15';
-import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs?v=td-ux-15';
-import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-15';
-import {targetEconomy} from './campaign-review.mjs?v=td-ux-15';
-import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs?v=td-ux-15';
-import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs?v=td-ux-15';
-import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-15';
-import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs?v=td-ux-15';
+import {productionMarkup,productionAction,recoveryMarkup} from './production-view.mjs?v=td-ux-16';
+import {ProductionScene} from './production-scene.mjs?v=td-ux-16';
+import {rosterOf} from './production.mjs?v=td-ux-16';
+import {upgradeMode,staffQuote,startResearch,settleResearch,speedResearch,timeText,FACILITY_DEFS} from './research.mjs?v=td-ux-16';
+import {SHOP_ITEMS,SHOP_GROUPS,shopQuote,purchaseShop,useShieldReview} from './shop.mjs?v=td-ux-16';
+import {targetEconomy} from './campaign-review.mjs?v=td-ux-16';
+import {TOWER_IDS,HERO_DEFS,FORCES,FORCE_IDS,COMPOSITIONS,TOWER_DEFS,MAX_CAPACITY_LEVEL,MAX_ARMY,capacity,upgradeQuote,upgradeGrowth,short,rangeLabel,damageMultiplier,forceComposition,wallStats} from './progression.mjs?v=td-ux-16';
+import {CATALOG,PADS,ROUTE,WORLD} from './engine.mjs?v=td-ux-16';
+import {growthItem,growthKind,comparisonRows,matchupRows,GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-16';
+import {EXPEDITION_MODES,REVIEW_TARGETS,REVIEW_AREAS,REVIEW_MISSIONS,targetSnapshot,defenseSummary,counterWarnings,validateReviewPlan} from './expedition-model.mjs?v=td-ux-16';
 const escapeUI=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const uiNumber=n=>Number(n).toLocaleString('ko-KR',{maximumFractionDigits:Math.abs(n)>0&&Math.abs(n)<.1?3:2});
+export function setBattleControlsInert(root,value){
+ const host=root.closest?.('.td-root')||root.closest?.('#game')||root.parentElement;
+ const controls=host?.querySelector?.('#controls');if(controls)controls.inert=value;
+ return !!controls;
+}
 export class ReviewUI{
  constructor(root,session,art){
   this.root=root;this.root.setAttribute('role','dialog');this.root.setAttribute('aria-modal','true');this.root.setAttribute('aria-label','물류센터 지휘실');this.s=session;this.art=art;this.productionRole='army';this.productionCycles={army:1,air:1,navy:1};this.productionOrdersOpen={army:false,air:false,navy:false};this.productionScene=new ProductionScene(art);this.reducedMotion=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;this.page=null;this.category='tower';this.selected='cannon';this.detail=false;this.steps=1;this.heroMode='level';this.targetRole='army';this.showExtra=false;this.expDetail=false;this.notice='';this.receipt=null;this.shopGroup='growth';this.shopSelected='normalBook';this.shopQuantity=1;this.shopDetail=false;this.lastPurchase=null;this.timerAt=0;
@@ -24,7 +29,7 @@ export class ReviewUI{
  get mobile(){return this.s.width<760;}
  button(action,label,value='',cls='',disabled=false){return `<button type="button" class="ui-button ${cls}" data-ui="${action}" data-value="${escapeUI(value)}" ${disabled?'disabled':''}>${label}</button>`;}
  open(page='management',category='tower'){if(this.s.campaign.pending){this.s.notify('진행 중인 전투로 돌아갑니다.');return;}this.plan.amount=this.s.campaign.troops;this.plan.shieldActive=this.s.campaign.shieldUntil>Date.now();this.s.growthOpen=false;this.page=page;this.category=category;this.selected=GROWTH_CATEGORIES[category].ids[0];this.detail=false;this.expDetail=false;this.shopDetail=false;this.receipt=null;this.notice='';this.render(false);}
- close(){this.page=null;this.root.hidden=true;document.querySelector('#controls').inert=false;this.root.innerHTML='';}
+ close(){this.page=null;this.root.hidden=true;setBattleControlsInert(this.root,false);this.root.innerHTML='';}
  dispatchCanvasAction(id,data){if(id==='exit-battle'){if(this.s.campaign.pending){this.s.notify('전투 결과를 저장 중이에요. 잠시 후 나갈 수 있어요.');return;}this.s.edit();this.open('expedition');return;}if(id==='history')return this.open('history');if(this.s.campaign.pending&&['growth','army','prepare','again'].includes(id)){this.s.notify('출정 중에는 후퇴 후 관리할 수 있어요.');return;}if(id==='growth')return this.open('management','tower');if(id==='army')return this.open('production');if(id==='prepare'||id==='again')return this.open('expedition');this.s.action(id,data);}
  action(id,value){
   if(productionAction(this,id,value))return;
@@ -80,7 +85,7 @@ export class ReviewUI{
  header(){const title=this.page==='production'?'병력 생산':this.page==='recovery'?'회복·복구':this.page==='shop'?'보급 상점':this.page==='queue'?'스탭 연구':this.page==='expedition'?'출정 준비':this.page==='history'?'전투 기록':this.page==='transition'?'성장 전환 미리보기':this.page==='matrix'?'방어 상성표':this.category==='mine'?'채굴 연구':['force','capacity','military'].includes(this.category)?'병력 관리':'방어 관리';return `<header class="command-header"><div><span class="ui-eyebrow">컬리 아포칼립스 · V7</span><h1>${title}</h1></div><span class="review-badge">체험 데이터</span>${this.button('close','전장','','ui-close')}</header><nav class="command-nav" aria-label="지휘 메뉴">${[['expedition','출정'],['management','방어 관리'],['army','병력 관리'],['mining','채굴'],['shop','상점'],['history','기록']].map(([id,label])=>this.button('page',label,id,(id==='army'?['production','recovery'].includes(this.page)||this.page==='management'&&['force','capacity','military'].includes(this.category):id==='management'?this.page==='management'&&!['force','capacity','military','mine'].includes(this.category):id==='mining'?this.page==='management'&&this.category==='mine':this.page===id)?'selected':'')).join('')}</nav>`;}
  render(preserve=true){
   const scroll={};if(preserve)for(const el of this.root.querySelectorAll('[data-scroll]'))scroll[el.dataset.scroll]=el.scrollTop;
-  const active=document.activeElement,focus=active?.id||null;this.root.hidden=false;document.querySelector('#controls').inert=true;this.root.innerHTML=`<div class="command-shell ${this.page==='management'&&this.detail?'detail-mode':this.page==='expedition'&&this.expDetail?'dispatch-mode':this.page==='shop'&&this.shopDetail?'shop-detail-mode':this.page==='production'?'production-mode':''}">${this.header()}${this.page==='expedition'?this.expedition():this.page==='matrix'?this.matrix():this.page==='production'?productionMarkup(this):this.page==='recovery'?recoveryMarkup(this):this.page==='shop'?this.shop():this.page==='queue'?this.queue():this.page==='history'?this.history():this.page==='transition'?this.transition():this.management()}<div class="ui-notice" role="status">${escapeUI(this.notice)}</div></div>`;
+  const active=document.activeElement,focus=active?.id||null;this.root.hidden=false;setBattleControlsInert(this.root,true);this.root.innerHTML=`<div class="command-shell ${this.page==='management'&&this.detail?'detail-mode':this.page==='expedition'&&this.expDetail?'dispatch-mode':this.page==='shop'&&this.shopDetail?'shop-detail-mode':this.page==='production'?'production-mode':''}">${this.header()}${this.page==='expedition'?this.expedition():this.page==='matrix'?this.matrix():this.page==='production'?productionMarkup(this):this.page==='recovery'?recoveryMarkup(this):this.page==='shop'?this.shop():this.page==='queue'?this.queue():this.page==='history'?this.history():this.page==='transition'?this.transition():this.management()}<div class="ui-notice" role="status">${escapeUI(this.notice)}</div></div>`;
   if(preserve)for(const el of this.root.querySelectorAll('[data-scroll]'))el.scrollTop=scroll[el.dataset.scroll]||0;
   if(focus&&this.root.querySelector('#'+focus))this.root.querySelector('#'+focus).focus({preventScroll:true});if(this.notice){clearTimeout(this.noticeTimer);this.noticeTimer=setTimeout(()=>{this.notice='';const n=this.root.querySelector('.ui-notice');if(n)n.textContent='';},2600);}
  }

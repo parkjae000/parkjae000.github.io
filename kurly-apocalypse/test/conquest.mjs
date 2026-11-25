@@ -1,6 +1,6 @@
-import {SIEGE_PADS,siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-15';
-import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS,FORCES} from './progression.mjs?v=td-ux-15';
-import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-15';
+import {SIEGE_PADS,siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-16';
+import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS,FORCES} from './progression.mjs?v=td-ux-16';
+import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-16';
 export const OCCUPATION_PROTECTION_MS=2*3600000;
 export function neutralDefense(area){
  const level=Math.max(1,Math.min(30,1+2*(area.level-1))),growth=defaultGrowth();

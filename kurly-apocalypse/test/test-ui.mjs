@@ -1,15 +1,15 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-15';
-import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-15';
-import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-15';
-import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-15';
-import {ReviewUI} from './review-ui.mjs?v=td-ux-15';
-import {growthKind} from './ui-model.mjs?v=td-ux-15';
-import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs?v=td-ux-15';
-import {PADS,CATALOG} from './engine.mjs?v=td-ux-15';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-16';
+import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-16';
+import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-16';
+import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-16';
+import {ReviewUI} from './review-ui.mjs?v=td-ux-16';
+import {growthKind} from './ui-model.mjs?v=td-ux-16';
+import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs?v=td-ux-16';
+import {PADS,CATALOG} from './engine.mjs?v=td-ux-16';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const remaining=until=>Math.max(0,Math.ceil((until-Date.now())/60000))+'분';
 export class TestUI extends ReviewUI{
- constructor(root,s,art){super(root,s,art);this.plan.routePlan='balanced';this.plan.mode='conquest';this.plan.target=s.latest.areas[0]?.id;this.s.onRemoteUpdate=()=>{if(this.isOpen)this.render();};}
+ constructor(root,s,art){super(root,s,art);this.plan.routePlan='balanced';this.plan.mode='conquest';this.plan.target=s.latest.areas[0]?.id;this.s.onRemoteUpdate=()=>{if(this.isOpen&&this.root.isConnected)this.render();};}
  header(){return super.header().replace('컬리 아포칼립스 · V7','TEST · '+esc(this.s.latest.me.name)).replace('체험 데이터','서버 저장').replace(this.button('page','채굴','mining'),this.button('classic','채굴')+this.button('mining-research','채굴 연구'));}
  async request(type,data={}){if(this.requestPending)return null;this.requestPending=true;this.notice='서버에 적용 중이에요…';if(this.isOpen)this.render();try{const result=await this.s.send(type,data);this.notice=result.message||'서버에 적용했어요.';if(this.isOpen)this.render();return result;}catch(e){this.notice=e.message;if(this.isOpen)this.render();return null;}finally{this.requestPending=false;if(this.isOpen)this.render();}}
  action(id,value){
