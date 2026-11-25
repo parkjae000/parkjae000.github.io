@@ -14,7 +14,7 @@ import {chatNotification} from './social.js?v=20261124-v227-worker-floor';
 import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261124-v227-worker-floor';
 import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v227-worker-floor';
 import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v227-worker-floor';
-const RELEASE='20261125-v230-clear-ui';
+const RELEASE='20261125-v231-unlimited-workers';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -230,7 +230,7 @@ function renderMine(){
   </button>`;};
   const markup=`<div class="mine-map">
      <div class="mine-hud">
-       <div class="mine-hud-stat"><b>👷 ${workers.length}/8</b><span data-mining-dps>⚒ ${number(state.mineStats.rawDps*miningMultiplier(g,serverNow()))} DPS${boost>0?' · 2배':''}</span><span>📦 ${number(g.boxes)} · 💰 ${number(g.cash)}</span><button class="mine-level-guide" data-open-merge>합성 · 최대 Lv.${WORKER_MAX_LEVEL}</button>${developmentCoverageMarkup('mining')}</div>
+       <div class="mine-hud-stat"><b>👷 ${number(workers.length)}명</b><span data-mining-dps>⚒ ${number(state.mineStats.rawDps*miningMultiplier(g,serverNow()))} DPS${boost>0?' · 2배':''}</span><span>📦 ${number(g.boxes)} · 💰 ${number(g.cash)}</span><button class="mine-level-guide" data-open-merge>합성 · ${workers.some(w=>w.parked)?'대기 '+number(workers.filter(w=>w.parked).length)+'명':'최대 Lv.'+WORKER_MAX_LEVEL}</button>${developmentCoverageMarkup('mining')}</div>
        <div class="mine-hud-actions">
         <span class="mine-sector">구역 ${m.zone+1}</span><button data-open-mail class="mine-icon mail-button" title="우편함">✉<b data-mail-badge ${!(g.mailbox||[]).some(m=>!m.readAt)?'hidden':''}>${(g.mailbox||[]).filter(m=>!m.readAt).length}</b></button>
         <button data-events class="mine-icon" title="이벤트">🎁</button><button data-notices class="mine-icon" title="공지사항" aria-label="공지사항">📣</button>
@@ -246,11 +246,11 @@ function renderMine(){
        ${workers.filter(w=>!w.parked).map(workerMarker).join('')}
      </div>
      <div class="mine-bottom">
-       <button class="mine-summon" data-summon ${g.boxes<state.mineStats.summonCost||workers.length>=8?'disabled':''}>
+       <button class="mine-summon" data-summon ${g.boxes<state.mineStats.summonCost?'disabled':''}>
         <span>✦ +</span> Lv.${state.mineStats.summonLevel||1} 일용직 소환 <small>${state.mineStats.summonCost===0?'첫 일용직 무료':'📦 '+number(state.mineStats.summonCost)}</small>
        </button>
        
-       ${workers.some(w=>w.parked)?'<span class="parked-note">대기 일용직은 통로가 열리면 배치됩니다.</span>':''}${boost>0?`<span class="mine-boost">⚡ ${timeLeft(boost)}</span>`:''}
+       ${boost>0?`<span class="mine-boost">⚡ ${timeLeft(boost)}</span>`:''}
      </div>
      ${gate.done?'<div class="zone-clear"><span>구역 돌파!</span><button class="btn btn-gold" data-next-zone>다음 구역으로 이동 ↑</button></div>':''}
    </div>`;
@@ -360,12 +360,15 @@ function showZoneTransition(zone){
  el.classList.remove('hidden');zoneTimer=setTimeout(()=>el.classList.add('hidden'),1900);
 }
 function openMerge(){
- const g=state.me.game,ws=g.workers||[],pairs=[];
- for(let i=0;i<ws.length;i++)for(let j=i+1;j<ws.length;j++)if(canMergeWorkers(ws[i],ws[j]))pairs.push([ws[i],ws[j]]);
+ const g=state.me.game,ws=g.workers||[],pairs=[],byLevel=new Map();
+ // One available pair per level keeps the list usable with unlimited ownership.
+ for(const w of ws){const group=byLevel.get(w.level)||[];if(group.length<2)group.push(w);byLevel.set(w.level,group);}
+ for(const [a,b] of byLevel.values())if(canMergeWorkers(a,b))pairs.push([a,b]);
+ pairs.sort((a,b)=>a[0].level-b[0].level);
  showModal(`<div class="modal-header"><h2 class="modal-title">🔀 일용직 합성 · 최대 Lv.${WORKER_MAX_LEVEL}</h2><button class="modal-close" data-close>닫기 ✕</button></div>
  <p class="section-note">같은 레벨 2명을 합쳐 1레벨 올려요. 한 명의 채굴 속도는 이전 레벨의 2.4배로, 두 명의 합계보다 20% 빨라져요.</p>
  <p class="section-note">경력 확률 연구: ${Math.round((state.mineStats.mergeChance||0)*100)}% 확률로 2레벨 상승 · Lv.${WORKER_MAX_LEVEL}을 넘지 않아요. 최대 레벨 직원은 채굴에 계속 사용할 수 있어요.</p>
- <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 보유 일용직도 기본 소환 레벨보다 낮으면 무료로 올라가요. 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>다음 구역에서도 일용직의 레벨과 인원을 유지해요. 입구 자리가 부족한 직원은 통로가 열리면 배치돼요.</p></div>
+ <div class="miner-progression-note"><b>기본 소환 Lv.${state.mineStats.summonLevel||1} / 최대 Lv.${SUMMON_MAX_LEVEL}</b><p>경력 증가 연구는 소환 시작 레벨을 올려요. 보유 일용직도 기본 소환 레벨보다 낮으면 무료로 올라가요. 합성으로 최대 Lv.${WORKER_MAX_LEVEL}까지 성장해요.</p><p>보유 인원 제한 없이 소환할 수 있어요. 자리가 없으면 대기하며, 대기 일용직도 여기서 합성할 수 있어요. 통로가 열리면 자동 배치되고 다음 구역에서도 모두 유지돼요.</p></div>
  ${pairs.length?pairs.map(([a,b])=>`<div class="shop-item"><span class="si">👷</span><div class="info"><strong>Lv.${a.level} + Lv.${b.level} → Lv.${a.level+1}</strong><small>채굴 속도 합계 ${number(workerDps({...a,parked:false},g)*2)} → ${number(workerDps({...a,parked:false,level:a.level+1},g))} DPS</small></div><button class="btn btn-gold" data-merge="${a.id}|${b.id}">합성</button></div>`).join(''):`<p class="muted">${ws.some(w=>w.level>=WORKER_MAX_LEVEL)?`Lv.${WORKER_MAX_LEVEL} MAX 직원은 추가로 합성할 수 없어요. 그 아래 같은 레벨 2명이 필요해요.`:'합성하려면 같은 레벨 일용직 2명이 필요해요.'}</p>`}
  <details class="miner-level-table"><summary>레벨별 기본 채굴 속도 보기 · Lv.1~${WORKER_MAX_LEVEL}</summary><p>연구·숙련도·정복지·부스트·지게차 효과 적용 전 수치예요.</p><table><thead><tr><th>직원 레벨</th><th>기본 채굴 속도</th></tr></thead><tbody>${Array.from({length:WORKER_MAX_LEVEL},(_,i)=>`<tr><th>Lv.${i+1}${i+1===WORKER_MAX_LEVEL?' MAX':''}</th><td>${new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(workerBaseDps(i+1))} DPS</td></tr>`).join('')}</tbody></table></details>`);
 }
