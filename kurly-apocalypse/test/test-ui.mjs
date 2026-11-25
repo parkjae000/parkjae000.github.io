@@ -1,5 +1,5 @@
 import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs';
-import {ReviewUI} from './review-ui.mjs';
+import {ReviewUI} from './review-ui.mjs?v=td-ux-10';
 import {growthKind} from './ui-model.mjs';
 import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs';
 import {PADS,CATALOG} from './engine.mjs';

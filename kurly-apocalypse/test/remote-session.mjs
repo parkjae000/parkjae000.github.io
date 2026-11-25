@@ -1,5 +1,5 @@
-import {Session} from './session.mjs';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-integration-9';
+import {Session} from './session.mjs?v=td-ux-10';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-10';
 import {battleFromRecord} from './replay.mjs';
 import {rosterOf} from './production.mjs';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';

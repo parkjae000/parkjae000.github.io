@@ -1,29 +1,29 @@
-import {RemoteSession} from './remote-session.mjs?v=td-integration-9';
-import {TestUI} from './test-ui.mjs?v=td-integration-9';
-import {Renderer} from './renderer-v2.mjs?v=td-integration-9';
-import {browserArt} from './art.mjs?v=td-integration-9';
+import {RemoteSession} from './remote-session.mjs?v=td-ux-10';
+import {CompactUI} from './compact-ui.mjs?v=td-ux-10';
+import {Renderer} from './renderer-v2.mjs?v=td-ux-10';
+import {browserArt} from './art.mjs?v=td-ux-10';
 import {EditorInteraction,editorPads} from './editor-interaction.mjs';
-import {CATALOG,WORLD} from './engine.mjs?v=td-integration-9';
+import {CATALOG,WORLD} from './engine.mjs?v=td-ux-10';
 import {HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel} from './progression.mjs';
 import {GROWTH_CATEGORIES} from './ui-model.mjs';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-integration-9',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
+async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css','compact.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-ux-10',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
 class IntegratedSession extends RemoteSession{
  constructor(td,token,api){super(td,token);this.api=api;this.active=false;}
  async send(type,params={}){params=structuredClone(params);const run=async()=>{this.busy=true;try{const out=await this.api('/api/action','POST',{type,...params,requestId:crypto.randomUUID()});if(out.td)this.apply(out.td);this.notify(out.message||'저장했어요.');return out;}catch(error){this.notify(error.message);throw error;}finally{this.busy=false;}};const pending=this.requestChain.then(run);this.requestChain=pending.catch(()=>{});return pending;}
  async poll(force=false){if(!this.active||this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?2000:6500))return;this.polling=true;try{const result=await this.api('/api/td-state');this.apply(result.td);}catch(error){this.notify(error.message);}finally{this.polling=false;this.lastPoll=Date.now();}}
 }
-class EmbeddedUI extends TestUI{
+class EmbeddedUI extends CompactUI{
  constructor(root,session,art,owner){super(root,session,art);this.owner=owner;root.removeAttribute('aria-modal');root.setAttribute('role','region');}
  open(page='management',category='tower'){this.plan.amount=this.s.campaign.troops;this.plan.shieldActive=this.s.campaign.shieldUntil>Date.now();this.s.growthOpen=false;this.page=page;this.category=category;this.selected=GROWTH_CATEGORIES[category]?.ids[0]||'cannon';this.detail=false;this.expDetail=false;this.shopDetail=false;this.receipt=null;this.notice='';this.render(false);}
- header(){const title=this.page==='production'?'병력 관리':this.page==='expedition'?'출정':this.page==='shop'?'보급 상점':this.page==='history'?'전투 기록':this.page==='queue'?'진행 중인 연구':this.page==='recovery'?'회복·복구':this.page==='matrix'?'전장 상성표':this.page==='transition'?'성장 전환 내역':this.category==='mine'?'채굴 연구':['force','capacity','military'].includes(this.category)?'병력 연구':'방어 강화';return `<header class="command-header td-command-header"><h2>${title}</h2><div>${this.page==='expedition'?this.button('editor','방어 배치')+this.button('local-page','방어 강화','management')+this.button('local-page','기록','history'):this.button('editor',this.s.campaign.pending?'전투 보기':'방어 배치')}</div></header>`;}
+
  action(id,value){
   if(id==='classic'){this.owner.navigate('explore');return;}
   if(id==='page'&&value==='mining'){this.owner.navigate('mine');return;}
   if(id==='page'&&value==='shop'){this.owner.navigate('shop');return;}
   if(id==='page'&&value==='army'){this.owner.navigate('center');return;}
   if(id==='editor'||id==='close'){if(this.s.campaign.pending){this.close();return;}this.owner.navigate('defense',{scope:this.s.scope});return;}
-  if(id==='local-page'){this.open(value);return;}
+  if(id==='local-page'){this.open(value,this.category);return;}
   if(id==='scope'){this.owner.navigate('defense',{scope:value});return;}
   if(id==='range'){super.action(id,value);this.owner.refreshEditor();return;}
   return super.action(id,value);
