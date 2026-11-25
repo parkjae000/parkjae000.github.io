@@ -23,7 +23,7 @@ import {chatNotification} from './social.js?v=20261124-v227-worker-floor';
 import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261125-v245-forklift-pass';
 import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v227-worker-floor';
 import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v227-worker-floor';
-const RELEASE='20261125-v245-forklift-pass';
+const RELEASE='20261125-v245-forklift-voucher';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE=/^(www\.)?jparkapps\.xyz$|^parkjae000\.github\.io$/.test(location.hostname)?'https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse':location.hostname.endsWith('.supabase.co')?location.origin+'/functions/v1/kurly-apocalypse':'';
@@ -699,7 +699,7 @@ function openEvents(page=eventsPage){eventsPage=page==='workbook'?'workbook':'at
 
 function inventoryMarkup(){return warehouseItemsMarkup();}
 
-function openForklift(){const g=state.me.game,active=g.forklift.permanent||g.forklift.until>serverNow();showModal(`${modalHead('지게차 배치')}<div class="inventory-card"><img src="assets/forklift-cute.webp" alt="지게차"><p>${active?'일용직 1명에게 탑승시켜 주세요.':'상점의 1일권 또는 출석 보상의 7일권을 사용해 주세요.'}</p>${active?g.workers.filter(w=>!w.parked).map(w=>`<button class="btn btn-gold btn-wide" data-equip-forklift="${w.id}">Lv.${w.level} 일용직 ${g.forklift.workerId===w.id?'✓ 탑승 중':'탑승'}</button>`).join(''):''}${g.forklift.workerId?'<button class="btn btn-outline" data-equip-forklift="">내리기</button>':''}<button class="btn btn-outline btn-wide" data-inventory>이용권 확인</button></div>`);}
+function openForklift(){const g=state.me.game,active=g.forklift.permanent||g.forklift.until>serverNow();showModal(`${modalHead('지게차 배치')}<div class="inventory-card"><img src="assets/forklift-cute.webp" alt="지게차"><p>${active?'일용직 1명에게 탑승시켜 주세요.':'보유한 지게차 이용권을 사용해 주세요. 7일권은 출석 보상으로 받을 수 있어요.'}</p>${active?g.workers.filter(w=>!w.parked).map(w=>`<button class="btn btn-gold btn-wide" data-equip-forklift="${w.id}">Lv.${w.level} 일용직 ${g.forklift.workerId===w.id?'✓ 탑승 중':'탑승'}</button>`).join(''):''}${g.forklift.workerId?'<button class="btn btn-outline" data-equip-forklift="">내리기</button>':''}<button class="btn btn-outline btn-wide" data-inventory>이용권 확인</button></div>`);}
 function maybeEventPopup(){if(updateNoticeController?.maybe())return;if(!state?.me.game.patchRewards?.[PATCH_ID]&&patchNoticeController?.maybe())return;if(!state||showOnboard||isTrainingActive()||(state.me.game.onboarding&&!state.me.game.onboarding.acknowledged)||animation||recruiting||popupPending||!$('modalOverlay').classList.contains('hidden'))return;const a=state.progression?.attendance,today=new Date(serverNow()+9*3600000).toISOString().slice(0,10);if(a?.claimable&&a.popupDay!==today){popupPending=true;a.popupDay=today;openEvents('attendance');api('/api/action','POST',{type:'event/popup',requestId:crypto.randomUUID()}).finally(()=>popupPending=false);}}
 function handleV17Button(b){
  const d=b.dataset;
