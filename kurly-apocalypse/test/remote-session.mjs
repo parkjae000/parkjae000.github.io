@@ -4,13 +4,13 @@ import {battleFromRecord} from './replay.mjs';
 import {rosterOf} from './production.mjs';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
-export async function testApi(path,{token,body}={}){const r=await fetch(API+path,{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
+export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
 export class RemoteSession extends Session{
  constructor(td,token){
   super({getItem:key=>key===STORAGE_KEY?JSON.stringify({version:7,items:td.items,growth:td.growth,campaign:{...td.campaign,pending:null}}):null,setItem(){}});
   this.remote=true;this.token=token;this.scope='home';this.requestChain=Promise.resolve();this.lastPoll=0;this.polling=false;this.busy=false;this.latest=null;this.apply(td);
  }
- apply(td){
+ apply(td){if(this.latest&&td.serverTime<this.latest.serverTime)return;
   const previous=this.campaign,oldPending=previous?.pending;this.latest=td;this.serverOffset=td.serverTime-Date.now();this.growth=td.growth;this.campaign=td.campaign;this.amount=this.campaign.pending?.amount||this.campaign.troops;
   for(const role of ['army','air','navy']){const difference=(rosterOf(this.campaign)[role]||0)-(rosterOf(previous)[role]||0);if(difference>0&&!oldPending)this.productionEvents.push({role,count:difference,at:Date.now(),kind:'production'});}this.productionEvents=this.productionEvents.slice(-9);
   const items=this.scope==='home'?td.items:td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||td.items;this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty)this.editor=new DefenseEditor(items);
@@ -23,7 +23,7 @@ export class RemoteSession extends Session{
   const run=async()=>{this.busy=true;try{const r=await testApi('/api/action',{token:this.token,body:{type,...params,requestId:crypto.randomUUID()}});if(r.td)this.apply(r.td);this.notify(r.message||'저장했어요.');return r;}catch(e){this.notify(e.message);throw e;}finally{this.busy=false;}};
   const request=this.requestChain.then(run);this.requestChain=request.catch(()=>{});return request;
  }
- async poll(force=false){if(this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?1600:5000))return;this.polling=true;this.lastPoll=Date.now();try{const r=await testApi('/api/td-state',{token:this.token});this.apply(r.td);}catch(e){this.notify(e.message);}finally{this.polling=false;}}
+ async poll(force=false){if(this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?1600:5000))return;this.polling=true;this.lastPoll=Date.now();try{const r=await testApi('/api/td-state',{token:this.token});this.apply(r.td);}catch(e){this.notify(e.message);}finally{this.polling=false;this.lastPoll=Date.now();}}
  save(){this.send('td/layout',{scope:this.scope,items:this.editor.items}).then(()=>{this.editor.dirty=false;}).catch(()=>{});return true;}
  finishBattle(){if(this.remote)this.poll(true);}
  action(id,data){
