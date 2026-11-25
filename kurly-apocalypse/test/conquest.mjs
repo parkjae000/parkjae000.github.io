@@ -1,6 +1,6 @@
-import {SIEGE_PADS,siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-14';
-import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS,FORCES} from './progression.mjs?v=td-ux-14';
-import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-14';
+import {SIEGE_PADS,siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-15';
+import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS,FORCES} from './progression.mjs?v=td-ux-15';
+import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-15';
 export const OCCUPATION_PROTECTION_MS=2*3600000;
 export function neutralDefense(area){
  const level=Math.max(1,Math.min(30,1+2*(area.level-1))),growth=defaultGrowth();
@@ -30,7 +30,7 @@ export function ownedDefense(area,td,stationed=null){
  return {variant:'open-siege',rulesVersion:11,items:structuredClone(items),growth:structuredClone(td.growth),strength:1,fortressProfile:{wallMax:Math.round(baseWall*(1+support.wallHp)),baseWall,centerMax:Math.round(24000*1.18**(td.growth.facilityLevels.center-1))},support,recommended:neutral.recommended};
 }
 export function survivorsByRole(battle){return Object.fromEntries(FORCE_IDS.map(id=>[id,battle.forceTotals[id]-battle.deathsByRole[id]]));}
-export function countsFromLegacy(garrison){const r=garrison?.formation?.roles;if(r&&r.spear+r.ranged+r.shield===garrison.amount)return {army:r.spear,air:r.ranged,navy:r.shield};return forceComposition(garrison?.amount||0);}
+export function countsFromLegacy(garrison){const r=garrison?.formation?.roles;if(r){const army=r.spear??r.assault,air=r.ranged??r.engineer,navy=r.shield??r.support;if([army,air,navy].every(n=>Number.isSafeInteger(n)&&n>=0)&&army+air+navy===garrison.amount)return {army,air,navy};}return forceComposition(garrison?.amount||0);}
 export function legacyFormation(counts){return {preset:'balanced',amount:FORCE_IDS.reduce((n,id)=>n+counts[id],0),roles:{spear:counts.army,ranged:counts.air,shield:counts.navy}};}
 
 export function areaIncomeText(a){const p=[];if(a.boxesPerHour)p.push('박스 '+a.boxesPerHour);if(a.cashPerHour)p.push('골드 '+a.cashPerHour);if(a.normalHeroXpPerHour)p.push('일반 교본 '+a.normalHeroXpPerHour+' XP');if(a.rareHeroXpPerHour)p.push('희귀 교본 '+a.rareHeroXpPerHour+' XP');for(const [id,n] of Object.entries(a.shardsPerHour||{}))p.push(HERO_DEFS[id].name+' 조각 '+n+'개');return p.join(' · ')+' / 시간';}

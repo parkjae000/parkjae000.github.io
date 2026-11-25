@@ -1,10 +1,10 @@
-import {siegeLayout} from './conquest.mjs?v=td-ux-14';
-import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-14';
-import {CATALOG} from './engine.mjs?v=td-ux-14';
-import {Session} from './session.mjs?v=td-ux-14';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-14';
-import {battleFromRecord} from './replay.mjs?v=td-ux-14';
-import {rosterOf} from './production.mjs?v=td-ux-14';
+import {siegeLayout} from './conquest.mjs?v=td-ux-15';
+import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-15';
+import {CATALOG} from './engine.mjs?v=td-ux-15';
+import {Session} from './session.mjs?v=td-ux-15';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-15';
+import {battleFromRecord} from './replay.mjs?v=td-ux-15';
+import {rosterOf} from './production.mjs?v=td-ux-15';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
 export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}
@@ -13,7 +13,7 @@ export class RemoteSession extends Session{
   super({getItem:key=>key===STORAGE_KEY?JSON.stringify({version:7,items:td.items,growth:td.growth,campaign:{...td.campaign,pending:null}}):null,setItem(){}});
   this.remote=true;this.token=token;this.scope='home';this.requestChain=Promise.resolve();this.lastPoll=0;this.polling=false;this.busy=false;this.latest=null;this.apply(td);
  }
- apply(td){if(this.latest&&td.serverTime<this.latest.serverTime)return;
+ apply(td){if(this.latest&&(td.world!==this.latest.world||td.me.id!==this.latest.me.id||td.serverTime<this.latest.serverTime))return;
   const previous=this.campaign,oldPending=previous?.pending;this.latest=td;if(this.scope!=='home'&&!td.areas.some(a=>a.id===this.scope&&a.mine)){this.scope='home';this.editor.dirty=false;}this.serverOffset=td.serverTime-Date.now();this.growth=td.growth;this.campaign=td.campaign;this.amount=this.campaign.pending?.amount||this.campaign.troops;
   for(const role of ['army','air','navy']){const difference=(rosterOf(this.campaign)[role]||0)-(rosterOf(previous)[role]||0);if(difference>0&&!oldPending)this.productionEvents.push({role,count:difference,at:Date.now(),kind:'production'});}this.productionEvents=this.productionEvents.slice(-9);
   const items=this.scope==='home'?td.items:siegeLayout(td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||[]);this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty){const selected=this.editor.selected,tool=this.editor.tool;this.editor=new DefenseEditor(items);this.editor.tool=tool;if(selected)this.editor.select(selected);}

@@ -1,4 +1,4 @@
-import {towerStats} from './progression.mjs?v=td-ux-14';
+import {towerStats} from './progression.mjs?v=td-ux-15';
 export const CONQUEST_RANGE_BONUS={cannon:150,tesla:135,ice:135,laser:150};
 export function conquestTowerStats(growth,id,support=null){
  const personal=towerStats(growth,id),base={...personal,range:personal.range+CONQUEST_RANGE_BONUS[id]},area=support?.towerArea||0;

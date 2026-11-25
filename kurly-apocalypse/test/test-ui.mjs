@@ -1,11 +1,11 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-14';
-import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-14';
-import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-14';
-import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-14';
-import {ReviewUI} from './review-ui.mjs?v=td-ux-14';
-import {growthKind} from './ui-model.mjs?v=td-ux-14';
-import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs?v=td-ux-14';
-import {PADS,CATALOG} from './engine.mjs?v=td-ux-14';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-15';
+import {SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-15';
+import {expeditionMarkup} from './expedition-view.mjs?v=td-ux-15';
+import {CONQUEST_PLANS,splitConquestRoster,LANE_NAMES,CONQUEST_PADS,CONQUEST_ROUTES} from './conquest-geometry.mjs?v=td-ux-15';
+import {ReviewUI} from './review-ui.mjs?v=td-ux-15';
+import {growthKind} from './ui-model.mjs?v=td-ux-15';
+import {short,FORCES,TOWER_DEFS,HERO_DEFS} from './progression.mjs?v=td-ux-15';
+import {PADS,CATALOG} from './engine.mjs?v=td-ux-15';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const remaining=until=>Math.max(0,Math.ceil((until-Date.now())/60000))+'분';
 export class TestUI extends ReviewUI{
@@ -42,7 +42,7 @@ export class TestUI extends ReviewUI{
  shopItemDetail(){return super.shopItemDetail().replace('체험 구매','구매하기');}
  expedition(){return expeditionMarkup(this);}
 
- transition(){const m=this.s.latest.migration;return `<div class="history-content ui-scroll"><h2>TEST 성장 전환 내역</h2><div class="transition-summary"><b>기존 보유 파트장과 자원을 보존하고 재투자할 수 있도록 전환했어요.</b><p>전투 연구 환급: ${short(m.boxes)}박스</p><p>일반 교본 ${short(m.hero.normalXp)} XP · 희귀 교본 ${short(m.hero.rareXp)} XP · 전용 조각 ${short(m.hero.shards)}개 반환</p><p>채굴·센터·방벽·자가 수리 연구는 유지합니다. 파트장 레벨·성급은 보유 상태를 유지한 채 초기 단계로 전환했습니다.</p><p>${esc(m.basis)}</p><p>시험 적용 전 상태는 계정별로 보관했습니다. 다른 서버에는 이 전환을 적용하지 않았어요.</p></div></div>`;}
+ transition(){const m=this.s.latest.migration;return `<div class="history-content ui-scroll"><h2>성장 계승·환급 내역</h2><div class="transition-summary"><b>현재 파트장·채굴·센터·방벽 성장은 그대로 계승합니다.</b><p>교체된 전투 연구 환급: ${short(m.boxes)} 박스</p><p>파트장 레벨·성급·XP·조각·교본과 남은 상품은 보존합니다. 이미 TEST에서 재투자한 강화도 유지합니다.</p><p>제거된 거점의 병력과 탐사 병력은 귀환하고, 완료된 보상은 한 번만 정산합니다.</p><p>전환 전 상태와 항목별 환급 내역은 계정에 보관됩니다.</p></div></div>`;}
  history(){const records=this.s.campaign.history;return `<div class="history-content ui-scroll" data-scroll="history"><div class="history-tools">${this.button('page','성장 전환 내역','transition')}${this.button('matrix','상성표')}</div><h2>최근 전투 ${records.length}건</h2>${records.map(r=>`<article class="history-card"><div><span>${r.mode==='conquest'?'정복전':'센터 약탈전'}</span><h3>${esc(r.targetName)}</h3><b>${r.status==='victory'?'작전 성공':r.status==='retreated'?'후퇴 완료':'공략 실패'}</b>${r.powerAtStart?`<p>공격력 ${short(r.powerAtStart.attacker)} · 방어력 ${short(r.powerAtStart.defender)}</p>`:''}<p>출격 ${short(r.amount)} · 귀환 ${short(r.returned)} · 부상 ${short(r.wounded)}</p><p>${r.mode==='conquest'?(r.status==='victory'?'소유권·생산 수입 확보 · 거점 '+(r.protectionHours||2)+'시간 보호':'소유권 유지 · 생존 병력 전원 귀환'):'박스 +'+short(r.loot.boxes)+' · 골드 +'+short(r.loot.cash)}</p>${r.summary.variant==='open-siege'?`<p>전면 공성전 · 방벽 ${r.summary.wallBrokenAt===null?'미돌파':r.summary.wallBrokenAt.toFixed(1)+'초 돌파'} · 방어 지원 ${short(r.summary.support?.count||0)}명</p>`:''}${r.summary.walls?`<div class="route-results">${r.summary.walls.map((w,i)=>`<span>${LANE_NAMES[i]} ${w.brokenAt===null?'미돌파':w.brokenAt.toFixed(1)+'초 돌파'}</span>`).join('')}</div>`:''}${r.summary.facilitiesDisabled?.map(f=>`<small>${esc(f.name)} ${f.at.toFixed(1)}초 무력화 </small>`).join('')||''}</div>${this.button('play-history','리플레이',r.id,'primary')}</article>`).join('')||'<div class="ui-empty">전투가 끝나면 방벽 돌파 시점과 전투 결과를 확인할 수 있어요.</div>'}</div>`;}
 
 }

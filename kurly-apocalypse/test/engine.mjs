@@ -1,4 +1,4 @@
-import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-14';
+import {TOWER_DEFS,HERO_DEFS,FORCES,FORCE_IDS,defaultGrowth,towerStats,heroStats,wallStats,MAX_ARMY,short,damageMultiplier,forceComposition} from './progression.mjs?v=td-ux-15';
 export const WORLD={w:1536,h:1024};
 export const STORAGE_KEY='kurly-tower-defense-review-v7';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));

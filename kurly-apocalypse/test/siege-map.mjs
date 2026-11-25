@@ -1,5 +1,5 @@
-import {WORLD} from './engine.mjs?v=td-ux-14';
-import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-14';
+import {WORLD} from './engine.mjs?v=td-ux-15';
+import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-15';
 export function makeSiegeMap(floor,makeCanvas,pads=SIEGE_PADS){
  const canvas=makeCanvas(WORLD.w,WORLD.h),c=canvas.getContext('2d');c.drawImage(floor,0,0,WORLD.w,WORLD.h);
  const g=c.createLinearGradient(230,0,SIEGE.wallX,0);g.addColorStop(0,'#223c7830');g.addColorStop(.7,'#35284100');g.addColorStop(1,'#be644b25');c.fillStyle=g;c.fillRect(170,145,940,750);

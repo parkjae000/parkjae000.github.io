@@ -1,16 +1,16 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-14';
-import {AttackPreview} from './attack-preview.mjs?v=td-ux-14';
-import {syncCanvasControls} from './canvas-controls.mjs?v=td-ux-14';
-import {RemoteSession} from './remote-session.mjs?v=td-ux-14';
-import {CompactUI} from './compact-ui.mjs?v=td-ux-14';
-import {Renderer} from './renderer-v2.mjs?v=td-ux-14';
-import {browserArt} from './art.mjs?v=td-ux-14';
-import {EditorInteraction,editorPads} from './editor-interaction.mjs?v=td-ux-14';
-import {CATALOG,WORLD} from './engine.mjs?v=td-ux-14';
-import {HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel} from './progression.mjs?v=td-ux-14';
-import {GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-14';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-15';
+import {AttackPreview} from './attack-preview.mjs?v=td-ux-15';
+import {syncCanvasControls} from './canvas-controls.mjs?v=td-ux-15';
+import {RemoteSession} from './remote-session.mjs?v=td-ux-15';
+import {CompactUI} from './compact-ui.mjs?v=td-ux-15';
+import {Renderer} from './renderer-v2.mjs?v=td-ux-15';
+import {browserArt} from './art.mjs?v=td-ux-15';
+import {EditorInteraction,editorPads} from './editor-interaction.mjs?v=td-ux-15';
+import {CATALOG,WORLD} from './engine.mjs?v=td-ux-15';
+import {HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel} from './progression.mjs?v=td-ux-15';
+import {GROWTH_CATEGORIES} from './ui-model.mjs?v=td-ux-15';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css','compact.css','operations.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-ux-14',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
+async function styles(){await Promise.all(['review-ui.css','test.css','integrated.css','compact.css','operations.css'].map(file=>new Promise((resolve,reject)=>{const href=new URL(file+'?v=td-ux-15',import.meta.url).href;if([...document.styleSheets].some(s=>s.href===href))return resolve();const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.onload=resolve;link.onerror=()=>reject(Error('전장 화면을 불러오지 못했어요.'));document.head.append(link);})));}
 class IntegratedSession extends RemoteSession{
  constructor(td,token,api){super(td,token);this.api=api;this.active=false;}
  async send(type,params={}){params=structuredClone(params);const run=async()=>{this.busy=true;try{const out=await this.api('/api/action','POST',{type,...params,requestId:crypto.randomUUID()});if(out.td)this.apply(out.td);this.notify(out.message||'저장했어요.');return out;}catch(error){this.notify(error.message);throw error;}finally{this.busy=false;}};const pending=this.requestChain.then(run);this.requestChain=pending.catch(()=>{});return pending;}
@@ -25,6 +25,7 @@ class EmbeddedUI extends CompactUI{
   if(id==='page'&&value==='mining'){this.owner.navigate('mine');return;}
   if(id==='page'&&value==='shop'){this.owner.navigate('shop');return;}
   if(id==='page'&&value==='army'){this.owner.navigate('center');return;}
+  if(id==='close'&&this.page==='expedition'&&!this.s.campaign.pending){this.close();this.owner.navigate('war-home');return;}
   if(id==='editor'||id==='close'){if(this.s.campaign.pending){this.close();return;}this.owner.navigate('defense',{scope:this.s.scope});return;}
   if(id==='local-page'){this.open(value,this.category);return;}
   if(id==='scope'){this.owner.navigate('defense',{scope:value});return;}
@@ -38,7 +39,7 @@ class EmbeddedRenderer extends Renderer{
  drawSide(){}
 }
 export async function mountIntegratedTD({host,td,token,api,onState=()=>{},onNavigate=()=>{},sessionFactory=null}){
- if(td.world!=='TEST')throw Error('TEST 서버에서만 새 전장을 사용할 수 있어요.');await styles();const art=await browserArt(),root=document.createElement('section');root.className='td-root';root.setAttribute('aria-label','센터 병력과 전장 관리');
+ if(!/^[A-Z0-9-]{4,12}$/.test(td.world))throw Error('서버 코드를 확인해 주세요.');await styles();const art=await browserArt(),root=document.createElement('section');root.className='td-root';root.setAttribute('aria-label','센터 병력과 전장 관리');
  root.innerHTML='<div class="td-stage"><canvas id="screen" aria-label="방어 설정. 타워를 누르면 사거리가 표시되고 드래그로 이동합니다."></canvas><div id="controls"></div><div id="reviewUI" hidden></div><div class="td-selection" hidden></div><div class="td-battle-feedback" role="status" hidden></div><div class="td-attack-preview" hidden></div></div><div class="td-editor-dock" hidden></div>';
  host.append(root);const canvas=root.querySelector('#screen'),controls=root.querySelector('#controls'),stage=root.querySelector('.td-stage'),dock=root.querySelector('.td-editor-dock'),selection=root.querySelector('.td-selection');
  const session=sessionFactory?sessionFactory(td,token):new IntegratedSession(td,token,api),renderer=new EmbeddedRenderer(canvas,art);session.useDOMUI=true;let destroyed=false,visible=true,last=performance.now(),raf=0,lastDockKey='',lastMode='',editingScope=null;
@@ -75,5 +76,5 @@ export async function mountIntegratedTD({host,td,token,api,onState=()=>{},onNavi
  const baseRender=ui.render.bind(ui);ui.render=preserve=>{if(session.expanded)setExpanded(false);baseRender(preserve);refreshEditor();};
  function frame(now){if(destroyed)return;const dt=Math.min(.08,(now-last)/1000);last=now;if(visible&&!document.hidden){session.tick(dt);const mode=ui.isOpen?'ui':session.mode;if(mode!==lastMode){lastMode=mode;refreshEditor();resize();}if(!ui.isOpen){renderer.draw(session);syncButtons();}const feedback=root.querySelector('.td-battle-feedback'),message=session.toast&&session.toast.until>session.elapsed?session.toast.message:'';feedback.hidden=!message||ui.isOpen||session.resultAt!==null;if(feedback.textContent!==message)feedback.textContent=message;ui.refreshTimer(now);ui.animateProduction(now);attackPreview.tick(dt);refreshEditor();}raf=requestAnimationFrame(frame);}
  raf=requestAnimationFrame(frame);resize();if(session.campaign.pending){session.mode='battle';ui.close();}else ui.open('production');
- return {root,session,ui,get active(){return visible;},get managing(){return visible;},show(host,page='production',category='tower'){host.append(root);visible=true;session.active=true;if(page==='battle'&&session.campaign.pending)ui.close();else ui.open(page,category);resize();},hide(){attackPreview.close();if(session.expanded)setExpanded(false);visible=false;session.active=false;interaction.cancel();},update(value){if(value?.world==='TEST'&&value.me.id===session.latest.me.id)session.apply(value);},edit:owner.edit,open(page,category){ui.open(page,category);resize();},destroy(){attackPreview.close();destroyed=true;session.active=false;cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('keydown',onKey);root.remove();}};
+ return {root,session,ui,get active(){return visible;},get managing(){return visible;},show(host,page='production',category='tower'){host.append(root);visible=true;session.active=true;if(page==='battle'&&session.campaign.pending)ui.close();else ui.open(page,category);resize();},hide(){attackPreview.close();if(session.expanded)setExpanded(false);visible=false;session.active=false;interaction.cancel();},update(value){if(value?.world===session.latest.world&&value.me.id===session.latest.me.id)session.apply(value);},edit:owner.edit,open(page,category){ui.open(page,category);resize();},destroy(){attackPreview.close();destroyed=true;session.active=false;cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('keydown',onKey);root.remove();}};
 }

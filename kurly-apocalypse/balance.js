@@ -8,7 +8,7 @@ export const workerBaseDps=level=>5*Math.pow(WORKER_LEVEL_MULTIPLIER,level-1);
 export function workerMiningDps(worker,g){if(worker.parked)return 0;return workerBaseDps(worker.level)*Math.pow(1.2,(g.levels.mine||1)-1)*(1+.03*(g.captures||[]).length)*(1+.02*(g.miningMastery||0));}
 export const canMergeWorkers=(a,b)=>!!a&&!!b&&a.id!==b.id&&a.level===b.level&&a.level<WORKER_MAX_LEVEL;
 export const OFFLINE_MINING_MS=8*3600000;
-export const RESEARCH_PREPARED_LEVEL=20;
+export const RESEARCH_PREPARED_LEVEL=30;
 // Extend only future levels; already paid prices and durations stay unchanged.
 const extendResearch=(base,growth,unit)=>{for(let lv=base.length;lv<=RESEARCH_PREPARED_LEVEL;lv++)base.push(Math.ceil(base[10]*growth**(lv-10)/unit)*unit);return base;};
 export const CENTER_COST=extendResearch([0,0,300,800,2000,5000,12000,27000,60000,135000,300000],1.65,10);
@@ -20,11 +20,11 @@ export function upgradeCost(key,level){if(key==='careerLevel')return {boxes:[0,0
 export function resourceBaseHp(zone,index){
  // The first parcel teaches the loop in 15 seconds. Deeper rows gradually slow down.
  if(zone===0){if(index===37)return 75;return [1800,1800,1800,1500,1200,900,450,150][Math.floor(index/5)];}
- return 1800*Math.pow(1.5,Math.min(zone,20));
+ const d=Math.max(0,zone-55);return 1800*Math.pow(1.5,Math.min(zone,20))*(1+.025*d+.00004*d*d);
 }
 
 export const MINING_RESEARCH=['laborCost','lossDiscovery','careerLevel','mergeLuck'];
-export const researchMax=key=>key==='careerLevel'?SUMMON_MAX_LEVEL:RESEARCH_PREPARED_LEVEL;
+export const researchMax=key=>key==='careerLevel'?SUMMON_MAX_LEVEL:['mine','lossDiscovery','center','wallRepair','wallReflect'].includes(key)?RESEARCH_PREPARED_LEVEL:20;
 export const researchLimitKind=key=>key==='careerLevel'?'system':'prepared';
 export const researchLimitLabel=key=>researchLimitKind(key)==='system'?`최대 Lv.${researchMax(key)}`:'추가 연구 준비 중';
 export function miningEconomy(g){const l=g.levels||{};return {costMultiplier:Math.max(.24,Math.min(1,1-.04*((l.laborCost||1)-1))),rewardMultiplier:1+.10*((l.lossDiscovery||1)-1),maxWorkerLevel:WORKER_MAX_LEVEL,maxSummonLevel:SUMMON_MAX_LEVEL,summonLevel:Math.min(SUMMON_MAX_LEVEL,l.careerLevel||1),mergeChance:.03*((l.mergeLuck||1)-1)};}
@@ -89,3 +89,4 @@ export function adjacentMiningTarget(g,w){
  options.sort((a,b)=>b.y-a.y||a.x-b.x);
  return options[0]?.idx??(w.y===0&&w.x>=1&&w.x<=3&&g.mine.nodes.every(n=>n.done)&&!g.mine.gate?.done?'gate':null);
 }
+

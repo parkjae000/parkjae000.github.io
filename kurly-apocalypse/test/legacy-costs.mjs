@@ -1,5 +1,5 @@
 // Cost/time tables read from parkjae000/kurly-apocalypse2.2.7 on2026-11-25.
-export const RESEARCH_PREPARED_LEVEL=20;
+export const RESEARCH_PREPARED_LEVEL=40;
 // Extend only future levels; already paid prices and durations stay unchanged.
 const extendResearch=(base,growth,unit)=>{for(let lv=base.length;lv<=RESEARCH_PREPARED_LEVEL;lv++)base.push(Math.ceil(base[10]*growth**(lv-10)/unit)*unit);return base;};
 export const CENTER_COST=extendResearch([0,0,300,800,2000,5000,12000,27000,60000,135000,300000],1.65,10);

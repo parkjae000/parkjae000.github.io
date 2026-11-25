@@ -1,8 +1,8 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-14';
-import {siegeLayout} from './conquest.mjs?v=td-ux-14';
-import {Battle} from './engine.mjs?v=td-ux-14';
-import {FORCES} from './progression.mjs?v=td-ux-14';
-import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-14';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-15';
+import {siegeLayout} from './conquest.mjs?v=td-ux-15';
+import {Battle} from './engine.mjs?v=td-ux-15';
+import {FORCES} from './progression.mjs?v=td-ux-15';
+import {SIEGE,SIEGE_PADS} from './siege-geometry.mjs?v=td-ux-15';
 export class ConquestBattle extends Battle{
  constructor(layout,options={}){
   super(siegeLayout(layout),{...options,pads:SIEGE_PADS});this.siegeVersion=11;this.objective='conquest';this.variant='open-siege';this.support=structuredClone(options.support||null);
