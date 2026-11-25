@@ -1,4 +1,4 @@
-import {clamp,CATALOG} from './engine.mjs?v=td-ux-19';
+import {clamp,CATALOG} from './engine.mjs?v=td-ux-20';
 const TAU=Math.PI*2;
 const hash=n=>{const x=Math.sin(n*127.1+31.7)*43758.5453;return x-Math.floor(x);};
 export class CombatVFX{

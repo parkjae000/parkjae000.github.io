@@ -1,11 +1,11 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-19';
-import {SIEGE,SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-19';
-import {paintSiegeWall} from './siege-map.mjs?v=td-ux-19';
-import {CONQUEST_PADS,CONQUEST_ROUTES,conquestPoint} from './conquest-geometry.mjs?v=td-ux-19';
-import {RendererBase} from './renderer.mjs?v=td-ux-19';
-import {CombatVFX} from './battle-vfx.mjs?v=td-ux-19';
-import {WORLD,CATALOG,PADS,ROUTE,WALL_POINT,lanePoint,clamp} from './engine.mjs?v=td-ux-19';
-import {short,capacity,FORCES,FORCE_IDS,TOWER_IDS,HERO_DEFS,towerStats,heroStats,wallStats,MAX_CAPACITY_LEVEL,STAR_COST,forceComposition} from './progression.mjs?v=td-ux-19';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-20';
+import {SIEGE,SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-20';
+import {paintSiegeWall} from './siege-map.mjs?v=td-ux-20';
+import {CONQUEST_PADS,CONQUEST_ROUTES,conquestPoint} from './conquest-geometry.mjs?v=td-ux-20';
+import {RendererBase} from './renderer.mjs?v=td-ux-20';
+import {CombatVFX} from './battle-vfx.mjs?v=td-ux-20';
+import {WORLD,CATALOG,PADS,ROUTE,WALL_POINT,lanePoint,clamp} from './engine.mjs?v=td-ux-20';
+import {short,capacity,FORCES,FORCE_IDS,TOWER_IDS,HERO_DEFS,towerStats,heroStats,wallStats,MAX_CAPACITY_LEVEL,STAR_COST,forceComposition} from './progression.mjs?v=td-ux-20';
 export class Renderer extends RendererBase{
  draw(s){if(!this.vfx)this.vfx=new CombatVFX(this);super.draw(s);if(s.growthOpen&&!s.useDOMUI){this.buttons=[];this.drawGrowth(s);}}
  drawWorld(s){const c=this.c,v=s.layout.stage,t=this.transform(s),b=s.battle,time=b?.time||s.elapsed,isConquest=b?.objective==='conquest'||s.mode==='design'&&s.scope!=='home',siege=isSiegeScene(s),support=s.scope==='home'?null:s.latest?.areas.find(a=>a.id===s.scope)?.snapshot.support,pads=siege?(b?.pads||SIEGE_PADS):isConquest?CONQUEST_PADS:PADS;

@@ -1,6 +1,6 @@
-import {RESEARCH_PASSES,BOOST_PASSES,FORKLIFT_PASSES,SHIELD_PRICES,HEAL_PRICE} from '../pass-catalog.mjs?v=20261125-v244-battle-controls';
-import {researchStaffCount} from './research-economy.mjs?v=td-ux-19';
-import {HERO_DEFS} from './progression.mjs?v=td-ux-19';
+import {RESEARCH_PASSES,BOOST_PASSES,FORKLIFT_PASSES,SHIELD_PRICES,HEAL_PRICE} from '../pass-catalog.mjs?v=20261125-v245-forklift-pass';
+import {researchStaffCount} from './research-economy.mjs?v=td-ux-20';
+import {HERO_DEFS} from './progression.mjs?v=td-ux-20';
 export const SHOP_GROUPS={growth:'파트장 성장',research:'연구·채굴',defense:'보호·치료'};
 export const SHOP_ITEMS=[
  {id:'normalTicket',name:'일반 모집권',group:'growth',currency:'boxes',price:500,key:'normalTickets',amount:1,art:'ticketNormal',description:'기존 일반 모집에 사용하는 모집권',existing:true},

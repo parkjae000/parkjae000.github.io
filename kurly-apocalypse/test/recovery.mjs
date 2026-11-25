@@ -1,4 +1,4 @@
-import {wallStats} from './progression.mjs?v=td-ux-19';
+import {wallStats} from './progression.mjs?v=td-ux-20';
 const reviewCenterMax=g=>Math.round(100000*1.18**((g.facilityLevels?.center||1)-1));
 export function freshFortress(g,now=Date.now()){return {wallHp:wallStats(g).hp,wallMax:wallStats(g).hp,centerHp:reviewCenterMax(g),centerMax:reviewCenterMax(g),at:now,centerRepair:null};}
 export function reconcileFortress(g,state,now=Date.now(),busy=false){

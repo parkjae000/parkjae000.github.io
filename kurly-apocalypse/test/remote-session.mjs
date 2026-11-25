@@ -1,11 +1,11 @@
-import {battleSpeed,battleElapsedTicks} from './battle-clock.mjs?v=td-ux-19';
-import {siegeLayout} from './conquest.mjs?v=td-ux-19';
-import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-19';
-import {CATALOG} from './engine.mjs?v=td-ux-19';
-import {Session} from './session.mjs?v=td-ux-19';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-19';
-import {battleFromRecord} from './replay.mjs?v=td-ux-19';
-import {rosterOf} from './production.mjs?v=td-ux-19';
+import {battleSpeed,battleElapsedTicks} from './battle-clock.mjs?v=td-ux-20';
+import {siegeLayout} from './conquest.mjs?v=td-ux-20';
+import {siegeSlotAccepts} from './siege-geometry.mjs?v=td-ux-20';
+import {CATALOG} from './engine.mjs?v=td-ux-20';
+import {Session} from './session.mjs?v=td-ux-20';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-ux-20';
+import {battleFromRecord} from './replay.mjs?v=td-ux-20';
+import {rosterOf} from './production.mjs?v=td-ux-20';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
 export const TEST_TOKEN_KEY='ka_game_test_session_v1';
 export async function testApi(path,{token,body}={}){const r=await fetch(API+path+(path.includes('?')?'&':'?')+'forceFunctionRegion=ap-northeast-2',{method:body?'POST':'GET',cache:'no-store',headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok)throw Object.assign(Error(data.error||'연결을 확인해 주세요.'),{status:r.status,code:data.code});return data;}

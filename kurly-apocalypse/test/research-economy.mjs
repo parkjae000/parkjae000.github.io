@@ -1,4 +1,4 @@
-import {legacyCost} from './legacy-costs.mjs?v=td-ux-19';
+import {legacyCost} from './legacy-costs.mjs?v=td-ux-20';
 export const RESEARCH_ECONOMY_VERSION=2;
 const EARLY_SECONDS=[0,0,20,60,120,300,600,900,1800,2700,3600];
 export function researchCost(kind,id,target){

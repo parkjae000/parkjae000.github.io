@@ -1,5 +1,5 @@
-import {EVENT_ENDS_AT,eventClosed} from './patch-policy.mjs?v=20261125-v244-battle-controls';
-import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261125-v244-battle-controls';
+import {EVENT_ENDS_AT,eventClosed} from './patch-policy.mjs?v=20261125-v245-forklift-pass';
+import {BOSS_ASSETS,drawBossScreen,bossLayout} from './boss-renderer.js?v=20261125-v245-forklift-pass';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let assetsPromise;
 function loadAssets(){return assetsPromise??=Promise.all(Object.entries(BOSS_ASSETS).map(([key,path])=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve([key,i]);i.onerror=()=>reject(Error('보스 이미지를 불러오지 못했어요.'));i.src=path;}))).then(Object.fromEntries).catch(e=>{assetsPromise=null;throw e;});}
