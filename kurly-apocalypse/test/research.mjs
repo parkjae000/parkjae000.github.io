@@ -1,6 +1,6 @@
-import {RESEARCH_MINUTES} from '../pass-catalog.mjs?v=20261125-v243-rare-events';
-import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-18';
-import {researchCost,researchSeconds,researchStaffCount,RESEARCH_ECONOMY_VERSION} from './research-economy.mjs?v=td-ux-18';
+import {RESEARCH_MINUTES} from '../pass-catalog.mjs?v=20261125-v244-battle-controls';
+import {upgradeGrowth,upgradeQuote,MAX_CAPACITY_LEVEL} from './progression.mjs?v=td-ux-19';
+import {researchCost,researchSeconds,researchStaffCount,RESEARCH_ECONOMY_VERSION} from './research-economy.mjs?v=td-ux-19';
 export const FACILITY_DEFS={productionEfficiency:{name:'생산 효율',group:'military',identity:'육·공·해 생산 주기 단축',max:20},
  mine:{name:'채굴 효율',group:'mine',identity:'일용직의 채굴 속도 증가',max:30},
  laborCost:{name:'일용직 인건비 감소',group:'mine',identity:'일용직 소환 비용 감소',max:20},
@@ -19,6 +19,7 @@ export function ensureResearch(g,now=Date.now()){
 export function facilityStats(g,id,level=g.facilityLevels?.[id]||1){const d=FACILITY_DEFS[id],n=level-1;return {...d,level,hp:Math.round(100000*1.18**n),miningSpeed:1.2**n,costReduction:Math.min(.76,.04*n),rewardBonus:.1*n,summonLevel:Math.min(6,level),mergeChance:.03*n,repairRate:.01*n,reflectRate:.02*n,productionReduction:Math.min(.5,.03*n)};}
 export const timeText=seconds=>seconds>=3600?(seconds/3600).toFixed(seconds%3600?1:0)+'시간':seconds>=60?Math.ceil(seconds/60)+'분':Math.ceil(seconds)+'초';
 export function staffQuote(g,kind,id,steps=1){
+ if(kind==='facility'&&id==='wallRepair')return {enabled:false,reason:'전투 후 시설은 무료로 즉시 복구돼요.'};
  const quote=kind==='facility'?facilityQuote(g,id,steps):upgradeQuote(g,kind,id,steps);if(!quote.nextGrowth)return quote;
  const jobs=g.researchJobs||[],key=kind+':'+(id||''),duplicate=jobs.some(j=>j.key===key),full=jobs.length>=researchStaffCount(g);
  const level=kind==='capacity'?g.capacityLevel:kind==='force'?g.forceLevels[id]:g.facilityLevels?.[id]||1;

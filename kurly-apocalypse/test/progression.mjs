@@ -1,4 +1,4 @@
-import {researchCost} from './research-economy.mjs?v=td-ux-18';
+import {researchCost} from './research-economy.mjs?v=td-ux-19';
 export const MAX_ARMY=100_000_000;
 export const CAPACITY_BASE=1000;
 export const CAPACITY_STEP=100;

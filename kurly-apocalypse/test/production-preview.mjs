@@ -1,5 +1,5 @@
-import {FORCE_IDS,capacity} from './progression.mjs?v=td-ux-18';
-import {rosterTotal,rosterOf,capacityUsed} from './production.mjs?v=td-ux-18';
+import {FORCE_IDS,capacity} from './progression.mjs?v=td-ux-19';
+import {rosterTotal,rosterOf,capacityUsed} from './production.mjs?v=td-ux-19';
 // Preview only: all live orders and currency remain server owned.
 export function productionPreview(g,c,quote,now=Date.now()){
  const at=Math.max(now,quote.endAt||now),current=rosterTotal(rosterOf(c));let queued=0,recovered=0;

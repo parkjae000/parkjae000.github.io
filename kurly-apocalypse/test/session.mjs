@@ -1,12 +1,12 @@
-import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs?v=td-ux-18';
-import {freshFortress,reconcileFortress} from './recovery.mjs?v=td-ux-18';
-import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs?v=td-ux-18';
-import {heroResetPreview} from './migration.mjs?v=td-ux-18';
-import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-18';
-import {Replay,battleFromRecord} from './replay.mjs?v=td-ux-18';
-import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs?v=td-ux-18';
-import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs?v=td-ux-18';
-import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-18';
+import {ensureProduction,settleProduction,setRoster,rosterOf} from './production.mjs?v=td-ux-19';
+import {freshFortress,reconcileFortress} from './recovery.mjs?v=td-ux-19';
+import {ensureResearch,startResearch,settleResearch,upgradeMode} from './research.mjs?v=td-ux-19';
+import {heroResetPreview} from './migration.mjs?v=td-ux-19';
+import {defaultCampaign,beginInvasion,settleInvasion,targetEconomy,TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-19';
+import {Replay,battleFromRecord} from './replay.mjs?v=td-ux-19';
+import {REVIEW_TARGETS,targetSnapshot} from './expedition-model.mjs?v=td-ux-19';
+import {defaultGrowth,migrateLegacyGrowth,capacity,upgradeGrowth,MAX_ARMY,HERO_DEFS,short,forceComposition} from './progression.mjs?v=td-ux-19';
+import {Battle,DefenseEditor,CATALOG,PADS,WORLD,STORAGE_KEY,validateLayout,defaultLayout,clamp} from './engine.mjs?v=td-ux-19';
 export function layoutFor(w,h){const mobile=w<760;const header=mobile?96:82;const footer=mobile?190:122;const side=!mobile&&w>=1180?282:0;return {mobile,header,footer,side,stage:{x:0,y:header,w:w-side,h:Math.max(180,h-header-footer)}};}
 export class Session{
  constructor(storage){this.storage=storage;const initialReset=heroResetPreview(defaultGrowth());this.migrationPreview={rows:initialReset.rows,total:initialReset.total,basis:initialReset.basis};let saved;try{saved=JSON.parse(storage?.getItem(STORAGE_KEY)||'null');}catch{}
@@ -61,6 +61,8 @@ export class Session{
   if(id==='pause'&&this.replay){this.replay.paused=!this.replay.paused;this.paused=this.replay.paused;this.uiVersion++;return;}
   if(id==='skip'&&this.replay){this.replay.skip();this.resultAt=this.elapsed;this.uiVersion++;return;}
   if(id==='timelapse'&&this.replay){this.replay.setTimelapse();this.speed=this.replay.speed;this.paused=false;this.uiVersion++;return;}
+  if(id==='speed'&&!this.replay&&this.battle){this.speed=this.speed===1?2:1;this.uiVersion++;return;}
+  if(id==='skip'&&!this.replay&&this.battle){this.battle.skip();this.finishBattle();this.uiVersion++;return;}
   if(id==='retreat'&&this.battle&&!this.replay){this.battle.retreat();this.finishBattle();return;}
   if(id==='replay'){this.playReplay(data||this.lastRecord?.id);return;}
   if(id==='replay-exit'){this.edit();return;}
@@ -70,7 +72,7 @@ export class Session{
  tick(dt){this.elapsed+=dt;const produced=settleProduction(this.growth,this.campaign,Date.now());if(produced.length){this.productionEvents.push(...produced);this.productionEvents=this.productionEvents.slice(-9);this.persist();this.uiVersion++;}this.campaign.fortress=reconcileFortress(this.growth,this.campaign.fortress,Date.now(),!!this.campaign.pending);const done=settleResearch(this.growth,Date.now());if(done.length){this.persist();this.notify('연구 '+done.length+'건 완료');}
   if(this.replay){this.replay.tick(dt);if(this.replay.finished&&this.resultAt===null){this.resultAt=this.elapsed;this.uiVersion++;}}
   else if(this.battle&&this.battle.status==='running'){
-   this.accumulator+=dt;while(this.accumulator+1e-10>=1/30&&this.battle.status==='running'){this.battle.step(1/30);this.accumulator-=1/30;}
+   this.accumulator+=dt*this.speed;while(this.accumulator+1e-10>=1/30&&this.battle.status==='running'){this.battle.step(1/30);this.accumulator-=1/30;}
    if(this.campaign.pending){this.campaign.pending.ticks=this.battle.ticks;this.checkpoint+=dt;if(this.checkpoint>=1){this.persist();this.checkpoint=0;}}
    if(this.battle.status!=='running')this.finishBattle();
   }

@@ -1,6 +1,6 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-18';
-import {FACILITY_DEFS,facilityStats} from './research.mjs?v=td-ux-18';
-import {TOWER_DEFS,HERO_DEFS,FORCES,TOWER_IDS,FORCE_IDS,towerStats,heroStats,forceStats,wallStats,capacity,upgradeQuote,rangeLabel,damageMultiplier} from './progression.mjs?v=td-ux-18';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-19';
+import {FACILITY_DEFS,facilityStats} from './research.mjs?v=td-ux-19';
+import {TOWER_DEFS,HERO_DEFS,FORCES,TOWER_IDS,FORCE_IDS,towerStats,heroStats,forceStats,wallStats,capacity,upgradeQuote,rangeLabel,damageMultiplier} from './progression.mjs?v=td-ux-19';
 export function growthItem(g,category,id,context=null){if(category==='facility'||category==='mine'||category==='military')return facilityStats(g,id);if(category==='tower')return context?conquestTowerStats(g,id,context.support):towerStats(g,id);if(category==='hero')return heroStats(g,id);if(category==='force')return forceStats(g,id);if(category==='wall')return {...wallStats(g),name:'센터 방벽',identity:'센터 진입을 막는 첫 번째 방어선'};return {name:'출격 한도',level:g.capacityLevel,capacity:capacity(g),identity:'강화 1회마다100명 증원'};}
 export function growthKind(category,heroMode='level'){return {tower:'tower',hero:heroMode==='star'?'hero-star':'hero-level',force:'force',wall:'wall',capacity:'capacity',facility:'facility',mine:'facility',military:'facility'}[category];}
 export function comparisonRows(g,category,id,quote,context=null){const a=growthItem(g,category,id,context),b=quote.nextGrowth?growthItem(quote.nextGrowth,category,id,context):a;if(!a)return [];
@@ -11,4 +11,4 @@ export function comparisonRows(g,category,id,quote,context=null){const a=growthI
  if(category==='force')return [row('개체 내구도','hp'),row('공성력','siege',n=>n.toFixed(2)),row('이동 속도','speed')];if(category==='wall')return [row('방벽 내구도','hp')];return [row('출격 가능 인원','capacity',n=>n.toLocaleString('ko-KR')+'명')];
 }
 export function matchupRows(type,st){return FORCE_IDS.map(id=>({id,name:FORCES[id].name,multiplier:damageMultiplier(type,id),damage:st?.damage?Math.round(st.damage*damageMultiplier(type,id)):null,skill:st?.skillDamage?Math.round(st.skillDamage*damageMultiplier(type,id)):null}));}
-export const GROWTH_CATEGORIES={military:{name:'생산 효율',ids:['productionEfficiency']},tower:{name:'포탑',ids:TOWER_IDS},hero:{name:'파트장',ids:Object.keys(HERO_DEFS)},wall:{name:'방벽',ids:['wall']},force:{name:'병력',ids:FORCE_IDS},capacity:{name:'수용 한도',ids:['capacity']},facility:{name:'센터 연구',ids:Object.keys(FACILITY_DEFS).filter(id=>FACILITY_DEFS[id].group==='facility')},mine:{name:'채굴 연구',ids:Object.keys(FACILITY_DEFS).filter(id=>FACILITY_DEFS[id].group==='mine')}};
+export const GROWTH_CATEGORIES={military:{name:'생산 효율',ids:['productionEfficiency']},tower:{name:'포탑',ids:TOWER_IDS},hero:{name:'파트장',ids:Object.keys(HERO_DEFS)},wall:{name:'방벽',ids:['wall']},force:{name:'병력',ids:FORCE_IDS},capacity:{name:'수용 한도',ids:['capacity']},facility:{name:'센터 연구',ids:Object.keys(FACILITY_DEFS).filter(id=>FACILITY_DEFS[id].group==='facility'&&id!=='wallRepair')},mine:{name:'채굴 연구',ids:Object.keys(FACILITY_DEFS).filter(id=>FACILITY_DEFS[id].group==='mine')}};

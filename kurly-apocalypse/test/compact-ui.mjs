@@ -1,17 +1,17 @@
-import {setBattleControlsInert} from './review-ui.mjs?v=td-ux-18';
-import {productionAvailability,selectedProductionQuote} from './production-availability.mjs?v=td-ux-18';
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-18';
-import {productionPreview} from './production-preview.mjs?v=td-ux-18';
-import {expeditionMarkup,currentExpeditionTarget,previewURL} from './expedition-view.mjs?v=td-ux-18';
-import {defensePreviewModel} from './defense-preview.mjs?v=td-ux-18';
-import {attackGuide,affinityList} from './combat-guide.mjs?v=td-ux-18';
-import {TestUI} from './test-ui.mjs?v=td-ux-18';
-import {FORCE_IDS,FORCES,HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel,capacity,short,damageMultiplier} from './progression.mjs?v=td-ux-18';
-import {GROWTH_CATEGORIES,growthItem,growthKind,comparisonRows} from './ui-model.mjs?v=td-ux-18';
-import {upgradeMode,timeText} from './research.mjs?v=td-ux-18';
-import {PRODUCTION_DEFS,productionQuote,productionCycle,rosterOf,capacityUsed} from './production.mjs?v=td-ux-18';
-import {recoveryMarkup} from './production-view.mjs?v=td-ux-18';
-import {SHOP_GROUPS,SHOP_ITEMS,shopQuote} from './shop.mjs?v=td-ux-18';
+import {setBattleControlsInert} from './review-ui.mjs?v=td-ux-19';
+import {productionAvailability,selectedProductionQuote} from './production-availability.mjs?v=td-ux-19';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-19';
+import {productionPreview} from './production-preview.mjs?v=td-ux-19';
+import {expeditionMarkup,currentExpeditionTarget,previewURL} from './expedition-view.mjs?v=td-ux-19';
+import {defensePreviewModel} from './defense-preview.mjs?v=td-ux-19';
+import {attackGuide,affinityList} from './combat-guide.mjs?v=td-ux-19';
+import {TestUI} from './test-ui.mjs?v=td-ux-19';
+import {FORCE_IDS,FORCES,HERO_DEFS,TOWER_IDS,heroStats,towerStats,rangeLabel,capacity,short,damageMultiplier} from './progression.mjs?v=td-ux-19';
+import {GROWTH_CATEGORIES,growthItem,growthKind,comparisonRows} from './ui-model.mjs?v=td-ux-19';
+import {upgradeMode,timeText} from './research.mjs?v=td-ux-19';
+import {PRODUCTION_DEFS,productionQuote,productionCycle,rosterOf,capacityUsed} from './production.mjs?v=td-ux-19';
+import {recoveryMarkup} from './production-view.mjs?v=td-ux-19';
+import {SHOP_GROUPS,SHOP_ITEMS,shopQuote} from './shop.mjs?v=td-ux-19';
 export const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const count=n=>Number(n||0).toLocaleString('ko-KR');
 const parcel=new URL('../assets/parcel.webp',import.meta.url).href;
@@ -41,7 +41,7 @@ export class CompactUI extends TestUI{
   return super.action(id,value);
  }
  header(){const army=this.page==='production'||['recovery','orders'].includes(this.page)||this.page==='management'&&['force','capacity','military'].includes(this.category),title=this.page==='shop'?'상점':army?'병력 관리':this.page==='expedition'?'출정':this.page==='queue'?'진행 중인 연구':this.page==='history'?'전투 기록':this.page==='matrix'?'상성표':this.page==='transition'?'전환 내역':this.category==='mine'?'채굴 연구':this.category==='hero'?'파트장 강화':this.category==='tower'?'포탑 강화':this.category==='wall'?'방벽 강화':'센터 연구';const actions=this.page==='management'?(this.category==='mine'?'':this.button(['tower','hero','wall','facility'].includes(this.category)?'editor':'local-page',['tower','hero','wall','facility'].includes(this.category)?'배치로':'연구 '+this.s.growth.researchJobs.length+'/'+this.s.growth.staffCount,'queue')):this.page==='expedition'?this.button('local-page','기록','history'):['history','matrix','transition','queue'].includes(this.page)?this.button('return-context','돌아가기'):'';if(army||this.page==='management'&&this.category==='mine')return '';return `<header class="td-page-header"><h2>${title}</h2><div>${actions}</div></header>`;}
- armyNav(){const selected=this.page==='production'?'production':['recovery','orders'].includes(this.page)?'recovery':'research';return `<nav class="td-section-tabs" aria-label="병력 관리 메뉴">${[['production','생산'],['research','병력 연구'],['recovery','회복·복구']].map(([id,label])=>this.button('army-section',label,id,id===selected?'selected':'')).join('')}</nav>`;}
+ armyNav(){const selected=this.page==='production'?'production':['recovery','orders'].includes(this.page)?'recovery':'research';return `<nav class="td-section-tabs" aria-label="병력 관리 메뉴">${[['production','생산'],['research','병력 연구'],['recovery','병력 회복']].map(([id,label])=>this.button('army-section',label,id,id===selected?'selected':'')).join('')}</nav>`;}
  render(preserve=true){
   if(!this.page)return;const positions={};if(preserve)for(const el of this.root.querySelectorAll('[data-scroll]'))positions[el.dataset.scroll]=el.scrollTop;
   const active=document.activeElement,focus=this.root.contains(active)?active.id:null;this.root.hidden=false;setBattleControlsInert(this.root,true);

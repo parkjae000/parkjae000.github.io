@@ -1,4 +1,4 @@
-import {WORLD,ROUTE,lanePoint,ROUTE_LENGTH} from './engine.mjs?v=td-ux-18';
+import {WORLD,ROUTE,lanePoint,ROUTE_LENGTH} from './engine.mjs?v=td-ux-19';
 // Cache the illustrated floor and exact battle lane once. Geometry is shared with simulation.
 export function makeBattleMap(floor,makeCanvas){
  const canvas=makeCanvas(WORLD.w,WORLD.h),c=canvas.getContext('2d');c.drawImage(floor,0,0,WORLD.w,WORLD.h);

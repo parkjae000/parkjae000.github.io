@@ -1,9 +1,9 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-18';
-import {Battle,CATALOG} from './engine.mjs?v=td-ux-18';
-import {HERO_DEFS} from './progression.mjs?v=td-ux-18';
-import {Renderer} from './renderer-v2.mjs?v=td-ux-18';
-import {CombatVFX} from './battle-vfx.mjs?v=td-ux-18';
-import {attackGuide} from './combat-guide.mjs?v=td-ux-18';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-19';
+import {Battle,CATALOG} from './engine.mjs?v=td-ux-19';
+import {HERO_DEFS} from './progression.mjs?v=td-ux-19';
+import {Renderer} from './renderer-v2.mjs?v=td-ux-19';
+import {CombatVFX} from './battle-vfx.mjs?v=td-ux-19';
+import {attackGuide} from './combat-guide.mjs?v=td-ux-19';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // An isolated visual sandbox using the same fire, impact, status and VFX code as real combat.
 export function createAttackDemo(type,growth,mode='basic',context=null){

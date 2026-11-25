@@ -1,11 +1,11 @@
-import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-18';
-import {SIEGE,SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-18';
-import {paintSiegeWall} from './siege-map.mjs?v=td-ux-18';
-import {CONQUEST_PADS,CONQUEST_ROUTES,conquestPoint} from './conquest-geometry.mjs?v=td-ux-18';
-import {RendererBase} from './renderer.mjs?v=td-ux-18';
-import {CombatVFX} from './battle-vfx.mjs?v=td-ux-18';
-import {WORLD,CATALOG,PADS,ROUTE,WALL_POINT,lanePoint,clamp} from './engine.mjs?v=td-ux-18';
-import {short,capacity,FORCES,FORCE_IDS,TOWER_IDS,HERO_DEFS,towerStats,heroStats,wallStats,MAX_CAPACITY_LEVEL,STAR_COST,forceComposition} from './progression.mjs?v=td-ux-18';
+import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-19';
+import {SIEGE,SIEGE_PADS,isSiegeScene} from './siege-geometry.mjs?v=td-ux-19';
+import {paintSiegeWall} from './siege-map.mjs?v=td-ux-19';
+import {CONQUEST_PADS,CONQUEST_ROUTES,conquestPoint} from './conquest-geometry.mjs?v=td-ux-19';
+import {RendererBase} from './renderer.mjs?v=td-ux-19';
+import {CombatVFX} from './battle-vfx.mjs?v=td-ux-19';
+import {WORLD,CATALOG,PADS,ROUTE,WALL_POINT,lanePoint,clamp} from './engine.mjs?v=td-ux-19';
+import {short,capacity,FORCES,FORCE_IDS,TOWER_IDS,HERO_DEFS,towerStats,heroStats,wallStats,MAX_CAPACITY_LEVEL,STAR_COST,forceComposition} from './progression.mjs?v=td-ux-19';
 export class Renderer extends RendererBase{
  draw(s){if(!this.vfx)this.vfx=new CombatVFX(this);super.draw(s);if(s.growthOpen&&!s.useDOMUI){this.buttons=[];this.drawGrowth(s);}}
  drawWorld(s){const c=this.c,v=s.layout.stage,t=this.transform(s),b=s.battle,time=b?.time||s.elapsed,isConquest=b?.objective==='conquest'||s.mode==='design'&&s.scope!=='home',siege=isSiegeScene(s),support=s.scope==='home'?null:s.latest?.areas.find(a=>a.id===s.scope)?.snapshot.support,pads=siege?(b?.pads||SIEGE_PADS):isConquest?CONQUEST_PADS:PADS;
@@ -86,10 +86,10 @@ export class Renderer extends RendererBase{
   }else{const b=s.battle,target=b.wallHp>0?'방벽':'센터',hp=b.wallHp>0?b.wallHp:b.centerHp,max=b.wallHp>0?b.wallMax:b.centerMax,replay=!!s.replay;
    if(m){if(b.walls&&b.wallHp>0){this.text(b.walls.map((v,i)=>['북','중','남'][i]+' '+Math.ceil(v.hp/v.max*100)+'%').join(' · '),16,y+20,15,'#d6edff');b.walls.forEach((v,i)=>this.progress(16+i*(w-28)/3,y+37,(w-44)/3,13,v.hp/v.max,['#8de5ff','#ffdb8e','#c9a5ff'][i]));}else{this.text((replay?'리플레이 · ':'')+target+' 내구도',16,y+20,16,'#f2dcc0');this.text(Math.ceil(hp/max*100)+'%',w-16,y+20,15,'#b8edff','right');this.progress(16,y+37,w-32,13,hp/max,b.wallHp>0?'#65d7f3':'#ed8b93');}
     if(replay){const bw=(w-44)/3;this.button('speed',s.replay.timelapse?'배속 선택':s.speed+'배속',16,y+61,bw,44,{active:s.speed===2,small:true});this.button('timelapse','10초 압축',22+bw,y+61,bw,44,{active:s.replay.timelapse,small:true});this.button('skip','스킵',28+bw*2,y+61,bw,44,{small:true});this.button('pause',s.paused?'계속':'일시정지',16,y+112,bw,44,{small:true});this.button('follow','추적',22+bw,y+112,bw,44,{active:s.follow,small:true});this.button('history','기록',28+bw*2,y+112,bw,44,{small:true});}
-    else{this.button('retreat',s.retreatPending?'후퇴 처리 중…':'후퇴 · 생존 '+short(b.alive)+'명 귀환',16,y+61,w-32,44,{disabled:b.status!=='running'||s.retreatPending});this.button('follow',s.follow?'병력 추적 ON':'병력 추적 OFF',16,y+112,w*.48-20,44,{active:s.follow});this.button('log','전투 현황',w*.48+8,y+112,w*.52-24,44);}}
+    else{const bw=(w-44)/3,busy=!!(s.retreatPending||s.battleControlPending),done=b.status!=='running';this.button('speed',s.speed===2?'2배속 · 1배로':'1배속 · 2배로',16,y+61,bw,44,{active:s.speed===2,small:true,disabled:busy||done});this.button('skip',s.battleControlPending?'처리 중…':'스킵 · 결과',22+bw,y+61,bw,44,{small:true,disabled:busy||done});this.button('retreat',s.retreatPending?'처리 중…':'후퇴',28+2*bw,y+61,bw,44,{small:true,disabled:busy||done});this.button('follow',s.follow?'병력 추적 ON':'병력 추적 OFF',16,y+112,w*.48-20,44,{active:s.follow});this.button('log','전투 현황',w*.48+8,y+112,w*.52-24,44);}}
    else{this.text('방벽 '+Math.ceil(b.wallHp/b.wallMax*100)+'%',24,y+25,17,'#b6eaff');this.progress(24,y+43,190,16,b.wallHp/b.wallMax,'#6ed7ec');this.text((b.objective==='conquest'&&b.wallHp>0?'지휘소 보호 ':'센터 ')+Math.ceil(b.centerHp/b.centerMax*100)+'%',235,y+25,17,'#ffd3d5');this.progress(235,y+43,190,16,b.centerHp/b.centerMax,'#e78b97');this.text('격파 '+short(b.kills)+' · 생존 '+short(b.alive),24,y+85,17,'#f4dbac');
     if(replay){let xx=w-598;for(const [id,label,bw] of [['speed',s.replay.timelapse?'배속 선택':s.speed+'배속',90],['timelapse','10초 압축',128],['pause',s.paused?'계속':'일시정지',104],['skip','스킵',80],['history','전투 기록',128]]){this.button(id,label,xx,y+42,bw,48);xx+=bw+8;}}
-    else{this.text('중단하려면 후퇴 · 생존 병력만 귀환',w-24,y+23,16,'#d5c1d9','right');this.button('retreat',s.retreatPending?'처리 중…':'후퇴',w-300,y+53,146,48,{disabled:b.status!=='running'||s.retreatPending});this.button('log','전투 현황',w-142,y+53,118,48);}}
+    else{const busy=!!(s.retreatPending||s.battleControlPending),done=b.status!=='running';this.text(w<1040?'스킵은 최종 결과로 이동':'스킵은 최종 정산 · 후퇴는 현재 생존 병력 귀환',w-24,y+23,15,'#d5c1d9','right');this.button('speed',s.speed===2?'2배속 · 1배로':'1배속 · 2배로',w-530,y+65,128,48,{active:s.speed===2,disabled:busy||done});this.button('skip',s.battleControlPending?'처리 중…':'스킵 · 결과',w-394,y+65,118,48,{disabled:busy||done});this.button('retreat',s.retreatPending?'처리 중…':'후퇴',w-268,y+65,110,48,{disabled:busy||done});this.button('log','전투 현황',w-150,y+65,126,48);}}
   }
  }
 

@@ -1,4 +1,4 @@
-import {BOOST_PASSES,FORKLIFT_PASSES} from './pass-catalog.mjs?v=20261125-v243-rare-events';
+import {BOOST_PASSES,FORKLIFT_PASSES} from './pass-catalog.mjs?v=20261125-v244-battle-controls';
 export const PASS_ITEMS={
  auto:[['autoMine2h','2시간권'],['autoMine1d','1일권'],['autoMine2d','2일권'],['autoMine3d','3일권']],
  forklift:FORKLIFT_PASSES.map(p=>[p.key,p.label+'권']),boost:BOOST_PASSES.map(p=>[p.key,p.label+'권']),
