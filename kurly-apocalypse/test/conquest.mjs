@@ -1,5 +1,5 @@
-import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS} from './progression.mjs?v=td-ux-11';
-import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-11';
+import {defaultGrowth,forceComposition,HERO_DEFS,TOWER_DEFS,FORCE_IDS} from './progression.mjs?v=td-ux-12';
+import {CATALOG,validateLayout} from './engine.mjs?v=td-ux-12';
 export const OCCUPATION_PROTECTION_MS=6*3600000;
 export function neutralDefense(area){
  const level=Math.max(1,Math.min(30,1+2*(area.level-1))),growth=defaultGrowth();

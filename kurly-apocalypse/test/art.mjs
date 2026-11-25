@@ -1,9 +1,9 @@
-import {makeConquestMap} from './conquest-map.mjs?v=td-ux-11';
+import {makeConquestMap} from './conquest-map.mjs?v=td-ux-12';
 import atlas from './atlas.js';
-import {makeBattleMap} from './battle-map.mjs?v=td-ux-11';
+import {makeBattleMap} from './battle-map.mjs?v=td-ux-12';
 export const ASSET_PATHS={armyHD:'army-hd-v2.webp',miningBoost:'mining-boost-v2.webp',productionFacilities:'production-facilities.png',ticketNormal:'ticket-normal.webp',ticketRare:'ticket-rare.webp',bookNormal:'book-normal.webp',bookRare:'book-rare.webp',researchVoucher:'research-voucher.webp',medicalKit:'medical-kit.webp',workerCute:'worker-cute.webp',fxMeteor:'fx-meteor.webp',fxFireball:'fx-fireball.webp',fxSnowball:'fx-snowball.webp',fxCrystal:'fx-crystal.webp',fxFlame:'fx-flame.webp',fxExplosion:'fx-explosion.webp',fxBlizzard:'fx-blizzard.webp',fxElectric:'fx-electric.webp',air0:'air-0.webp',air1:'air-1.webp',navy0:'navy-0.webp',navy1:'navy-1.webp',gate0:'wall-intact.webp',gate1:'wall-cracked.webp',gate2:'wall-open.webp',gatling0:'gatling-0.webp',gatling1:'gatling-1.webp',gatling2:'gatling-2.webp',gatling3:'gatling-3.webp',map:'courtyard.webp',hq:'headquarters.webp',cannon:'cannon.webp',tesla:'tesla.webp',ice:'ice.webp',laser:'laser.webp',fighters:'fighters.webp',cs:'csMotion.webp',beauty:'beautyMotion.webp',ambient:'ambientMotion.webp',chilled:'chilledMotion.webp',returns:'returnsMotion.webp',ranged:'troop-ranged.webp',spear:'troop-spear.webp',shield:'troop-shield.webp',win:'battle-victory.webp',loss:'battle-defeat.webp'};
 export function prepareArt(raw,makeCanvas){
- const art={...raw,map:makeBattleMap(raw.map,makeCanvas),conquestMap:makeConquestMap(raw.map,makeCanvas),heroes:{},troops:{}};
+ const art={...raw,floor:raw.map,map:makeBattleMap(raw.map,makeCanvas),conquestMap:makeConquestMap(raw.map,makeCanvas),heroes:{},troops:{}};
  const crop=(image,r,h)=>{const w=Math.round(r.w/r.h*h),canvas=makeCanvas(w,h);const c=canvas.getContext('2d');c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(image,r.x,r.y,r.w,r.h,0,0,w,h);return canvas;};
  art.heroes.frozen=[8,11,9,10].map(i=>crop(raw.fighters,atlas.fighters[i],152));
  for(const name of ['cs','beauty','ambient','chilled','returns'])art.heroes[name]=atlas[name+'Motion'].map(r=>crop(raw[name],r,152));

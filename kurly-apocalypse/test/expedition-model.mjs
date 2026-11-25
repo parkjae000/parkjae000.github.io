@@ -1,5 +1,5 @@
-import {defaultGrowth,capacity,forceComposition,FORCE_IDS,HERO_DEFS,damageMultiplier,COMPOSITIONS} from './progression.mjs?v=td-ux-11';
-import {defaultLayout} from './engine.mjs?v=td-ux-11';
+import {defaultGrowth,capacity,forceComposition,FORCE_IDS,HERO_DEFS,damageMultiplier,COMPOSITIONS} from './progression.mjs?v=td-ux-12';
+import {defaultLayout} from './engine.mjs?v=td-ux-12';
 export const EXPEDITION_MODES={invasion:{name:'침공',title:'물류센터 침공전',reward:'센터 자원 확보',rule:'방벽을 돌파한 뒤 센터를 파괴하세요.'},conquest:{name:'정복',title:'정복지 출정',reward:'시간당 수입 확보',rule:'세 시설과 중앙 지휘소를 돌파하면 점령하고 생존 병력은 전원 귀환합니다.'},explore:{name:'탐사',title:'탐사 파견',reward:'교본·조각 수급',rule:'하루 5회 · 임무 완료 후 전원 귀환'}};
 export const REVIEW_TARGETS=[
  {id:'practice-balanced',name:'균형 방어 센터',tag:'연습 전장',description:'모든 방어 유형을 고르게 배치한 전장',loot:120000,boxes:600000,cash:25000,variant:'balanced',status:'도전 가능'},

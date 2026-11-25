@@ -1,6 +1,6 @@
-import {ConquestBattle} from './conquest-battle.mjs?v=td-ux-11';
-import {Battle} from './engine.mjs?v=td-ux-11';
-import {TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-11';
+import {ConquestBattle} from './conquest-battle.mjs?v=td-ux-12';
+import {Battle} from './engine.mjs?v=td-ux-12';
+import {TD_ENGINE_VERSION} from './campaign-review.mjs?v=td-ux-12';
 export function battleFromRecord(record){if(!['td-test-8',TD_ENGINE_VERSION].includes(record.engineVersion))throw Error('이 기록은 이전 버전 전투 재생기가 필요해요.');return new (record.mode==='conquest'?ConquestBattle:Battle)(record.snapshot.items,{combatVersion:record.engineVersion==='td-test-8'?8:9,amount:record.amount,seed:record.seed,growth:record.snapshot.growth,attackerGrowth:record.attackerGrowth,composition:record.composition,forceTotals:record.forceTotals,initialState:record.initialState,strength:record.snapshot.strength??1,fortressProfile:record.snapshot.fortressProfile,routePlan:record.routePlan||'balanced'});}
 export class Replay{
  constructor(record){this.record=structuredClone(record);this.battle=battleFromRecord(record);this.endTick=record.endTick;this.finished=false;this.speed=1;this.accumulator=0;this.elapsed=0;this.timelapse=false;this.paused=false;}
