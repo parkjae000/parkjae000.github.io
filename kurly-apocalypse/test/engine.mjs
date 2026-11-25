@@ -34,7 +34,13 @@ export function validateLayout(layout){
  return towerCount<=6&&heroCount<=6;
 }
 export class DefenseEditor{
- constructor(layout=defaultLayout()){this.items=validateLayout(layout)?structuredClone(layout):defaultLayout();this.history=[];this.selected=null;this.tool='cannon';this.dirty=false;this.nextId=1;}
+ constructor(layout=defaultLayout()){this.items=validateLayout(layout)?structuredClone(layout):defaultLayout();this.history=[];this.selected=null;this.tool='cannon';this.dirty=false;this.nextId=1;while(this.items.some(p=>p.id==='new-'+this.nextId))this.nextId++;}
+ select(id){const item=this.items.find(p=>p.id===id);if(!item)return false;this.selected=id;this.tool=item.type;return true;}
+ move(id,pad,{swap=true}={}){
+  const current=this.items.find(p=>p.id===id);if(!current||!PADS.some(p=>p.id===pad))return {ok:false,message:'배치 가능한 발판에 놓아 주세요.'};if(current.pad===pad){this.select(id);return {ok:true,changed:false,message:'현재 위치예요.'};}
+  const candidate=structuredClone(this.items),moving=candidate.find(p=>p.id===id),occupied=candidate.find(p=>p.pad===pad);if(occupied&&!swap)return {ok:false,message:'이미 다른 방어 시설이 있어요.'};if(occupied)occupied.pad=moving.pad;moving.pad=pad;
+  if(!validateLayout(candidate))return {ok:false,message:'이 발판에는 배치할 수 없어요.'};this.remember();this.items=candidate;this.select(id);return {ok:true,changed:true,swapped:!!occupied,message:occupied?'두 시설의 자리를 바꿨어요.':'배치를 옮겼어요.'};
+ }
  remember(){this.history.push(structuredClone(this.items));this.history=this.history.slice(-30);this.dirty=true;}
  choose(type){if(!CATALOG[type])return;this.tool=type;this.selected=null;}
  place(pad){
@@ -44,7 +50,7 @@ export class DefenseEditor{
   const candidate=structuredClone(this.items);const moving=candidate.find(p=>p.id===this.selected);
   if(moving)moving.pad=pad;else candidate.push({id:'new-'+this.nextId,type:this.tool,pad});
   if(!validateLayout(candidate))return {ok:false,message:CATALOG[this.tool].kind==='hero'?'파트장은 중복 없이 최대 6명까지 배치해요.':'타워는 최대 6기까지 배치해요.'};
-  this.remember();this.items=candidate;if(!moving)this.nextId++;this.selected=null;
+  this.remember();this.items=candidate;if(!moving){this.nextId++;while(this.items.some(p=>p.id==='new-'+this.nextId))this.nextId++;}this.selected=null;
   return {ok:true,message:moving?'배치 위치를 옮겼어요.':CATALOG[this.tool].name+' 배치 완료'};
  }
  remove(){if(!this.selected)return false;this.remember();this.items=this.items.filter(p=>p.id!==this.selected);this.selected=null;return true;}

@@ -1,5 +1,5 @@
 import {Session} from './session.mjs';
-import {STORAGE_KEY,DefenseEditor} from './engine.mjs';
+import {STORAGE_KEY,DefenseEditor} from './engine.mjs?v=td-integration-9';
 import {battleFromRecord} from './replay.mjs';
 import {rosterOf} from './production.mjs';
 export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
@@ -13,7 +13,7 @@ export class RemoteSession extends Session{
  apply(td){if(this.latest&&td.serverTime<this.latest.serverTime)return;
   const previous=this.campaign,oldPending=previous?.pending;this.latest=td;this.serverOffset=td.serverTime-Date.now();this.growth=td.growth;this.campaign=td.campaign;this.amount=this.campaign.pending?.amount||this.campaign.troops;
   for(const role of ['army','air','navy']){const difference=(rosterOf(this.campaign)[role]||0)-(rosterOf(previous)[role]||0);if(difference>0&&!oldPending)this.productionEvents.push({role,count:difference,at:Date.now(),kind:'production'});}this.productionEvents=this.productionEvents.slice(-9);
-  const items=this.scope==='home'?td.items:td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||td.items;this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty)this.editor=new DefenseEditor(items);
+  const items=this.scope==='home'?td.items:td.outposts[this.scope]?.items||td.areas.find(a=>a.id===this.scope)?.snapshot.items||td.items;this.saved={version:7,items:structuredClone(items),growth:this.growth,campaign:this.campaign};if(!this.editor.dirty){const selected=this.editor.selected,tool=this.editor.tool;this.editor=new DefenseEditor(items);this.editor.tool=tool;if(selected)this.editor.select(selected);}
   const p=this.campaign.pending;if(p){if(!this.battle||this.liveId!==p.id||this.replay){this.replay=null;this.battle=battleFromRecord(p);this.liveId=p.id;this.lastRecord=null;this.mode='battle';this.resultAt=null;this.follow=true;this.accumulator=0;}this.setViewport(this.width,this.height);}
   else if(oldPending){const r=this.campaign.history.find(x=>x.id===oldPending.id);if(r){this.lastRecord=r;if(!this.battle||this.liveId!==r.id)this.battle=battleFromRecord(r);while(this.battle.status==='running'&&this.battle.ticks<r.endTick)this.battle.step(1/30);if(r.status==='retreated'&&this.battle.status==='running')this.battle.retreat();this.resultAt=this.elapsed;this.mode='battle';}}
   this.uiVersion++;this.onRemoteUpdate?.();
@@ -24,7 +24,7 @@ export class RemoteSession extends Session{
   const request=this.requestChain.then(run);this.requestChain=request.catch(()=>{});return request;
  }
  async poll(force=false){if(this.polling||this.busy||!force&&Date.now()-this.lastPoll<(this.campaign.pending?1600:5000))return;this.polling=true;this.lastPoll=Date.now();try{const r=await testApi('/api/td-state',{token:this.token});this.apply(r.td);}catch(e){this.notify(e.message);}finally{this.polling=false;this.lastPoll=Date.now();}}
- save(){this.send('td/layout',{scope:this.scope,items:this.editor.items}).then(()=>{this.editor.dirty=false;}).catch(()=>{});return true;}
+ save(){const editor=this.editor,items=structuredClone(editor.items),scope=this.scope;this.send('td/layout',{scope,items}).then(()=>{if(this.editor===editor&&JSON.stringify(editor.items)===JSON.stringify(items))editor.dirty=false;}).catch(()=>{});return true;}
  finishBattle(){if(this.remote)this.poll(true);}
  action(id,data){
   if(id==='amount'||id==='defend'){this.notify('시험 서버에서는 실제 보유 병력을 사용해요.');return;}
