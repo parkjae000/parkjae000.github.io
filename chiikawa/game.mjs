@@ -10,6 +10,7 @@ export function advance(g,now){if(g.version!==VERSION){
   g.version=VERSION;
   if(g.guide)g.guide.paused=true;
  }
+ E.placeStoredItems(g);
  // A saved entrance that had finished mining can start production without another tap.
  for(const f of g.facilities)if(f.repaired&&!f.active)E.activate(g,f.id);
  // Older clients still read this flag when opening a saved account.
@@ -19,7 +20,7 @@ export function advance(g,now){if(g.version!==VERSION){
  g.lastAt=until;return {seconds:Math.max(0,(until-from)/1000),gold:g.gold-beforeGold,rocks:g.stats.rocks-beforeRocks,births};}
 const str=(v,max=100)=>{if(typeof v!=='string'||!v||v.length>max)throw fail('작업 대상을 확인해 주세요.');return v;};
 const int=(v,min,max)=>{if(!Number.isInteger(v)||v<min||v>max)throw fail('작업 수치를 확인해 주세요.');return v;};
-export const PREDICTABLE=new Set(['assign','move','merge','recruit','upgrade','activate','collect','research','automate','auto','next','guide','dismissIntro','unpack','charge','mergeCharges']);
+export const PREDICTABLE=new Set(['assign','move','merge','recruit','upgrade','activate','collect','research','automate','auto','next','guide','dismissIntro','unpack','charge','moveCharge','mergeCharges']);
 export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let result,game=g;switch(type){
  case 'assign':{const target=str(p.target);const stand=p.stand==null?null:{x:int(p.stand.x,0,E.COLS-1),y:int(p.stand.y,0,g.rows+2)};result=E.assign(g,str(p.worker),target,stand);if(target.startsWith('r'))g.stats.manualAssignments++;if(g.facilities.some(f=>f.id===target))g.stats.facilityStarted++;break;}
  case 'move':result=E.move(g,str(p.worker),int(p.x,0,6),int(p.y,0,g.rows+2));if(result.target)g.stats.manualAssignments++;break;
@@ -29,6 +30,7 @@ export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let r
   if(wasRock&&result.cleared){g.stats.rocks++;g.daily.rocks++;}
   break;
  }
+ case 'moveCharge':result=E.moveCharge(g,str(p.charge),int(p.x,0,6),int(p.y,0,g.rows+2));break;
  case 'mergeCharges':result=E.mergeCharges(g,str(p.a),str(p.b));break;
  case 'unpack':result=E.unpackWorker(g,str(p.barrel));result.id='w-'+str(requestId,80);break;
  case 'merge':result=E.merge(g,str(p.a),str(p.b));g.stats.merges++;g.daily.merges++;break;

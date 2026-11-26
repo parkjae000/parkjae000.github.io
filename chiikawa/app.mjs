@@ -2,7 +2,7 @@ import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
 import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
-import {guidePage} from './guide.mjs?v=128';
+import {guidePage} from './guide.mjs?v=130';
 import {watchRelease} from './release.mjs?v=124';
 import {GameSession} from './session.mjs';
 import {API,LIVE_HOSTS} from './config.mjs';
@@ -29,15 +29,15 @@ cv.style.position='relative';
 const sceneryContext=scenery.getContext('2d',{alpha:false});
 let sceneryView='';
 let terrainKey='',lastSimulation=0;
-let pendingBarrel=null,parcelFlight=null,selectedCharge=null,chargeGesture=null,chargeKey='';
-const workerParcelPoint=()=>coord(6,g.camp.row+1.1);
+let pendingBarrel=null,parcelFlight=null,selectedCharge=null,chargeGesture=null,itemStage=null;
+
 const client=new GameSession({api:LIVE_HOSTS.includes(location.hostname)?API:'/api',onGame:acceptGame,onStatus:updateSave,onError:notice});
 for(const [name,type,fields] of [['assign','assign',['worker','target','stand']],['move','move',['worker','x','y']],['merge','merge',['a','b']],['recruit','recruit',[]],['upgrade','upgrade',['facility','count']],['activate','activate',['facility']],['collect','collect',['facility']],['research','research',['card']],['automate','automate',['facility']]]){E[name]=(_state,...args)=>{const payload=Object.fromEntries(fields.map((key,i)=>[key,args[i]]));const value=client.mutate(type,payload);return name==='collect'?value.result.amount:value.result;};}
 E.nextMine=()=>client.mutate('next').game;
 function updateSave(status){const el=$('#save-state');el.textContent=status==='saved'?'✓':status==='saving'?'↻':status==='offline'?'!':'…';el.dataset.status=status;el.title={saved:'서버 저장 완료',saving:'저장 중',offline:'연결을 복구하면 저장을 이어서 진행해요.'}[status]||'연결 확인 중';if(status==='signed-out')showWelcome();if(!g&&status==='offline'){$('#auth-loading').textContent='연결을 확인한 뒤 다시 시도해 주세요.';$('#retry-connection').hidden=false;}else $('#retry-connection').hidden=true;}
 function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;$('#auth-form').hidden=false;$('#auth-loading').hidden=true;if(dialog.open)dialog.close();g=null;resetChat(null);}
 function acceptGame(game,p){if(!game){showWelcome();return;}const first=!g,changed=g&&g.stage!==game.stage,previous=g?.camp.moves;if(!first&&game!==g&&game.rocks.some((rock,i)=>rock.done!==g.rocks[i]?.done))terrainKey='';
- g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
+ g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){itemStage=null;$('#board-items').replaceChildren();terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
  if(first&&!offlineShown&&client.base&&client.now()-client.base.lastAt>60000)offlineShown=true;}
 const coord=(x,y)=>({x:LEFT+(x+.5)*STEP,y:H-(g.rows+3.2)*STEP+y*STEP});
 function facilityBounds(f){
@@ -51,7 +51,7 @@ function visual(f){
  return {x:b.left+b.width/2,y:b.top+124};
 }
 const cannonPoint=()=>({x:676,y:coord(0,g.camp.row+2.55).y});
-const barrelPoint=()=>coord(6,g.camp.row);
+
 const cameraMin=()=>g?Math.min(0,coord(0,g.camp.row+3.2).y-VH):0;
 function focusCamp(){camera=Math.max(cameraMin(),Math.min(H-VH,coord(0,g.camp.row+3.2).y-VH));placeStructures();}
 function fit(){if(!world.clientWidth||!world.clientHeight)return;const oldV=VH,oldH=H;VH=Math.round(world.clientHeight*W/world.clientWidth);H=Math.max(1260,VH,g?220+(g.rows+3.2)*STEP:1260);if(cv.width!==W)cv.width=W;if(cv.height!==VH)cv.height=VH;camera=Math.max(cameraMin(),Math.min(H-VH,camera+(H-oldH)+(oldV-VH)));placeStructures();}
@@ -62,8 +62,8 @@ function text(s,x,y,size=34,color='#fff8ec',stroke='#5b4a49'){ctx.textAlign='cen
 function rect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}}
 function notice(message){$('#notice').textContent=message;}
 function action(fn,message=null){try{settle();const result=fn();if(message)notice(message);return result;}catch(e){notice(e.message);return null;}}
-function settle(){if(!g)return;const t=client.now();lastReal=t;const ids=new Set(g.friends.map(w=>w.id)),before={...g.ledger},hadSupply=g.barrel,parcelCount=g.workerBarrels?.length||0;simulate(g,t);if(!hadSupply&&g.barrel)flyParcel('supply');if((g.workerBarrels?.length||0)>parcelCount)flyParcel('worker');if(campSeen!==g.camp.moves){if(campSeen>=0){focusCamp();notice('개방 완료! 찻집·대포·소환 위치가 앞으로 이동했어요.');}campSeen=g.camp.moves;}for(const w of g.friends)if(!ids.has(w.id))launch(w.id);for(const f of g.facilities)if(g.ledger[f.id]>before[f.id])showPayout(f.id,g.ledger[f.id]-before[f.id]);}
-function updateHUD(force=false){if(!g)return;$('#gold').textContent=fmt(g.gold);$('#elixir').textContent=fmt(g.elixir);$('#gems').textContent=fmt(g.gems);$('#scene-name').textContent='간식 동굴 '+g.stage;$('#crew-count').textContent=E.occupiedSlots(g)+'/'+E.capacity(g);const level=E.hireLevel(g),a=E.appearance(level);$('#hire-level').textContent='LV.'+level;const hires=g.hires%E.hiresPerLevel;$('#hire-meter').style.setProperty('--paid',hires/E.hiresPerLevel*100+'%');$('#hire-meter').textContent=level<40?hires+'/'+E.hiresPerLevel:'MAX';$('#hire-cost').textContent=E.occupiedSlots(g)>=E.capacity(g)?'정원 가득':fmt(E.hirePrice(g));$('#hire-portrait').style.backgroundPosition=(a.idle/3*100)+'% 0';$('#hire').disabled=E.occupiedSlots(g)>=E.capacity(g)||g.gold<E.hirePrice(g);$('#hire-coin').hidden=E.occupiedSlots(g)>=E.capacity(g);$('#hire').setAttribute('aria-label',E.occupiedSlots(g)>=E.capacity(g)?'친구 정원 가득':`Lv.${level} ${a.name} 채용 · ${fmt(E.hirePrice(g))} 골드`);$('#wheel-count').textContent=g.wheel.extra+'/5';$('#wheel-button').title=g.wheel.free?'추가 회전 '+g.wheel.extra+'/5':'무료 회전 가능';$('#event-clock').textContent=g.daily.claims.length+'/4';$('#scene').setAttribute('aria-label','작업장 · '+g.friends.map(w=>E.appearance(w.level).name+' Lv.'+w.level).join(', '));$('#work-count').textContent=`작업 중 ${g.friends.filter(w=>w.target).length}/${g.friends.length}`;updateStructures(force);updateProductionClocks();updateCharges();updateSelection();refreshPanel(force);}
+function settle(){if(!g)return;const t=client.now();lastReal=t;const ids=new Set(g.friends.map(w=>w.id)),before={...g.ledger};simulate(g,t);if(campSeen!==g.camp.moves){if(campSeen>=0){focusCamp();notice('개방 완료! 찻집·대포·소환 위치가 앞으로 이동했어요.');}campSeen=g.camp.moves;}for(const w of g.friends)if(!ids.has(w.id))launch(w.id);for(const f of g.facilities)if(g.ledger[f.id]>before[f.id])showPayout(f.id,g.ledger[f.id]-before[f.id]);}
+function updateHUD(force=false){if(!g)return;$('#gold').textContent=fmt(g.gold);$('#elixir').textContent=fmt(g.elixir);$('#gems').textContent=fmt(g.gems);$('#scene-name').textContent='간식 동굴 '+g.stage;$('#crew-count').textContent=E.occupiedSlots(g)+'/'+E.capacity(g);const level=E.hireLevel(g),a=E.appearance(level);$('#hire-level').textContent='LV.'+level;const hires=g.hires%E.hiresPerLevel;$('#hire-meter').style.setProperty('--paid',hires/E.hiresPerLevel*100+'%');$('#hire-meter').textContent=level<40?hires+'/'+E.hiresPerLevel:'MAX';$('#hire-cost').textContent=E.occupiedSlots(g)>=E.capacity(g)?'정원 가득':fmt(E.hirePrice(g));$('#hire-portrait').style.backgroundPosition=(a.idle/3*100)+'% 0';$('#hire').disabled=E.occupiedSlots(g)>=E.capacity(g)||g.gold<E.hirePrice(g)||!E.deliverySpot(g);$('#hire-coin').hidden=E.occupiedSlots(g)>=E.capacity(g);$('#hire').setAttribute('aria-label',E.occupiedSlots(g)>=E.capacity(g)?'친구 정원 가득':`Lv.${level} ${a.name} 채용 · ${fmt(E.hirePrice(g))} 골드`);$('#wheel-count').textContent=g.wheel.extra+'/5';$('#wheel-button').title=g.wheel.free?'추가 회전 '+g.wheel.extra+'/5':'무료 회전 가능';$('#event-clock').textContent=g.daily.claims.length+'/4';$('#scene').setAttribute('aria-label','작업장 · '+g.friends.map(w=>E.appearance(w.level).name+' Lv.'+w.level).join(', '));$('#work-count').textContent=`작업 중 ${g.friends.filter(w=>w.target).length}/${g.friends.length}`;updateStructures(force);updateProductionClocks();updateBoardItems();updateSelection();refreshPanel(force);}
 let accessGame=null,accessSignature='',accessTiles;
 function showPayout(id,amount){
  const clock=document.getElementById('info-'+id);
@@ -115,6 +115,7 @@ function updateStructures(force=false){const signature=[g.stage,g.stats.rocks,g.
  return `<div class="production" data-structure="${f.id}"><span class="yield" title="${statFmt(E.facilityCycle(g,f))}초 생산량 · 현재 → 표시된 강화 후">${icon('gold')}<b>${fmt(E.cycleYield(g,f))}${q.count?' → '+fmt(E.cycleYield(g,{...f,level:f.level+q.count})):''}</b></span><button id="upgrade-${f.id}" class="upgrade-card" data-upgrade="${f.id}" data-count="${q.count}" ${!q.count?'disabled':''} aria-label="${d.name} Lv.${f.level} · ${statFmt(E.facilityCycle(g,f))}초마다 ${fmt(E.cycleYield(g,f))} 골드 · ${q.count?'+'+q.count+'레벨 강화 '+fmt(q.cost)+' 골드':'강화 골드 부족'}"><span class="upgrade-progress"><i class="preview-fill" style="width:${preview*100}%"></i><i class="current-fill" style="width:${bar.progress*100}%"></i><b>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'Lv.'+f.level+' / '+bar.next}</b></span><span class="upgrade-buy"><strong>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'+'+(q.count||1)}</strong><span>${icon('gold')}${f.level>=E.maxFacilityLevel(f.id)?'최대':fmt(q.cost)}</span></span></button><button class="facility-label" data-details="${f.id}" aria-label="${d.name} 생산 정보와 자동 수령 설정">${f.auto?d.name:'자동 수령 설정'} ›</button></div>`;}).join('')+[...g.checkpoints.filter(t=>!t.done),g.exit].map(t=>`<button class="gate-hit ${t.id==='exit'&&t.done?'exit-next':''}" data-gate="${t.id}" aria-label="${t.id==='exit'?(E.readyForNext(g)?'다음 구역으로':'출구 작업 · 앞줄 세 칸'):'중간 개방문 '+t.toSegment+' 작업 · 앞줄 세 칸'}">${t.id==='exit'&&t.done?'다음 구역으로 ›':''}</button>`).join('');syncClockButtons();placeStructures();}
 function placeStructures(){
  if(!g)return;
+ positionLoot();
  const k=world.clientWidth/W;
  for(const node of document.querySelectorAll('[data-structure]')){
   const f=g.facilities.find(f=>f.id===node.dataset.structure),p=visual(f);
@@ -227,21 +228,9 @@ function drawTerrain() {
  sceneryContext.fillStyle='#bdadbb';sceneryContext.fillRect(0,0,W,VH);
  sceneryContext.drawImage(terrain,0,start-camera);
 }
-function flyParcel(kind){if(!reduced)parcelFlight={kind,at:performance.now()};}
-function drawParcel(kind,p,label,time){
- let x=p.x,y=p.y;
- if(parcelFlight?.kind===kind){
-  const q=Math.min(1,(time-parcelFlight.at)/380),start=cannonPoint();
-  if(q<1){x=start.x+(x-start.x)*q;y=start.y+(y-start.y)*q-Math.sin(Math.PI*q)*120;}
- }
- sprite(9,x,y,76);
- rect(x-46,y-86,92,26,7,'#fff4c6','#caa773');text(label,x,y-73,19,'#775131',null);
-}
 function draw(time){requestAnimationFrame(draw);if(!g||document.hidden)return;frameAt=time;const dt=Math.min(.06,(time-lastFrame)/1000||.033);lastFrame=time;if(time-lastSimulation>=100){settle();lastSimulation=time;}if(time-hudAt>240){updateHUD();hudAt=time;}ctx.clearRect(0,0,W,VH);ctx.save();ctx.translate(0,-camera);drawTerrain();gate(g.exit);if(!g.exit.done)workbar(g.exit,coord(g.exit.x,g.exit.y));for(const checkpoint of g.checkpoints){gate(checkpoint);if(!checkpoint.done)workbar(checkpoint,coord(checkpoint.x,checkpoint.y));}
  for(const r of g.rocks){if(r.done||r.hp>=r.max)continue;const p=coord(r.x,r.y);if(p.y>=camera-20&&p.y<=camera+VH+100)workbar(r,p);}
- for(const f of g.facilities)drawFacility(f,time);const cannon=cannonPoint(),shot=Math.max(delivery?.at??-1000,parcelFlight?.at??-1000),kick=time-shot<400?Math.sin((time-shot)/400*Math.PI)*9:0;sprite(12,cannon.x+kick,cannon.y,166);rect(cannon.x-38,cannon.y-143,76,26,8,'#fff1d0','#ad8b66');text('Lv.'+E.cannonLevel(g),cannon.x,cannon.y-130,21,'#856340',null);
- if(g.barrel)drawParcel('supply',barrelPoint(),pendingBarrel?'여는 중':'보급',time);
- if(g.workerBarrels?.length)drawParcel('worker',workerParcelPoint(),'친구 ×'+g.workerBarrels.length,time);
+ for(const f of g.facilities)drawFacility(f,time);const cannon=cannonPoint(),shot=Math.max(delivery?.at??-1000,parcelFlight?.at??-1000),kick=time-shot<400?Math.sin((time-shot)/400*Math.PI)*9:0;sprite(12,cannon.x+kick,cannon.y,166);rect(cannon.x-38,cannon.y+2,76,24,8,'#fff1d0','#ad8b66');text('Lv.'+E.cannonLevel(g),cannon.x,cannon.y+14,20,'#856340',null);
  drawFriends(time,dt);
  if(chargeGesture?.aim){
   const aim=chargeGesture.aim,p=aim.target.port?visual(aim.target):coord(aim.target.x,aim.target.y);
@@ -277,7 +266,7 @@ function targetAt(p){return E.targets(g).filter(t=>!t.port).map(t=>({t,p:coord(t
 function facilityAt(p){return g.facilities.find(f=>{if(f.footprint.length){const b=facilityBounds(f);return p.x>=b.left&&p.x<b.left+b.width&&p.y>=b.top&&p.y<b.top+b.height;}
  const at=visual(f);return Math.abs(at.x-p.x)<90&&p.y>at.y-155&&p.y<at.y+25;});}
 function dropAt(p,actor,gesture){
- const signature=[g.stats.rocks,g.camp.moves,g.exit.done,...g.facilities.map(f=>f.repaired),...g.friends.map(w=>w.id+','+w.x+','+w.y)].join('/');
+ const signature=[g.stats.rocks,g.camp.moves,g.exit.done,...g.facilities.map(f=>f.repaired),...[...g.friends,...E.boardItems(g)].map(w=>w.id+','+w.x+','+w.y)].join('/');
  if(gesture.game!==g||gesture.layout!==signature){
   gesture.board=placementBoard(g,actor);gesture.game=g;gesture.layout=signature;
  }
@@ -340,9 +329,6 @@ cv.addEventListener('pointerup',e=>{
   }
   return;
  }
- const hitParcel=at=>Math.abs(p.x-at.x)<42&&p.y>at.y-88&&p.y<at.y+15;
- if(g.workerBarrels?.length&&hitParcel(workerParcelPoint())){openWorkerParcel();return;}
- if(g.barrel&&hitParcel(barrelPoint())){openMystery();return;}
  const w=friendAt(p),t=targetAt(p),f=facilityAt(p);
  if(w){selected=w.id;updateSelection();return;}if(t&&!f?.footprint.length){orderTarget(t);return;}if(f){if(!f.repaired){orderTarget(f);return;}if(f.ready){collectFacility(f);return;}openFacility(f);return;}if((g.bedrock||[]).some(([x,y])=>{const q=coord(x,y);return Math.abs(q.x-p.x)<STEP/2&&p.y>q.y-65&&p.y<q.y+15;})){notice('고정 암벽이에요. 옆의 숫자 바위를 캐서 길을 내세요.');return;}if(p.y<cannonPoint().y&&p.y>cannonPoint().y-160&&p.x>590){panel('supply');return;}selected=null;updateSelection();});
 for(const event of ['pointercancel','lostpointercapture'])cv.addEventListener(event,e=>{if(drag?.pointer===e.pointerId)drag=null;});$('#clear-selection').onclick=()=>{selected=null;updateSelection();};
@@ -380,12 +366,12 @@ function rewardArt(reward){if(reward.type==='gems')return icon('gem');if(reward.
 function wheelMarkup(){const context=wheelContext||{level:E.hireLevel(g)+1,full:E.occupiedSlots(g)>=E.capacity(g)};const colors=['#a6d2be','#e8c5ab','#b9c5e0','#eddc9d','#bcd6a1','#d0b3d5','#a9d2d2','#e9bcaa'];let paths='';for(let i=0;i<8;i++){const a=(i*45-112.5)*Math.PI/180,b=(i*45-67.5)*Math.PI/180;paths+=`<path d="M160 160 L${160+151*Math.cos(a)} ${160+151*Math.sin(a)} A151 151 0 0 1 ${160+151*Math.cos(b)} ${160+151*Math.sin(b)}Z" fill="${colors[i]}" stroke="#fff2ce" stroke-width="2"/>`;}
  return `<div class="wheel-stage"><div class="wheel-pointer"></div><div id="wheel-rotor" class="wheel-rotor" style="transform:rotate(${wheelRotation}deg)"><svg viewBox="0 0 320 320" aria-hidden="true">${paths}</svg>${E.WHEEL_REWARDS.map((r,i)=>{const a=i*45*Math.PI/180,x=50+Math.sin(a)*32,y=50-Math.cos(a)*32;return `<span class="wheel-prize" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${i*45}deg)">${r.type==='worker'&&context.full?art(17):rewardArt(r)}<b>${r.type==='worker'?(context.full?'연구40':'Lv.'+context.level):r.type==='time'?'1분':r.amount+(r.type==='cards'?'장':'' )}</b></span>`;}).join('')}</div><div class="wheel-hub">✿</div></div>`;}
 function deliveryStatus(){
- const timer=E.occupiedSlots(g)>=E.capacity(g)?'정원 가득 · 배달 대기':duration((g.freeAt-g.elapsed)*1000)+' 후';
+ const timer=!E.deliverySpot(g)?'빈 바닥이 생길 때까지 '+duration((g.freeAt-g.elapsed)*1000)+'에서 멈춤':duration((g.freeAt-g.elapsed)*1000)+' 후';
  return `무료 친구 Lv.${E.cannonLevel(g)} · ${timer}<br>일반 보급통 · ${g.barrel?'지도에 도착':'배달 준비 중'}`;
 }
 function crewPanel(){
  const c=E.crewInfo(g),parcels=g.workerBarrels?.length||0;
- const explanation=c.pair?'같은 레벨 친구 둘을 합치면 한 칸이 비어요.':parcels?'친구 보급을 열어 레벨을 확인하고 짝을 합쳐 주세요.':c.stranded?'지금은 합칠 짝이 없어요. 다음 일반 보급통을 열면 가장 낮은 친구에게 짝이 도착해 그 자리에서 합쳐져요.':c.partner?'다음 일반 보급통에 Lv.'+c.partner.level+' 친구의 합성 짝이 들어 있어요.':'같은 레벨 둘을 겹치면 한 단계 높은 친구가 돼요.';
+ const explanation=parcels&&c.full&&c.pair?'상자는 바닥에서 기다려요. 친구 둘을 합쳐 자리를 만들고 열어 주세요.':c.pair?'같은 레벨 친구 둘을 합치면 한 칸이 비어요.':c.stranded?'지금은 합칠 짝이 없어요. 다음 일반 보급통을 열면 가장 낮은 친구에게 짝이 도착해 그 자리에서 합쳐져요.':c.partner?'다음 일반 보급통에 Lv.'+c.partner.level+' 친구의 합성 짝이 들어 있어요.':'같은 레벨 둘을 겹치면 한 단계 높은 친구가 돼요.';
  const cards=g.cards.capacity;
  return `<div class="facts"><span>사용 중인 정원</span><strong>${E.occupiedSlots(g)} / ${E.capacity(g)}칸</strong><span>지도 위 친구</span><strong>${g.friends.length}명</strong><span>미개봉 친구 보급</span><strong>${parcels}개</strong></div><p>${explanation}</p>${parcels?'<button class="dialog-button" id="open-worker-parcel">친구 보급 열기 · '+parcels+'개</button>':''}${c.pair?'<button class="dialog-button" data-crew-merge="'+c.pair.level+'">Lv.'+c.pair.level+' 친구 둘 합치기</button>':''}${g.barrel&&(c.stranded||c.partner)?'<button class="dialog-button" id="open-barrel">합성 짝 보급 열기</button>':''}<p id="supply-status">${deliveryStatus()}</p>${cards?.level<4?'<button class="dialog-button" data-panel="cards">정원 확장 카드 보기</button>':''}`;
 }
@@ -395,7 +381,7 @@ function panel(name){if(!g)return;settle();if(name==='menu'){open('내 모험 ·
  else if(name==='wheel'){open('행운 룰렛',`<p class="wheel-caption">간식 동굴의 작은 행운</p>${wheelMarkup()}<div id="wheel-result" role="status" class="wheel-result">${wheelSpinning?'두근두근…':wheelResult?'획득 · '+wheelResult.label:'오늘의 보상을 돌려 보세요'}</div><button class="dialog-button spin-main" id="spin-free" ${g.wheel.free||wheelSpinning?'disabled':''}>${g.wheel.free?'무료 회전 완료':'무료로 돌리기'}</button><button class="dialog-button" id="spin-extra" ${wheelSpinning||g.wheel.extra>=5||g.elapsed<g.wheel.nextAt?'disabled':''}>${g.wheel.extra>=5?'추가 회전 5회 완료':g.elapsed<g.wheel.nextAt?duration((g.wheel.nextAt-g.elapsed)*1000)+' 후 추가 회전':'추가 회전 · '+g.wheel.extra+'/5'}</button><p class="wheel-note">8칸의 확률은 각각 12.5%예요. 시간 보상은 즉시 적용돼요. 친구 정원이 가득 차면 연구 40으로 바뀌어요.</p><p class="wheel-note">매일 무료 1회 · 추가 회전은 2시간 간격, 하루 최대 5회예요. 자정(한국시간)에 다시 시작해요.</p>`,name);}
  else if(name==='events'){open('오늘의 업무',`<p class="panel-intro">매일 자정(한국시간)에 새 업무가 시작돼요.</p>${TASKS.map(t=>{const amount=g.daily[t.id]||0,claimed=g.daily.claims.includes(t.id);return `<article class="daily-card" data-task="${t.id}"><div><h2>${t.name}</h2><p>${Math.min(amount,t.goal)}/${t.goal} · 보석 ${t.gems} + 연구 ${t.elixir}</p><div class="material-bar"><i style="width:${Math.min(100,amount/t.goal*100)}%"></i></div></div><button data-daily="${t.id}" ${claimed||amount<t.goal?'disabled':''}>${claimed?'받음':'받기'}</button></article>`;}).join('')}`,name);}
  else if(name==='crew'){open('친구 정원',crewPanel(),name);}
- else if(name==='supply'){open('센터 보급',`<div class="supply-art">${art(12)}</div><p id="supply-status">${deliveryStatus()}</p><p>무료 친구 보급은 열기 전에도 정원 한 칸을 써요. 별사탕 폭죽은 같은 레벨 친구가 5분 동안 할 일을 즉시 처리해요. 시설에 쓰려면 먼저 친구가 옆에서 그 시설을 캐고 있어야 해요. 같은 레벨 폭죽 둘을 합칠 수도 있어요.</p><p>개방문을 열면 기본 찻집·대포·소환 위치가 다음 공간으로 함께 이동해요. 보급 골드는 기본 찻집과 자동화 시설 수입에 비례해요.</p><button class="dialog-button" id="open-barrel" ${g.barrel?'':'disabled'}>도착한 보급 열기</button><button class="dialog-button" id="open-worker-parcel" ${g.workerBarrels?.length?'':'hidden'}>친구 보급 열기</button>`,name);}
+ else if(name==='supply'){open('센터 보급',`<div class="supply-art">${art(12)}</div><p id="supply-status">${deliveryStatus()}</p><p>무료 친구 상자는 바닥 한 칸에 도착해요. 열어서 친구가 나올 때만 친구 수가 늘어요. 빈 바닥이 없으면 남은 배송 시간이 멈추고, 칸이 비면 이어져요. 별사탕 폭죽은 같은 레벨 친구가 5분 동안 할 일을 즉시 처리해요. 시설에 쓰려면 먼저 친구가 옆에서 그 시설을 캐고 있어야 해요. 지도에서 같은 레벨 폭죽 둘을 겹치면 한 단계 올라요. 빈 바닥으로 끌면 폭죽을 옮길 수 있어요.</p><p>개방문을 열면 기본 찻집·대포·소환 위치가 다음 공간으로 함께 이동해요. 보급 골드는 기본 찻집과 자동화 시설 수입에 비례해요.</p><button class="dialog-button" id="open-barrel" ${g.barrel?'':'disabled'}>도착한 보급 열기</button><button class="dialog-button" id="open-worker-parcel" ${g.workerBarrels?.length?'':'hidden'}>친구 보급 열기</button>`,name);}
  else if(name==='help'){showGuide(0);}
  else if(name==='chat'){open('친구들과 채팅','<p class="panel-intro">간식 동굴을 탐험하는 친구들과 이야기를 나눠요.</p><div id="chat-list" class="chat-list" aria-live="polite"></div><form id="chat-form" method="post"><label class="sr-only" for="chat-input">메시지</label><input id="chat-input" name="message" maxlength="200" placeholder="메시지 입력" autocomplete="off" required><button type="submit">보내기</button></form><p id="chat-error" role="status" class="panel-intro"></p>',name);markChatRead();renderChat();loadChat();}
  else if(name==='rankings'){open('동굴 탐험 랭킹','<p class="panel-intro">도달 구역 → 누적 채굴 → 합성 횟수 순이에요.</p><div id="ranking-list" aria-live="polite">불러오는 중…</div>',name);loadRankings();}}
@@ -419,55 +405,109 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
  }if(b.dataset.gate){const t=[...g.checkpoints,g.exit].find(t=>t.id===b.dataset.gate);if(t.id==='exit'&&t.done){showDeparture();}else orderTarget(t);return;}if(b.dataset.repair){const f=g.facilities.find(f=>f.id===b.dataset.repair);if(f.repaired){action(()=>E.activate(g,f.id),'시설을 가동했어요!');}else if(selected){assignTo(g.friends.find(w=>w.id===selected),f);}else orderTarget(f);return;}if(b.dataset.info){const f=g.facilities.find(f=>f.id===b.dataset.info);if(f.ready)collectFacility(f);else openFacility(f);return;}if(b.dataset.research){const name=modalName,offset=$('#dialog-content').scrollTop;if(action(()=>E.research(g,b.dataset.research))){panel(name);$('#dialog-content').scrollTop=offset;}return;}if(b.dataset.automate){const r=action(()=>E.automate(g,b.dataset.automate),'자동 수령을 켰어요.');if(r)dialog.close();return;}if(b.dataset.collect){collectFacility(g.facilities.find(f=>f.id===b.dataset.collect));dialog.close();return;}if(b.dataset.buy){serverAction(b,'buy',{offer:b.dataset.buy},r=>{shopReceipt=r.text;if(modalName==='shop'&&dialog.open){const offset=$('#dialog-content').scrollTop;panel('shop');$('#dialog-content').scrollTop=offset;}notice(r.text);});return;}if(b.id==='open-worker-parcel'){openWorkerParcel();return;}if(b.id==='open-barrel'){openMystery();return;}if(b.id==='spin-free'||b.id==='spin-extra'){startSpin(b.id==='spin-extra');return;}});
 requestAnimationFrame(draw);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&g){settle();updateHUD(true);client.sync();loadChat();}});
-function updateCharges(){
- const items=g.charges||[];
- if(!items.some(c=>c.id===selectedCharge))selectedCharge=null;
- const key=items.map(c=>c.id+':'+c.level).join(',')+'/'+selectedCharge;
- if(key===chargeKey)return;
- chargeKey=key;$('#charges').hidden=!items.length;
- $('#charge-items').innerHTML=items.map(c=>`<button data-charge="${esc(c.id)}" aria-label="별사탕 폭죽 레벨 ${c.level}" aria-pressed="${selectedCharge===c.id}">✦ ${c.level}</button>`).join('');
- $('#charge-tip').textContent=selectedCharge?'작업할 대상 또는 합칠 폭죽을 누르세요.':'바위로 끌어 놓거나 폭죽을 누르세요.';
+const lootLayer=$('#board-items');
+function positionLoot(){
+ const scale=world.clientWidth/W;
+ for(const node of lootLayer.children){
+  const at=coord(Number(node.dataset.col),Number(node.dataset.row));
+  node.style.left=at.x*scale+'px';node.style.top=(at.y-camera)*scale+'px';
+  node.style.width=STEP*.94*scale+'px';node.style.height=STEP*.96*scale+'px';
+ }
+}
+function updateBoardItems(){
+ const items=E.boardItems(g).filter(o=>Number.isInteger(o.x));
+ if(!items.some(item=>item.id===selectedCharge))selectedCharge=null;
+ const first=itemStage!==g.stage;itemStage=g.stage;
+ const old=new Map(Array.from(lootLayer.children,node=>[node.dataset.item,node]));
+ for(const item of items){
+  let node=old.get(item.id);
+  const charge=g.charges?.some(c=>c.id===item.id),kind=charge?'charge':g.barrel?.id===item.id?'supply':'worker';
+  const fresh=!node;
+  if(fresh){
+   node=document.createElement('button');node.className='board-loot '+kind;node.dataset.item=item.id;node.dataset.kind=kind;
+   node.innerHTML='<span class="loot-body"><i aria-hidden="true"></i><b></b></span>';
+   lootLayer.append(node);
+  }
+  old.delete(item.id);
+  const label=kind==='supply'?'보급':kind==='worker'?'친구 '+item.level:'Lv.'+item.level;
+  const name=kind==='charge'?'별사탕 폭죽 '+label:label+' 상자 열기';
+  if(node.getAttribute('aria-label')!==name){node.setAttribute('aria-label',name);node.querySelector('b').textContent=label;}
+  if(charge)node.setAttribute('aria-pressed',String(selectedCharge===item.id));
+  if(node.dataset.level&&node.dataset.level!==String(item.level)&&charge&&!reduced){
+   node.firstChild.animate([{transform:'scale(.85)'},{transform:'scale(1.34)',filter:'brightness(1.45)'},{transform:'scale(1)'}],{duration:450});
+  }
+  node.dataset.level=String(item.level);node.dataset.col=item.x;node.dataset.row=item.y;
+  if(fresh&&!first&&!reduced){
+   const from=cannonPoint(),to=coord(item.x,item.y),scale=world.clientWidth/W,dx=(from.x-to.x)*scale,dy=(from.y-to.y)*scale;
+   node.firstChild.animate([{transform:'translate('+dx+'px,'+dy+'px) scale(.6)'},{transform:'translate('+dx*.5+'px,'+(dy*.5-45)+'px) scale(1.05)'},{transform:'none'}],{duration:400});
+   parcelFlight={at:performance.now()};
+  }
+ }
+ for(const node of old.values())node.remove();
+ positionLoot();
 }
 function triggerCharge(target){
  const ok=action(()=>client.mutate('charge',{charge:selectedCharge,target:target.id}));
- if(ok){selectedCharge=null;updateCharges();const p=target.port?visual(target):coord(target.x,target.y);particles.push({x:p.x,y:p.y-40,life:1,text:'✦ −'+fmt(ok.result.damage)});}
+ if(ok){selectedCharge=null;updateBoardItems();const p=target.port?visual(target):coord(target.x,target.y);particles.push({x:p.x,y:p.y-40,life:1,text:'✦ −'+fmt(ok.result.damage)});}
 }
 function chooseCharge(id){
  if(selectedCharge&&id!==selectedCharge){
   if(action(()=>client.mutate('mergeCharges',{a:selectedCharge,b:id})))selectedCharge=null;
  }else selectedCharge=selectedCharge===id?null:id;
- updateCharges();
+ updateBoardItems();
 }
-const chargeItems=$('#charge-items');
-chargeItems.addEventListener('pointerdown',e=>{
- const button=e.target.closest('[data-charge]');if(!button||chargeGesture||!e.isPrimary)return;
- chargeGesture={id:button.dataset.charge,pointer:e.pointerId,x:e.clientX,y:e.clientY,moved:false};chargeItems.setPointerCapture(e.pointerId);
+lootLayer.addEventListener('pointerdown',e=>{
+ const node=e.target.closest('[data-kind="charge"]');
+ if(!node||chargeGesture||!e.isPrimary||e.button!==0)return;
+ chargeGesture={id:node.dataset.item,node,pointer:e.pointerId,x:e.clientX,y:e.clientY,moved:false};
+ node.setPointerCapture(e.pointerId);
 });
 function chargeHit(e){
- const node=document.elementFromPoint(e.clientX,e.clientY);
- const overlay=node?.closest('[data-gate],[data-repair]');
- if(overlay)return E.targets(g).find(t=>t.id===(overlay.dataset.gate||overlay.dataset.repair));
- if(!world.contains(node))return null;
- const p=point(e);return targetAt(p)||facilityAt(p);
+ const p=point(e);
+ const nodes=document.elementsFromPoint(e.clientX,e.clientY);
+ const other=nodes.map(n=>n.closest('[data-kind="charge"]')).find(n=>n&&n.dataset.item!==chargeGesture?.id);
+ if(other)return {other:other.dataset.item};
+ if(!nodes.includes(world))return {};
+ const overlay=nodes.map(n=>n.closest('[data-gate],[data-repair]')).find(Boolean);
+ const target=overlay?E.targets(g).find(t=>t.id===(overlay.dataset.gate||overlay.dataset.repair)):targetAt(p)||facilityAt(p);
+ return {target,p};
 }
-chargeItems.addEventListener('pointermove',e=>{
+lootLayer.addEventListener('pointermove',e=>{
  const gesture=chargeGesture;if(gesture?.pointer!==e.pointerId)return;
- if(!gesture.moved&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<4)return;
- gesture.moved=true;const target=chargeHit(e),id=target?.id;
- if(id!==gesture.hover){gesture.hover=id;gesture.aim=id?E.chargePreview(g,gesture.id,id):null;}
+ const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
+ if(!gesture.moved&&Math.hypot(dx,dy)<4)return;
+ gesture.moved=true;gesture.node.classList.add('lifted');
+ gesture.node.firstChild.style.translate=dx+'px '+dy+'px';
+ const {target}=chargeHit(e);
+ if(target?.id!==gesture.hover){gesture.hover=target?.id;gesture.aim=target&&E.chargePreview(g,gesture.id,target.id);}
 });
-chargeItems.addEventListener('pointerup',e=>{
+function endChargeGesture(){
+ if(chargeGesture){chargeGesture.node.classList.remove('lifted');chargeGesture.node.firstChild.style.translate='';chargeGesture=null;}
+}
+lootLayer.addEventListener('pointerup',e=>{
  const gesture=chargeGesture;if(gesture?.pointer!==e.pointerId)return;
- chargeGesture=null;if(!gesture.moved){chooseCharge(gesture.id);return;}
- const other=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-charge]')?.dataset.charge;
+ const hit=gesture.moved?chargeHit(e):null;endChargeGesture();
+ if(!hit){chooseCharge(gesture.id);return;}
  selectedCharge=gesture.id;
- if(other&&other!==selectedCharge)chooseCharge(other);
- else{const t=chargeHit(e);if(t)triggerCharge(t);else updateCharges();}
+ if(hit.other){chooseCharge(hit.other);return;}
+ if(hit.target&&E.chargePreview(g,gesture.id,hit.target.id)){triggerCharge(hit.target);return;}
+ if(hit.p){
+  const origin=coord(0,0),x=Math.round((hit.p.x-origin.x)/STEP),y=Math.round((hit.p.y-origin.y+STEP*.27)/STEP);
+  const charge=g.charges.find(c=>c.id===gesture.id);
+  if(charge&&E.freeTiles(g,charge).some(([cx,cy])=>cx===x&&cy===y))action(()=>client.mutate('moveCharge',{charge:gesture.id,x,y}));
+ }
+ selectedCharge=null;updateBoardItems();
 });
-for(const name of ['pointercancel','lostpointercapture'])chargeItems.addEventListener(name,e=>{if(chargeGesture?.pointer===e.pointerId)chargeGesture=null;});
-chargeItems.addEventListener('click',e=>{const b=e.target.closest('[data-charge]');if(!e.detail&&b)chooseCharge(b.dataset.charge);});
-function openWorkerParcel(){
- const barrel=g.workerBarrels?.[0];if(!barrel)return;
+for(const event of ['pointercancel','lostpointercapture'])lootLayer.addEventListener(event,e=>{if(chargeGesture?.pointer===e.pointerId)endChargeGesture();});
+lootLayer.addEventListener('click',e=>{
+ const button=e.target.closest('[data-item]');if(!button)return;
+ if(button.dataset.kind==='charge'){if(!e.detail)chooseCharge(button.dataset.item);}
+ else if(button.dataset.kind==='worker')openWorkerParcel(button.dataset.item);
+ else openMystery();
+});
+function openWorkerParcel(id){
+ const barrel=id?g.workerBarrels?.find(b=>b.id===id):g.workerBarrels?.[0];if(!barrel)return;
+ if(E.occupiedSlots(g)>=E.capacity(g)){panel('crew');return;}
  const value=action(()=>client.mutate('unpack',{barrel:barrel.id}));
  if(value){if(dialog.open)dialog.close();launch(value.result.id);}
 }
@@ -477,7 +517,7 @@ async function openMystery(){
  try{
   const reward=await client.confirm('barrel',{barrel:pendingBarrel});
   if((modalName==='supply'||modalName==='crew')&&dialog.open)dialog.close();notice(reward.text);
-  if(reward.id)launch(reward.id);
+  if(reward.type==='worker'&&reward.id)launch(reward.id);
  }catch(err){notice(err.message);}
  finally{pendingBarrel=null;refreshPanel(true);}
 }

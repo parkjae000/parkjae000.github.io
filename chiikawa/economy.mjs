@@ -145,22 +145,51 @@ export function createState(stage=2,seed=17,permanent=null){
  }
  return s;
 }
-export const occupiedSlots = s => s.friends.length + (s.workerBarrels?.length || 0);
+export const occupiedSlots = s => s.friends.length;
 export function crewInfo(s){
  const parcels=s.workerBarrels||[],sorted=[...s.friends].sort((a,b)=>a.level-b.level);
  const pair=sorted.find((w,i)=>w.level<40&&sorted[i+1]?.level===w.level);
  const lowest=sorted.find(w=>w.level<40),full=occupiedSlots(s)>=capacity(s);
  const missing=lowest&&lowest.level<cannonLevel(s)-1&&
   !sorted.some(w=>w!==lowest&&w.level===lowest.level)&&!parcels.some(b=>b.level===lowest.level);
- return {pair,lowest,partner:missing?lowest:null,full,stranded:full&&!parcels.length&&!pair&&!!lowest};
+ return {pair,lowest,partner:missing?lowest:null,full,stranded:full&&!pair&&!!lowest};
 }
 export const deliveryInterval = s => 2400 / (1+.1*researchLevel(s,'delivery')) * .9 ** s.checkpoints.filter(gate => gate.done).length;
 export const targets=s=>[...s.rocks.filter(r=>!r.done),...s.facilities.filter(f=>!f.repaired),...s.checkpoints.filter(t=>!t.done),...(s.exit.done?[]:[s.exit])];
-function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5);}
+function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5)&&!(x===6&&y===s.camp.row+1);}
 export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(!t.done||Math.abs(x-t.x)>1)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
  const seen=new Set(),queue=[[3,s.camp.row]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i],k=x+','+y;if(seen.has(k)||blocked.has(k)||x<0||x>=COLS||y<0||y>s.rows+2)continue;seen.add(k);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
-export function freeTiles(s,worker=null){return [...openTiles(s)].map(k=>k.split(',').map(Number)).filter(([x,y])=>!(x===6&&y===s.camp.row)&&!s.friends.some(w=>w.id!==worker?.id&&w.x===x&&w.y===y));}
+export const boardItems=s=>[...(s.barrel?[s.barrel]:[]),...(s.workerBarrels||[]),...(s.charges||[])];
+export function freeTiles(s,except=null){
+ const used=new Set([...s.friends,...boardItems(s)].filter(o=>o.id!==except?.id).map(o=>o.x+','+o.y));
+ return [...openTiles(s)].filter(k=>!used.has(k)).map(k=>k.split(',').map(Number));
+}
+const landingCache=new WeakMap();
+export function deliverySpot(s){
+ const key=[s.camp.row,...s.friends,...boardItems(s)].map(o=>typeof o==='number'?o:o.x+','+o.y).join('/');
+ const cached=landingCache.get(s);
+ if(cached?.key===key)return cached.spot;
+ let best=null,distance=Infinity;
+ for(const [x,y] of freeTiles(s)){
+  const d=Math.abs(6-x)+Math.abs(s.camp.row+1-y);
+  if(d<distance){best={x,y};distance=d;}
+ }
+ landingCache.set(s,{key,spot:best});return best;
+}
+// Older inventory entries have no board coordinates. Keep each one until a tile opens.
+export function placeStoredItems(s,relocate=false){
+ const items=boardItems(s);
+ if(relocate)for(const o of items)if(campBlocked(s,o.x,o.y)){delete o.x;delete o.y;}
+ for(const item of items)if(!Number.isInteger(item.x)||!Number.isInteger(item.y)){
+  const spot=deliverySpot(s);if(!spot)break;Object.assign(item,spot);
+ }
+}
+export function moveCharge(s,id,x,y){
+ const charge=s.charges?.find(c=>c.id===id);
+ if(!charge||!freeTiles(s,charge).some(([cx,cy])=>cx===x&&cy===y))error('폭죽을 빈 바닥에 놓아 주세요.');
+ Object.assign(charge,{x,y});return charge;
+}
 // Offsets from a target to the floor cells where a worker can stand.
 export const EXIT_APPROACH=[[0,1],[-1,1],[1,1]];
 const ordinaryApproach=[[0,1],[-1,0],[1,0],[0,-1]];
@@ -221,7 +250,7 @@ export function move(s,workerId,x,y){
  return w;
 }
 export function spawnOrigin(s){return {x:3,y:s.camp.row};}
-function addFriend(s,level=hireLevel(s)){if(occupiedSlots(s)>=capacity(s))error('같은 레벨 친구를 합쳐 빈자리를 만들어 주세요.');const origin=spawnOrigin(s),p=freeTiles(s).sort((a,b)=>Math.abs(a[1]-origin.y)*3+Math.abs(a[0]-origin.x)-Math.abs(b[1]-origin.y)*3-Math.abs(b[0]-origin.x))[0];if(!p)error('친구가 설 빈자리가 필요해요.');const w={id:id(s),level,x:p[0],y:p[1],target:null,paused:false};mineNearby(s,w);s.friends.push(w);return w;}
+function addFriend(s,level=hireLevel(s),at=null){if(occupiedSlots(s)>=capacity(s))error('같은 레벨 친구 두 명을 합쳐 친구 정원을 비워 주세요.');const spot=at||deliverySpot(s),p=spot&&[spot.x,spot.y];if(!p)error('친구가 설 빈자리가 필요해요.');const w={id:id(s),level,x:p[0],y:p[1],target:null,paused:false};mineNearby(s,w);s.friends.push(w);return w;}
 export function recruit(s){const price=hirePrice(s);if(s.gold<price)error('골드가 부족해요. 기본 찻집은 계속 생산해요.');const w=addFriend(s);s.gold-=price;s.hires++;return w;}
 export function merge(s,aId,bId){const a=s.friends.find(w=>w.id===aId),b=s.friends.find(w=>w.id===bId);if(!a||!b||a===b||a.level!==b.level)error('같은 레벨 친구 두 명을 합쳐 주세요.');if(b.level>=40)error('최대 레벨이에요.');b.level++;
  const jobs=targets(s);
@@ -245,7 +274,7 @@ export function cardPreview(s,card){
  const facility=BASE[card]||BASE[card.replace('manager-','')];
  let measure,label,unit,art=18;
  if(facility){const f=s.facilities.find(f=>f.id===facility.id)||{id:facility.id,level:1};measure=state=>cycleYield(state,f);label=facility.name+' · 1회 생산량';unit='골드';art=facility.art;}
- else if(card==='capacity'){measure=capacity;label='친구와 미개봉 보급 정원';unit='칸';art=19;}
+ else if(card==='capacity'){measure=capacity;label='지도에 꺼낼 수 있는 친구';unit='칸';art=19;}
  else if(card==='goldenCannon'){measure=state=>1+researchLevel(state,card);label='새 동굴 첫 채용';unit='레벨';art=12;}
  else if(card==='speed'){measure=state=>Math.round(facilityCycle(state,{id:'tea'})*100)/100;label='숲속 찻집 한 번 생산하는 시간';unit='초';art=16;}
  else if(card==='profit'){measure=state=>facilityRate(state,s.facilities[0]);label='기본 찻집 초당 수입';unit='골드';art=16;}
@@ -266,8 +295,8 @@ export function research(s,card){
  return c;
 }
 export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');const req=automation(s,f.id);if(researchLevel(s,req.card)<req.level)error(`${cardName(req.card)}을 Lv.${req.level}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
-function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
-function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.max(1,Math.round(regularIncome(s)*10*(1+.12*(t.level-1))*(t.kind==='gold'?1.5:1))); s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
+function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};placeStoredItems(s,true);for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
+function destroyed(s,t){landingCache.delete(s);t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.max(1,Math.round(regularIncome(s)*10*(1+.12*(t.level-1))*(t.kind==='gold'?1.5:1))); s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
 function validTask(w,t){
  if(t.port)return facilityApproaches(t).some(([x,y])=>w.x===x&&w.y===y);
  return approachFor(t).some(([dx,dy])=>w.x===t.x+dx&&w.y===t.y+dy);
@@ -285,12 +314,25 @@ function collectWork(s){
  }
  return work;
 }
+function dispatchDue(s){
+ placeStoredItems(s);
+ if(s.elapsed>=s.freeAt){
+  const spot=deliverySpot(s);
+  if(spot){(s.workerBarrels??=[]).push({id:id(s),level:cannonLevel(s),...spot});s.freeAt=s.elapsed+deliveryInterval(s);}
+ }
+ if(!s.barrel&&s.elapsed>=s.barrelAt){
+  const spot=deliverySpot(s);
+  if(spot)s.barrel={id:id(s),at:s.elapsed,...spot};
+ }
+}
 export function advance(s,seconds){
  let remaining=Math.max(0,Math.min(seconds,8*3600)),iterations=0;
  const births=[];
+ dispatchDue(s);
  let work=collectWork(s);
  while(remaining>1e-8&&iterations++<100000){
- let step=remaining;if(!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(occupiedSlots(s)<capacity(s)&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);if(step<1e-8)step=Math.min(remaining,1e-7);
+ const space=deliverySpot(s);
+ let step=remaining;if(space&&!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(space&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);if(step<1e-8)step=Math.min(remaining,1e-7);
  for(const f of s.facilities){
   if(!f.active||(!f.auto&&f.ready))continue;
   const cycle=facilityCycle(s,f),elapsed=f.progress+step,cycles=Math.floor((elapsed+1e-8)/cycle);
@@ -299,21 +341,20 @@ export function advance(s,seconds){
   if(f.auto){const earned=amount*cycles;f.progress=Math.max(0,elapsed-cycles*cycle);s.gold+=earned;s.ledger[f.id]=(s.ledger[f.id]||0)+earned;}
   else {f.ready=amount;f.progress=0;}
  }
- for(const {t,power}of work.values())t.hp=Math.max(0,t.hp-power*step);if(occupiedSlots(s)>=capacity(s))s.freeAt=Math.max(s.elapsed,s.freeAt)+step;
+ for(const {t,power}of work.values())t.hp=Math.max(0,t.hp-power*step);if(!space)s.freeAt=Math.max(s.elapsed,s.freeAt)+step;
  s.elapsed+=step;remaining-=step;
  let finished=false;
  for(const {t} of work.values())if(t.hp<1e-6){destroyed(s,t);finished=true;}
  // Resolve simultaneous breaks before choosing neighbors, even at the exact end of a tick.
  if(finished)work=collectWork(s);
- if(s.elapsed>=s.freeAt&&occupiedSlots(s)<capacity(s)){(s.workerBarrels ??= []).push({id:id(s),level:cannonLevel(s)});s.freeAt=s.elapsed+deliveryInterval(s);}
- if(!s.barrel&&s.elapsed>=s.barrelAt)s.barrel={id:id(s),at:s.elapsed};
+ dispatchDue(s);
  }if(iterations>=100000)error('정산 처리 한도를 넘었어요.');return {births};}
 export function unpackWorker(s, barrelId) {
  const barrels=s.workerBarrels || [];
  const index=barrels.findIndex(barrel=>barrel.id===barrelId);
  if(index<0)error('이미 열었거나 아직 도착하지 않은 친구 보급이에요.');
  const [barrel]=barrels.splice(index,1);
- try { return addFriend(s,barrel.level); }
+ try { return addFriend(s,barrel.level,Number.isInteger(barrel.x)?barrel:null); }
  catch(err) { barrels.splice(index,0,barrel);throw err; }
 }
 export const regularIncome=s=>s.facilities.filter(f=>f.active&&f.auto).reduce((n,f)=>n+facilityRate(s,f),0);
@@ -346,23 +387,25 @@ export function mergeCharges(s,aId,bId){
 }
 export function openBarrel(s){
  if(!s.barrel)error('보급 배달을 기다려 주세요.');
+ placeStoredItems(s);
+ const box=s.barrel,at=Number.isInteger(box.x)?{x:box.x,y:box.y}:deliverySpot(s);
  const r=random(s),crew=crewInfo(s);let result;
  if(crew.stranded){
   // The incoming partner merges on contact without occupying a ninth tile.
   const w=crew.lowest;w.level++;s.merges++;
   result={type:'partner',text:'합성 짝 도착! Lv.'+(w.level-1)+' 친구가 Lv.'+w.level+'이 되었어요.'};
- }else if(!crew.full&&(crew.partner||r<.15)){
-  const level=crew.partner?.level??Math.max(1,cannonLevel(s)-1),w=addFriend(s,level);
+ }else if(at&&!crew.full&&(crew.partner||r<.15)){
+  const level=crew.partner?.level??Math.max(1,cannonLevel(s)-1),w=addFriend(s,level,at);
   result={type:'worker',id:w.id,text:crew.partner?'혼자 남은 Lv.'+level+' 친구의 합성 짝이 도착했어요.':'Lv.'+level+' 친구가 도착했어요!'};
- }else if(r>=.4&&r<.5&&(s.charges?.length||0)<4){
- const charge={id:id(s),level:Math.max(1,...s.friends.map(w=>w.level))};
- (s.charges??=[]).push(charge);result={type:'charge',text:'별사탕 폭죽 Lv.'+charge.level+' 획득! 바위로 끌어 놓으세요.'};
+ }else if(at&&r>=.4&&r<.5&&(s.charges?.length||0)<4){
+ const charge={...at,id:id(s),level:Math.max(1,...s.friends.map(w=>w.level))};
+ (s.charges??=[]).push(charge);result={type:'charge',id:charge.id,text:'별사탕 폭죽 Lv.'+charge.level+' 획득! 바위로 끌어 놓으세요.'};
  }else if(r<.4){const amount=8+Math.floor(random(s)*12);s.elixir+=amount;result={type:'elixir',text:'연구 포인트 +'+amount};}else {const amount=Math.round(regularIncome(s)*20);s.gold+=amount;s.ledger.barrels+=amount;result={type:'gold',amount,text:'보급 골드 +'+Math.floor(amount).toLocaleString('ko-KR')};}s.barrel=null;s.barrelAt=s.elapsed+25;return result;}
 export function readyForNext(s){return s.exit.done;}
 export function nextMine(s){if(!readyForNext(s))error('출구 채굴을 먼저 마쳐 주세요.');return createState(s.stage+1,s.seed,s);}
 export const WHEEL_REWARDS=[{type:'gems',amount:10,label:'보석 10'},{type:'elixir',amount:25,label:'연구 25'},{type:'cards',amount:4,label:'카드 4장'},{type:'time',amount:60,label:'시간 1분'},{type:'gems',amount:30,label:'보석 30'},{type:'elixir',amount:60,label:'연구 60'},{type:'cards',amount:8,label:'카드 8장'},{type:'worker',amount:1,label:'친구 +1레벨'}];
 export function spin(s,extra=false){if(extra){if(s.wheel.extra>=5||s.elapsed<s.wheel.nextAt)error('추가 회전 준비 중이에요.');s.wheel.extra++;s.wheel.nextAt=s.elapsed+7200;}else {if(s.wheel.free)error('무료 회전을 이미 사용했어요.');s.wheel.free=true;}
- const index=Math.floor(random(s)*WHEEL_REWARDS.length),reward={...WHEEL_REWARDS[index],index};if(reward.type==='gems')s.gems+=reward.amount;else if(reward.type==='elixir')s.elixir+=reward.amount;else if(reward.type==='cards'){const keys=Object.keys(s.cards);for(let i=0;i<reward.amount;i++)s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}else if(reward.type==='time')advance(s,reward.amount);else if(occupiedSlots(s)<capacity(s))reward.id=addFriend(s,hireLevel(s)+1).id;else {s.elixir+=40;reward.label='정원 가득 · 연구 40';reward.type='elixir';reward.amount=40;}return reward;}
+ const index=Math.floor(random(s)*WHEEL_REWARDS.length),reward={...WHEEL_REWARDS[index],index};if(reward.type==='gems')s.gems+=reward.amount;else if(reward.type==='elixir')s.elixir+=reward.amount;else if(reward.type==='cards'){const keys=Object.keys(s.cards);for(let i=0;i<reward.amount;i++)s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}else if(reward.type==='time')advance(s,reward.amount);else if(occupiedSlots(s)<capacity(s)&&deliverySpot(s))reward.id=addFriend(s,hireLevel(s)+1).id;else {s.elixir+=40;reward.label='정원 가득 · 연구 40';reward.type='elixir';reward.amount=40;}return reward;}
 export function buy(s,offer){
  if(offer.startsWith('card-')){
   const id=offer.slice(5);

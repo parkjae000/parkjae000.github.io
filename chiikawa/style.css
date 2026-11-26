@@ -20,9 +20,6 @@
 
 .trophy svg{width:35px;height:35px;color:#ad8850}.place-2 .trophy svg{color:#99978b}.place-3 .trophy svg{color:#a78669}
 
-#charges{order:3;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 10px;background:#fff1da;color:#664e44;border-top:1px solid #d7bc9e;font-size:12px;flex:none}
-#charge-items{display:flex;gap:4px}#charge-items button{touch-action:none;min-height:36px;min-width:42px;padding:3px 6px;border-radius:8px;background:#ffe4a8;border:1px solid #c08c59;color:#624232;font-weight:800}#charge-items [aria-pressed=true]{outline:2px solid #976e3c}
-#charge-tip{flex:1 0 100%;line-height:1.2}
 
 .status #work-status{display:grid;place-items:center;white-space:nowrap}
 
@@ -97,3 +94,13 @@
 .auto-steps{background:#f4ead5;border:1px solid #d9bf90;border-radius:10px;padding:12px;margin-bottom:12px}
 .auto-steps h2{font-size:16px;margin:0 0 7px}
 #dialog-content .auto-steps p{font-size:13px;margin:4px 0}
+
+#board-items{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.board-loot,.board-loot:active{position:absolute;pointer-events:auto;transform:translate(-50%,-72%);border:0;background:none;padding:0;min-width:0;min-height:0;touch-action:none;user-select:none}
+.loot-body{position:relative;display:block;width:100%;height:100%;isolation:isolate}
+.loot-body::before{content:'';position:absolute;bottom:12%;left:14%;width:72%;height:15%;border-radius:50%;background:#6c4c423b;z-index:-1}
+.loot-body i{display:block;position:absolute;inset:0 4% 12%;background:url('atlas.webp') no-repeat 33.333% 66.667% / 400% 400%}
+.board-loot.charge i{inset:-4% 0 10%;background:url('candy-firework.webp') center/contain no-repeat}
+.loot-body b{position:absolute;bottom:0;left:50%;transform:translateX(-50%);white-space:nowrap;line-height:1.15;font-size:clamp(9px,2.7vw,12px);font-weight:850;color:#493448;background:#fff3d5;border:1px solid #995f5f;border-radius:5px;padding:0 3px}
+.board-loot[aria-pressed="true"] .loot-body,.board-loot.lifted .loot-body{filter:drop-shadow(0 0 3px #ffdb64)}
+.board-loot.lifted{z-index:3}.board-loot.lifted .loot-body{pointer-events:none}
