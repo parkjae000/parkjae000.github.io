@@ -178,7 +178,7 @@ export function facilityApproaches(f){
  }
  const positions=[...edge.values()];facilityEdges.set(f.footprint,positions);return positions;
 }
-function spotFor(open,t,w=null){
+export function spotFor(open,t,w=null){
  const spots=t.port?facilityApproaches(t):approachFor(t).map(([dx,dy])=>[t.x+dx,t.y+dy]);
  const reachable=spots.filter(p=>open.has(p.join(',')));
  const distance=p=>w?Math.abs(p[0]-w.x)+Math.abs(p[1]-w.y):-p[1];
@@ -186,7 +186,7 @@ function spotFor(open,t,w=null){
  return reachable.length?{x:reachable[0][0],y:reachable[0][1]}:null;
 }
 export function destination(s,t,w=null){return spotFor(new Set(freeTiles(s,w).map(p=>p.join(','))),t,w);}
-export function assign(s,workerId,targetId){const w=s.friends.find(w=>w.id===workerId),t=targets(s).find(t=>t.id===targetId);if(!w||!t)error('일할 친구와 대상을 다시 선택해 주세요.');const p=destination(s,t,w);if(!p)error('앞의 바위를 캐서 연결된 작업 자리를 열어 주세요.');Object.assign(w,p);w.target=t.id;w.paused=false;return w;}
+export function assign(s,workerId,targetId,preferred=null){const w=s.friends.find(w=>w.id===workerId),t=targets(s).find(t=>t.id===targetId);if(!w||!t)error('일할 친구와 대상을 다시 선택해 주세요.');const p=preferred?spotFor(new Set(freeTiles(s,w).map(tile=>tile.join(','))),t,preferred):destination(s,t,w);if(!p)error('앞의 바위를 캐서 연결된 작업 자리를 열어 주세요.');Object.assign(w,p);w.target=t.id;w.paused=false;return w;}
 // Rock coordinates stay fixed for the lifetime of a board, including after mining.
 const rockGrids=new WeakMap();
 const neighbors=[[0,-1],[-1,0],[1,0],[0,1]];

@@ -21,7 +21,7 @@ const str=(v,max=100)=>{if(typeof v!=='string'||!v||v.length>max)throw fail('작
 const int=(v,min,max)=>{if(!Number.isInteger(v)||v<min||v>max)throw fail('작업 수치를 확인해 주세요.');return v;};
 export const PREDICTABLE=new Set(['assign','move','merge','recruit','upgrade','activate','collect','research','automate','auto','next','guide','dismissIntro','unpack','charge','mergeCharges']);
 export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let result,game=g;switch(type){
- case 'assign':{const target=str(p.target);result=E.assign(g,str(p.worker),target);if(target.startsWith('r'))g.stats.manualAssignments++;if(g.facilities.some(f=>f.id===target))g.stats.facilityStarted++;break;}
+ case 'assign':{const target=str(p.target);const stand=p.stand==null?null:{x:int(p.stand.x,0,E.COLS-1),y:int(p.stand.y,0,g.rows+2)};result=E.assign(g,str(p.worker),target,stand);if(target.startsWith('r'))g.stats.manualAssignments++;if(g.facilities.some(f=>f.id===target))g.stats.facilityStarted++;break;}
  case 'move':result=E.move(g,str(p.worker),int(p.x,0,6),int(p.y,0,g.rows+2));if(result.target)g.stats.manualAssignments++;break;
  case 'charge':{
   const target=str(p.target),wasRock=g.rocks.some(r=>r.id===target&&!r.done);

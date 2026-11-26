@@ -1,4 +1,5 @@
 import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
+import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
 import {guidePage} from './guide.mjs?v=128';
@@ -31,7 +32,7 @@ let terrainKey='',lastSimulation=0;
 let pendingBarrel=null,parcelFlight=null,selectedCharge=null,chargeGesture=null,chargeKey='';
 const workerParcelPoint=()=>coord(6,g.camp.row+1.1);
 const client=new GameSession({api:LIVE_HOSTS.includes(location.hostname)?API:'/api',onGame:acceptGame,onStatus:updateSave,onError:notice});
-for(const [name,type,fields] of [['assign','assign',['worker','target']],['move','move',['worker','x','y']],['merge','merge',['a','b']],['recruit','recruit',[]],['upgrade','upgrade',['facility','count']],['activate','activate',['facility']],['collect','collect',['facility']],['research','research',['card']],['automate','automate',['facility']]]){E[name]=(_state,...args)=>{const payload=Object.fromEntries(fields.map((key,i)=>[key,args[i]]));const value=client.mutate(type,payload);return name==='collect'?value.result.amount:value.result;};}
+for(const [name,type,fields] of [['assign','assign',['worker','target','stand']],['move','move',['worker','x','y']],['merge','merge',['a','b']],['recruit','recruit',[]],['upgrade','upgrade',['facility','count']],['activate','activate',['facility']],['collect','collect',['facility']],['research','research',['card']],['automate','automate',['facility']]]){E[name]=(_state,...args)=>{const payload=Object.fromEntries(fields.map((key,i)=>[key,args[i]]));const value=client.mutate(type,payload);return name==='collect'?value.result.amount:value.result;};}
 E.nextMine=()=>client.mutate('next').game;
 function updateSave(status){const el=$('#save-state');el.textContent=status==='saved'?'✓':status==='saving'?'↻':status==='offline'?'!':'…';el.dataset.status=status;el.title={saved:'서버 저장 완료',saving:'저장 중',offline:'연결을 복구하면 저장을 이어서 진행해요.'}[status]||'연결 확인 중';if(status==='signed-out')showWelcome();if(!g&&status==='offline'){$('#auth-loading').textContent='연결을 확인한 뒤 다시 시도해 주세요.';$('#retry-connection').hidden=false;}else $('#retry-connection').hidden=true;}
 function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;$('#auth-form').hidden=false;$('#auth-loading').hidden=true;if(dialog.open)dialog.close();g=null;resetChat(null);}
@@ -251,8 +252,10 @@ function draw(time){requestAnimationFrame(draw);if(!g||document.hidden)return;fr
   scrollDragAtEdge(dt);
   const w=g.friends.find(w=>w.id===drag.id);
   if(w){
-   const drop=dropAt(drag.point,w);
-   if(drop){const p=drop.anchor;ctx.strokeStyle=drop.valid?'#79bf8a':'#cb8a7e';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(p.x,p.y,36,14,0,0,Math.PI*2);ctx.stroke();}
+   const drop=dropAt(drag.point,w,drag);
+   const anchor=drop?coord(drop.x,drop.y):{x:drag.point.x,y:drag.point.y+drag.grip};
+   ctx.strokeStyle=drop?'#479c68':'#cb8a7e';ctx.fillStyle=drop?'#c7f5b88c':'#ffdcc941';ctx.lineWidth=5;
+   ctx.beginPath();ctx.ellipse(anchor.x,anchor.y,36,14,0,0,Math.PI*2);ctx.fill();ctx.stroke();
    sprite(E.appearance(w.level).idle,drag.point.x,drag.point.y+drag.grip,118);
   }
  }
@@ -273,20 +276,13 @@ function friendAt(p,exclude) {
 function targetAt(p){return E.targets(g).filter(t=>!t.port).map(t=>({t,p:coord(t.x,t.y)})).filter(z=>Math.abs(z.p.x-p.x)<(E.isWideGate(z.t)?E.EXIT_APPROACH.length*STEP/2:47)&&p.y>z.p.y-81&&p.y<z.p.y+20).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-29-p.y)-Math.hypot(b.p.x-p.x,b.p.y-29-p.y))[0]?.t;}
 function facilityAt(p){return g.facilities.find(f=>{if(f.footprint.length){const b=facilityBounds(f);return p.x>=b.left&&p.x<b.left+b.width&&p.y>=b.top&&p.y<b.top+b.height;}
  const at=visual(f);return Math.abs(at.x-p.x)<90&&p.y>at.y-155&&p.y<at.y+25;});}
-function dropAt(p,actor){
- const friend=friendAt(p,actor.id),rock=targetAt(p),facility=facilityAt(p);
- const x=Math.round((p.x-LEFT)/STEP-.5),y=Math.round((p.y-coord(0,0).y)/STEP);
- const target=facility?.footprint.length?(facility.repaired?null:facility):rock;
- const spot=friend?'merge':target?'assign':'move';
- const key=[spot,friend?.id,target?.id,x,y,g.lastAt,actor.level].join('/');
- if(drag?.candidate?.key===key)return drag.candidate;
- let valid,anchor;
- if(friend){valid=friend.level===actor.level&&friend.level<40;anchor=coord(friend.x,friend.y);}
- else if(target){valid=!!E.destination(g,target,actor);anchor=target.port?visual(target):coord(target.x,target.y);}
- else{valid=E.freeTiles(g,actor).some(([cx,cy])=>cx===x&&cy===y);anchor=coord(x,y);}
- const candidate={key,spot,valid,anchor,friend,target,x,y};
- if(drag)drag.candidate=candidate;
- return candidate;
+function dropAt(p,actor,gesture){
+ const signature=[g.stats.rocks,g.camp.moves,g.exit.done,...g.facilities.map(f=>f.repaired),...g.friends.map(w=>w.id+','+w.x+','+w.y)].join('/');
+ if(gesture.game!==g||gesture.layout!==signature){
+  gesture.board=placementBoard(g,actor);gesture.game=g;gesture.layout=signature;
+ }
+ const origin=coord(0,0),touch={x:(p.x-origin.x)/STEP,y:(p.y-origin.y)/STEP};
+ return resolvePlacement(gesture.board,actor,touch,gesture.grip/STEP,friendAt(p,actor.id));
 }
 function scrollDragAtEdge(dt){
  const d=drag;if(!d?.active)return;
@@ -308,7 +304,7 @@ function orderTarget(t){
   notice('출구 앞줄에 연결된 빈 작업 칸이 필요해요.');
  }else notice('앞의 바위를 캐서 작업 자리를 열어 주세요.');
 }
-function assignTo(w,t){return action(()=>{const assigned=E.assign(g,w.id,t.id);selected=null;updateSelection();return assigned;});}
+function assignTo(w,t,stand){return action(()=>{const assigned=E.assign(g,w.id,t.id,stand);selected=null;updateSelection();return assigned;});}
 cv.addEventListener('pointerdown',e=>{
  if(!g||drag||!e.isPrimary||e.button!==0)return;
  const p=point(e),w=friendAt(p);
@@ -330,13 +326,18 @@ cv.addEventListener('pointerup',e=>{
  const actor=g.friends.find(w=>w.id===d.id);
  if(d.active){
   if(!actor)return;
-  const drop=dropAt(p,actor);
+  const drop=dropAt(p,actor,d);
+  if(!drop)return;
   if(drop.spot==='merge'){
    const result=action(()=>E.merge(g,actor.id,drop.friend.id));
    if(result){movers.set(result.id,coord(result.x,result.y));celebrations.set(result.id,performance.now()+650);}
   }else if(drop.spot==='assign'){
-   if(assignTo(actor,drop.target))movers.set(actor.id,coord(actor.x,actor.y));
-  }else if(action(()=>E.move(g,actor.id,drop.x,drop.y)))movers.set(actor.id,coord(actor.x,actor.y));
+   const job=assignTo(actor,drop.target,{x:drop.x,y:drop.y});
+   if(job)movers.set(actor.id,coord(job.x,job.y));
+  }else{
+   const moved=action(()=>E.move(g,actor.id,drop.x,drop.y));
+   if(moved)movers.set(actor.id,coord(moved.x,moved.y));
+  }
   return;
  }
  const hitParcel=at=>Math.abs(p.x-at.x)<42&&p.y>at.y-88&&p.y<at.y+15;
