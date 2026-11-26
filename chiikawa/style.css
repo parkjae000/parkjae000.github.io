@@ -59,3 +59,18 @@
 
 #later-release{padding:5px 2px;border:0;background:transparent;color:#6b5447;font-size:11px;text-decoration:underline}
 .production .repair-card:disabled{opacity:1;background:#eadac3;color:#624f43}
+
+.balances{grid-template-columns:minmax(0,1.15fr) minmax(0,.95fr) minmax(0,1fr) 34px;align-items:center}
+.balances #help-button{display:grid;place-items:center;width:34px;height:35px;border:1px solid #f4d3a0;border-radius:10px;background:#f5deaf;color:#6b4e39;font:900 23px/1 system-ui;box-shadow:0 2px 0 #433432}
+.guide-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0 0 12px}
+.guide-tabs button,.departure-actions button{padding:8px 2px;border:1px solid #cbb894;background:#f6edd9;border-radius:9px;color:#685039;font-weight:800}
+.guide-tabs button{font-size:clamp(11px,3vw,14px);white-space:nowrap}
+.guide-tabs button[aria-pressed="true"],.departure-actions [data-leave-stage]{background:#516d54;color:#fff8e5;border-color:#445e46}
+.guide-art{width:min(100%,250px);aspect-ratio:1;margin:0 auto 12px;background-image:url('cave-guide.webp');background-size:200% 200%;border-radius:13px;box-shadow:0 1px 5px #62492329}
+.guide-art-0{background-position:0 0}.guide-art-1{background-position:100% 0}.guide-art-2{background-position:0 100%}.guide-art-3{background-position:100% 100%}
+.guide-story{line-height:1.55;color:#523e32}.guide-story ol{padding-left:1.5em}.guide-story li{margin:.4em 0}
+.guide-story details{border-top:1px solid #d9c9b0;padding:9px 0}.guide-story summary{cursor:pointer;font-weight:750}.guide-story details p{padding:7px 0 0}
+.guide-carry p{background:#f4e6d2;border-radius:9px;padding:8px 11px}.guide-carry p+p{background:#e9efdc}.guide-carry b{display:block}
+.departure-gold{background:#f5e9cf;border-radius:12px;padding:10px 12px;margin-bottom:12px}.departure-gold p{display:flex;align-items:center;gap:8px;justify-content:space-between}.departure-gold p:last-child{margin-bottom:0!important}.departure-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:360px){.balances{gap:4px}.balances>span{gap:2px;padding:2px 3px}.balances i,.balances svg{width:18px;height:18px}.balances b{font-size:13px}}
+.guide-example{font-weight:750;padding:9px 12px;border-left:4px solid #bd913c;background:#fff1ce;border-radius:4px}

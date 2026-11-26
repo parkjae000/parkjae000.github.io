@@ -11,6 +11,8 @@ export function advance(g,now){if(g.version!==VERSION){
   g.version=VERSION;
   if(g.guide)g.guide.paused=true;
  }
+ // A saved entrance that had finished mining can start production without another tap.
+ for(const f of g.facilities)if(f.repaired&&!f.active)E.activate(g,f.id);
  // Older clients still read this flag when opening a saved account.
  g.introSeen=true;
  g.auto=false;if(!Number.isFinite(now))throw fail('시간을 확인해 주세요.');const last=g.lastAt,until=Math.max(last,now),from=Math.max(last,until-OFFLINE_CAP),beforeGold=g.gold,beforeRocks=g.stats.rocks;let cursor=from;rollDay(g,cursor);const births=[];
@@ -33,7 +35,7 @@ export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let r
  case 'merge':result=E.merge(g,str(p.a),str(p.b));g.stats.merges++;g.daily.merges++;break;
  case 'recruit':result=E.recruit(g);result.id='w-'+str(requestId,80);g.stats.hires++;g.daily.hires++;break;
  case 'upgrade':result=E.upgrade(g,str(p.facility),int(p.count,1,200));g.stats.upgrades++;break;
- case 'activate':result=E.activate(g,str(p.facility));g.stats.activated++;break;
+ case 'activate':result=E.activate(g,str(p.facility));break;
  case 'collect':result={amount:E.collect(g,str(p.facility))};g.stats.collections=(g.stats.collections||0)+1;break;
  case 'research':result=E.research(g,str(p.card));break;
  case 'automate':result=E.automate(g,str(p.facility));g.stats.automated=(g.stats.automated||0)+1;break;

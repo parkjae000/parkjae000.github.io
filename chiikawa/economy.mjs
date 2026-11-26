@@ -4,6 +4,8 @@ export const COLS=7,MAX_LEVEL=200,CAPACITY=8;
 export const CHARACTERS=[{name:'우사기',idle:2,hit:5},{name:'하치와레',idle:1,hit:4},{name:'치이카와',idle:0,hit:3}];
 export const appearance=level=>CHARACTERS[(Math.max(1,Math.floor(level))-1)%3];
 export const scale=stage=>2.3**Math.floor((Math.min(stage,120)-1)/4)*1.055**Math.min(stage-1,120);
+export const startingGold=stage=>Math.round(240*scale(stage));
+export const maxCardLevel=id=>id==='capacity'?4:20;
 const BASE={forge:{name:'기본 찻집',yield:12,cycle:4,cost:35,growth:1.18,required:0,art:16},tea:{name:'숲속 찻집',yield:48,cycle:6,cost:60,growth:1.16,required:1,art:10},bakery:{name:'간식 공방',yield:120,cycle:8,cost:90,growth:1.17,required:2,art:11}};
 export const facilityDef=id=>BASE[id];
 const MILESTONE_INTERVAL={forge:10,tea:20,bakery:40};
@@ -57,7 +59,7 @@ function layoutRoll(stage,x,y){
 }
 export function createState(stage=2,seed=17,permanent=null){
  const segments=mapPlan(stage),rows=segments[0].bottom+1;
- const s={version:ECONOMY_VERSION,stage,scale:scale(stage),seed,sequence:0,rows,segments,camp:{segment:0,row:segments[0].campRow,moves:0},gold:Math.round(240*scale(stage)),elixir:60,gems:96,hires:0,elapsed:0,freeAt:2400,barrelAt:25,barrel:null,auto:false,cards:Object.fromEntries(['forge','tea','bakery','pickaxe','discount','capacity'].map(k=>[k,{level:0,count:k==='capacity'?0:8}])),friends:[],rocks:[],bedrock:[],facilities:[],checkpoints:[],ledger:{forge:0,tea:0,bakery:0,rocks:0,barrels:0},merges:0,wheel:{free:false,extra:0,nextAt:0},shop:{freeAt:0},cleared:false};
+ const s={version:ECONOMY_VERSION,stage,scale:scale(stage),seed,sequence:0,rows,segments,camp:{segment:0,row:segments[0].campRow,moves:0},gold:startingGold(stage),elixir:60,gems:96,hires:0,elapsed:0,freeAt:2400,barrelAt:25,barrel:null,auto:false,cards:Object.fromEntries(['forge','tea','bakery','pickaxe','discount','capacity'].map(k=>[k,{level:0,count:k==='capacity'?0:8}])),friends:[],rocks:[],bedrock:[],facilities:[],checkpoints:[],ledger:{forge:0,tea:0,bakery:0,rocks:0,barrels:0},merges:0,wheel:{free:false,extra:0,nextAt:0},shop:{freeAt:0},cleared:false};
  if(permanent){for(const k of ['elixir','gems','cards','wheel','shop'])s[k]=structuredClone(permanent[k]);s.wheel.nextAt=Math.max(0,s.wheel.nextAt-permanent.elapsed);s.shop.freeAt=Math.max(0,s.shop.freeAt-permanent.elapsed);}
  s.facilities=[{id:'forge',level:1,active:true,repaired:true,auto:true,progress:0,ready:0,hp:0,max:0,footprint:[]}];
  const workScale=Math.min(s.scale,2.8*2.3**(hireLevel(s)-1));
@@ -116,8 +118,20 @@ export function freeTiles(s,worker=null){return [...openTiles(s)].map(k=>k.split
 export const EXIT_APPROACH=[[0,1],[-1,1],[1,1]];
 const ordinaryApproach=[[0,1],[-1,0],[1,0],[0,-1]];
 const approachFor=t=>t.id==='exit'?EXIT_APPROACH:ordinaryApproach;
+// A shop can be worked along any exposed edge of the tiles occupied by its building.
+const facilityEdges=new WeakMap();
+export function facilityApproaches(f){
+ if(!f.footprint?.length)return f.port?[f.port]:[];
+ const cached=facilityEdges.get(f.footprint);if(cached)return cached;
+ const occupied=new Set(f.footprint.map(p=>p.join(','))),edge=new Map();
+ for(const [x,y] of f.footprint)for(const [dx,dy] of ordinaryApproach){
+  const tile=[x+dx,y+dy],key=tile.join(',');
+  if(!occupied.has(key))edge.set(key,tile);
+ }
+ const positions=[...edge.values()];facilityEdges.set(f.footprint,positions);return positions;
+}
 function spotFor(open,t,w=null){
- const spots=t.port?[t.port]:approachFor(t).map(([dx,dy])=>[t.x+dx,t.y+dy]);
+ const spots=t.port?facilityApproaches(t):approachFor(t).map(([dx,dy])=>[t.x+dx,t.y+dy]);
  const reachable=spots.filter(p=>open.has(p.join(',')));
  const distance=p=>w?Math.abs(p[0]-w.x)+Math.abs(p[1]-w.y):-p[1];
  reachable.sort((a,b)=>distance(a)-distance(b));
@@ -144,7 +158,8 @@ function nearbyRock(s,w){
  return next;
 }
 function mineNearby(s,w){
- const target=!s.exit.done&&validTask(w,s.exit)?s.exit:nearbyRock(s,w);
+ const facility=s.facilities.find(f=>!f.repaired&&validTask(w,f));
+ const target=!s.exit.done&&validTask(w,s.exit)?s.exit:facility||nearbyRock(s,w);
  w.target=target?.id??null;
  w.paused=!target;
  return target;
@@ -164,22 +179,22 @@ export function merge(s,aId,bId){const a=s.friends.find(w=>w.id===aId),b=s.frien
  const work=[b.target,a.target].map(id=>jobs.find(t=>t.id===id)).find(t=>t&&validTask(b,t));
  b.target=work?.id||null;b.paused=false;if(!work)mineNearby(s,b);s.friends=s.friends.filter(w=>w!==a);s.merges++;return b;}
 export function upgrade(s,fId,count=null){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 복구하고 가동해 주세요.');const q=quoteUpgrade(s,f,count??200);if(!q.count||count!=null&&q.count!==count)error('시설 강화에 필요한 골드가 부족해요.');const before=milestones(f);s.gold-=q.cost;f.level+=q.count;const bonuses=Math.round(Math.log2(milestones(f)/before));s.elixir+=bonuses*10;return {...q,bonuses,level:f.level};}
-export function activate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.repaired||f.active)error('시설 복구를 먼저 완료해 주세요.');f.active=true;f.progress=0;s.elixir+=20;for(const c of ['tea','bakery'])s.cards[c].count+=2;return f;}
+export function activate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.repaired)error('친구가 가게 옆에서 가게를 다 캐야 열려요.');if(f.active)return f;f.active=true;if(s.stats)s.stats.activated=(s.stats.activated||0)+1;f.progress=0;s.elixir+=20;for(const c of ['tea','bakery'])s.cards[c].count+=2;return f;}
 export function collect(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.ready)error('아직 생산 중이에요.');const amount=f.ready;s.gold+=amount;s.ledger[f.id]+=amount;f.ready=0;f.progress=0;return amount;}
 export function researchCost(s,card){const c=s.cards[card];return {cards:2+c.level*2,elixir:Math.ceil(12*1.55**c.level)};}
-export function cardPreview(s,card){const c=s.cards[card],cost=researchCost(s,card),next=structuredClone(s),cap=card==='capacity'?4:20;next.cards[card].level=Math.min(cap,c.level+1);const f=s.facilities.find(f=>f.id===card)||{id:card,level:1};let current,value,label,unit;
+export function cardPreview(s,card){const c=s.cards[card],cost=researchCost(s,card),next={...s,cards:{...s.cards,[card]:{...c}}},cap=maxCardLevel(card);next.cards[card].level=Math.min(cap,c.level+1);const f=s.facilities.find(f=>f.id===card)||{id:card,level:1};let current,value,label,unit;
  if(BASE[card]){current=cycleYield(s,f);value=cycleYield(next,f);label=BASE[card].name+' · '+BASE[card].cycle+'초 생산';unit='골드';}
  else if(card==='capacity'){current=capacity(s);value=capacity(next);label='친구와 미개봉 보급 정원';unit='칸';}
  else if(card==='pickaxe'){current=workerPower(s,{level:1});value=workerPower(next,{level:1});label='Lv.1 친구 작업 능력';unit='/초';}
  else {current=hirePrice(s);value=hirePrice(next);label='현재 소환 레벨 채용 비용';unit='골드';}
  return {current,next:value,label,unit,cost,max:c.level>=cap,art:BASE[card]?.art??(card==='pickaxe'?18:19)};
 }
-export function research(s,card){const c=s.cards[card];if(!c||c.level>=(card==='capacity'?4:20))error('최대 연구 레벨이에요.');const cost=researchCost(s,card);if(c.count<cost.cards||s.elixir<cost.elixir)error('카드 또는 연구 포인트가 부족해요.');c.count-=cost.cards;s.elixir-=cost.elixir;c.level++;return c;}
+export function research(s,card){const c=s.cards[card];if(!c||c.level>=maxCardLevel(card))error('최대 연구 레벨이에요.');const cost=researchCost(s,card);if(c.count<cost.cards||s.elixir<cost.elixir)error('카드 또는 연구 포인트가 부족해요.');c.count-=cost.cards;s.elixir-=cost.elixir;c.level++;return c;}
 export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');if(s.cards[f.id].level<BASE[f.id].required)error(`${BASE[f.id].name} 카드를 Lv.${BASE[f.id].required}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
 function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
-function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.round(t.max*.45*(t.kind==='gold'?1.5:1));s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
+function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.round(t.max*.45*(t.kind==='gold'?1.5:1));s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
 function validTask(w,t){
- if(t.port)return w.x===t.port[0]&&w.y===t.port[1];
+ if(t.port)return facilityApproaches(t).some(([x,y])=>w.x===x&&w.y===y);
  return approachFor(t).some(([dx,dy])=>w.x===t.x+dx&&w.y===t.y+dy);
 }
 function collectWork(s){
@@ -224,6 +239,7 @@ export function chargePreview(s, chargeId, targetId) {
  const charge=s.charges?.find(item=>item.id===chargeId);
  const target=targets(s).find(item=>item.id===targetId);
  if(!charge||!target||!spotFor(openTiles(s),target))return null;
+ if(target.port&&!s.friends.some(w=>w.target===target.id&&validTask(w,target)))return null;
  const damage=Math.min(target.hp,workerPower(s,charge)*300);
  return {damage,remaining:Math.max(0,target.hp-damage),target};
 }
@@ -265,7 +281,12 @@ export function nextMine(s){if(!readyForNext(s))error('출구 채굴을 먼저 �
 export const WHEEL_REWARDS=[{type:'gems',amount:10,label:'보석 10'},{type:'elixir',amount:25,label:'연구 25'},{type:'cards',amount:4,label:'카드 4장'},{type:'time',amount:60,label:'시간 1분'},{type:'gems',amount:30,label:'보석 30'},{type:'elixir',amount:60,label:'연구 60'},{type:'cards',amount:8,label:'카드 8장'},{type:'worker',amount:1,label:'친구 +1레벨'}];
 export function spin(s,extra=false){if(extra){if(s.wheel.extra>=5||s.elapsed<s.wheel.nextAt)error('추가 회전 준비 중이에요.');s.wheel.extra++;s.wheel.nextAt=s.elapsed+7200;}else {if(s.wheel.free)error('무료 회전을 이미 사용했어요.');s.wheel.free=true;}
  const index=Math.floor(random(s)*WHEEL_REWARDS.length),reward={...WHEEL_REWARDS[index],index};if(reward.type==='gems')s.gems+=reward.amount;else if(reward.type==='elixir')s.elixir+=reward.amount;else if(reward.type==='cards'){const keys=Object.keys(s.cards);for(let i=0;i<reward.amount;i++)s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}else if(reward.type==='time')advance(s,reward.amount);else if(occupiedSlots(s)<capacity(s))reward.id=addFriend(s,hireLevel(s)+1).id;else {s.elixir+=40;reward.label='정원 가득 · 연구 40';reward.type='elixir';reward.amount=40;}return reward;}
-export function buy(s,offer){let price=0,result={type:offer};if(offer==='free'){if(s.elapsed<s.shop.freeAt)error('무료 상자를 준비 중이에요.');s.shop.freeAt=s.elapsed+14400;s.elixir+=15;for(let i=0;i<3;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}result.text='카드 3장 · 연구 15를 받았어요.';return result;}
+export function buy(s,offer){
+ if(offer.startsWith('card-')){
+  const id=offer.slice(5);
+  if(s.cards[id]?.level>=maxCardLevel(id))error('이 카드는 이미 연구를 끝냈어요.');
+ }
+ let price=0,result={type:offer};if(offer==='free'){if(s.elapsed<s.shop.freeAt)error('무료 상자를 준비 중이에요.');s.shop.freeAt=s.elapsed+14400;s.elixir+=15;for(let i=0;i<3;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}result.text='카드 3장 · 연구 15를 받았어요.';return result;}
  if(offer==='chest')price=35;else if(offer==='research')price=25;else if(offer==='time')price=20;else if(offer.startsWith('card-')&&s.cards[offer.slice(5)])price=12;else error('상품을 다시 선택해 주세요.');if(s.gems<price)error('보석이 부족해요.');s.gems-=price;
  if(offer==='chest'){s.elixir+=60;for(const c of Object.values(s.cards))c.count+=2;result.text='카드 각 2장 · 연구 60을 받았어요.';}else if(offer==='research'){s.elixir+=80;result.text='연구 포인트 80을 받았어요.';}else if(offer==='time'){advance(s,300);result.text='시설 생산과 지정한 작업을 5분 진행했어요.';}else {s.cards[offer.slice(5)].count+=3;result.text='선택한 카드 3장을 받았어요.';}return result;
 }
