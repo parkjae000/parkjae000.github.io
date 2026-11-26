@@ -162,9 +162,8 @@ function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5
 export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(!t.done||Math.abs(x-t.x)>1)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
  const seen=new Set(),queue=[[3,s.camp.row]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i],k=x+','+y;if(seen.has(k)||blocked.has(k)||x<0||x>=COLS||y<0||y>s.rows+2)continue;seen.add(k);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
-export const WORKER_PARCEL_LIMIT=3;
-export const workerDeliveryFull=s=>(s.workerBarrels?.length||0)>=WORKER_PARCEL_LIMIT;
-export const boardItems=s=>[...(s.barrel?[s.barrel]:[]),...(s.workerBarrels||[]).slice(0,WORKER_PARCEL_LIMIT),...(s.charges||[])];
+export const workerDeliveryFull=s=>(s.workerBarrels||[]).some(o=>!Number.isInteger(o.x))||!deliverySpot(s);
+export const boardItems=s=>[...(s.barrel?[s.barrel]:[]),...(s.workerBarrels||[]),...(s.charges||[])];
 export function freeTiles(s,except=null){
  const used=new Set([...s.friends,...boardItems(s)].filter(o=>o.id!==except?.id).map(o=>o.x+','+o.y));
  return [...openTiles(s)].filter(k=>!used.has(k)).map(k=>k.split(',').map(Number));
@@ -176,13 +175,15 @@ function underForgePanel(s,x,y){
  return x>=rect.left&&x<=rect.right&&row>=rect.top&&row<=rect.bottom;
 }
 export const lootTiles=(s,except=null)=>freeTiles(s,except).filter(([x,y])=>!underForgePanel(s,x,y));
+// New deliveries stay in the latest unlocked area, even when older areas have empty floor.
+export const deliveryTiles=s=>lootTiles(s).filter(([,y])=>y>=s.segments[s.camp.segment].top&&y<=s.camp.row+2);
 const landingCache=new WeakMap();
 export function deliverySpot(s){
  const key=[s.camp.row,...s.friends,...boardItems(s)].map(o=>typeof o==='number'?o:o.x+','+o.y).join('/');
  const cached=landingCache.get(s);
  if(cached?.key===key)return cached.spot;
  let best=null,distance=Infinity;
- for(const [x,y] of lootTiles(s)){
+ for(const [x,y] of deliveryTiles(s)){
   const d=Math.abs(6-x)+Math.abs(s.camp.row+1-y);
   if(d<distance){best={x,y};distance=d;}
  }
@@ -190,9 +191,7 @@ export function deliverySpot(s){
 }
 // Older inventory entries have no board coordinates. Keep each one until a tile opens.
 export function placeStoredItems(s,relocate=false){
- // Old saves can hold more than the current map limit. Keep them in arrival order.
- const parcels=s.workerBarrels||[];
- for(let i=WORKER_PARCEL_LIMIT;i<parcels.length;i++){delete parcels[i].x;delete parcels[i].y;}
+ // Preserve every previously received parcel. Loose inventory waits for current-area floor.
  const items=boardItems(s);
  for(const o of items)if(underForgePanel(s,o.x,o.y)||(relocate&&campBlocked(s,o.x,o.y))){delete o.x;delete o.y;}
  for(const item of items)if(!Number.isInteger(item.x)||!Number.isInteger(item.y)){
@@ -367,7 +366,7 @@ export function unpackWorker(s, barrelId) {
  const barrels=s.workerBarrels || [];
  const index=barrels.findIndex(barrel=>barrel.id===barrelId);
  if(index<0)error('이미 열었거나 아직 도착하지 않은 친구 보급이에요.');
- if(index>=WORKER_PARCEL_LIMIT)error('지도에 먼저 도착한 친구 상자를 열어 주세요.');
+ if(!Number.isInteger(barrels[index].x))error('현재 개방 구역에 상자를 놓을 빈자리가 필요해요.');
  const [barrel]=barrels.splice(index,1);
  let friend;
  try { friend=addFriend(s,barrel.level,Number.isInteger(barrel.x)?barrel:null); }
@@ -411,14 +410,14 @@ export function openBarrel(s){
  if(crew.supplyPartner&&(crew.full||!at)){
   // The incoming partner merges on contact without occupying a ninth tile.
   const w=crew.supplyPartner;w.level++;s.merges++;
-  result={type:'partner',text:'합성 짝 도착! Lv.'+(w.level-1)+' 친구가 Lv.'+w.level+'이 되었어요.'};
+  result={type:'partner',id:w.id,level:w.level,text:'합성 짝 도착! Lv.'+(w.level-1)+' 친구가 Lv.'+w.level+'이 되었어요.'};
  }else if(at&&!crew.full&&(crew.partner||r<.15)){
   const level=crew.partner?.level??Math.max(1,cannonLevel(s)-1),w=addFriend(s,level,at);
-  result={type:'worker',id:w.id,text:crew.partner?'혼자 남은 Lv.'+level+' 친구의 합성 짝이 도착했어요.':'Lv.'+level+' 친구가 도착했어요!'};
+  result={type:'worker',id:w.id,level,text:crew.partner?'혼자 남은 Lv.'+level+' 친구의 합성 짝이 도착했어요.':'Lv.'+level+' 친구가 도착했어요!'};
  }else if(at&&r>=.4&&r<.5&&(s.charges?.length||0)<4){
  const charge={...at,id:id(s),level:Math.max(1,...s.friends.map(w=>w.level))};
- (s.charges??=[]).push(charge);result={type:'charge',id:charge.id,text:'별사탕 폭죽 Lv.'+charge.level+' 획득! 바위로 끌어 놓으세요.'};
- }else if(r<.4){const amount=8+Math.floor(random(s)*12);s.elixir+=amount;result={type:'elixir',text:'연구 포인트 +'+amount};}else {const amount=Math.round(regularIncome(s)*20);s.gold+=amount;s.ledger.barrels+=amount;result={type:'gold',amount,text:'보급 골드 +'+Math.floor(amount).toLocaleString('ko-KR')};}s.barrel=null;s.barrelAt=s.elapsed+25;return result;}
+ (s.charges??=[]).push(charge);result={type:'charge',id:charge.id,level:charge.level,text:'별사탕 폭죽 Lv.'+charge.level+' 획득! 바위로 끌어 놓으세요.'};
+ }else if(r<.4){const amount=8+Math.floor(random(s)*12);s.elixir+=amount;result={type:'elixir',amount,text:'연구 포인트 +'+amount};}else {const amount=Math.round(regularIncome(s)*20);s.gold+=amount;s.ledger.barrels+=amount;result={type:'gold',amount,text:'보급 골드 +'+Math.floor(amount).toLocaleString('ko-KR')};}s.barrel=null;s.barrelAt=s.elapsed+25;return result;}
 export function readyForNext(s){return s.exit.done;}
 export function nextMine(s){if(!readyForNext(s))error('출구 채굴을 먼저 마쳐 주세요.');return createState(s.stage+1,s.seed,s);}
 export const WHEEL_REWARDS=[{type:'gems',amount:10,label:'보석 10'},{type:'elixir',amount:25,label:'연구 25'},{type:'cards',amount:4,label:'카드 4장'},{type:'time',amount:60,label:'시간 1분'},{type:'gems',amount:30,label:'보석 30'},{type:'elixir',amount:60,label:'연구 60'},{type:'cards',amount:8,label:'카드 8장'},{type:'worker',amount:1,label:'친구 +1레벨'}];
@@ -429,9 +428,17 @@ export function buy(s,offer){
   const id=offer.slice(5);
   if(s.cards[id]?.level>=maxCardLevel(id))error('이 카드는 이미 연구를 끝냈어요.');
  }
- let price=0,result={type:offer};if(offer==='free'){if(s.elapsed<s.shop.freeAt)error('무료 상자를 준비 중이에요.');s.shop.freeAt=s.elapsed+14400;s.elixir+=15;for(let i=0;i<3;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}result.text='카드 3장 · 연구 15를 받았어요.';return result;}
+ let price=0,result={type:offer};if(offer==='free'){
+  if(s.elapsed<s.shop.freeAt)error('무료 상자를 준비 중이에요.');
+  s.shop.freeAt=s.elapsed+14400;s.elixir+=15;
+  const counts={},keys=Object.keys(s.cards);
+  for(let i=0;i<3;i++){const key=keys[Math.floor(random(s)*keys.length)];s.cards[key].count++;counts[key]=(counts[key]||0)+1;}
+  result.cards=Object.entries(counts).map(([id,amount])=>({id,amount}));result.elixir=15;
+  result.text='카드 3장 · 연구 15를 받았어요.';return result;
+ }
+
  if(offer==='chest')price=35;else if(offer==='research')price=25;else if(offer==='time')price=20;else if(offer.startsWith('card-')&&s.cards[offer.slice(5)])price=12;else error('상품을 다시 선택해 주세요.');if(s.gems<price)error('보석이 부족해요.');s.gems-=price;
- if(offer==='chest'){s.elixir+=60;for(const c of Object.values(s.cards))c.count+=2;result.text='카드 각 2장 · 연구 60을 받았어요.';}else if(offer==='research'){s.elixir+=80;result.text='연구 포인트 80을 받았어요.';}else if(offer==='time'){advance(s,300);result.text='시설 생산과 지정한 작업을 5분 진행했어요.';}else {s.cards[offer.slice(5)].count+=3;result.text='선택한 카드 3장을 받았어요.';}return result;
+ if(offer==='chest'){s.elixir+=60;for(const c of Object.values(s.cards))c.count+=2;result.cards=Object.keys(s.cards).map(id=>({id,amount:2}));result.elixir=60;result.text='카드 각 2장 · 연구 60을 받았어요.';}else if(offer==='research'){s.elixir+=80;result.text='연구 포인트 80을 받았어요.';}else if(offer==='time'){advance(s,300);result.text='시설 생산과 지정한 작업을 5분 진행했어요.';}else {s.cards[offer.slice(5)].count+=3;result.text='선택한 카드 3장을 받았어요.';}return result;
 }
 
 // Keep the current mine playable across the economy patch. Anchors expire when the player leaves it.

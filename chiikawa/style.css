@@ -109,3 +109,11 @@
 .production[data-structure="forge"] .upgrade-card{min-height:0}
 .production[data-structure="forge"] .upgrade-buy{min-height:24px;flex-direction:row;gap:5px}
 .production[data-structure="forge"] .upgrade-buy strong{font-size:16px}
+
+
+.loot-reward{position:absolute;z-index:6;pointer-events:none;transform:translateX(-50%);display:flex;align-items:center;gap:8px;width:184px;min-height:70px;padding:10px 12px;border:2px solid #dca862;border-radius:18px;background:#fff7e8;color:#543d3f;box-shadow:0 5px 18px #50334240;animation:loot-reveal .2s ease-out}
+.reward-image{display:grid;place-items:center;flex:0 0 44px;height:44px}.reward-image>svg,.reward-image>img{width:44px;height:44px;object-fit:contain}.reward-image .item-art{width:48px;height:48px;margin:0}.loot-reward b{display:block;font-size:13px}.loot-reward strong{display:block;font-size:23px;color:#8b553d;line-height:1.2}
+.chest-contents{padding:12px;margin:0 0 16px;border:1px solid #b9c6b6;border-radius:12px;background:#f6fbef}.chest-contents summary{font-size:14px;font-weight:800;cursor:pointer}.chest-contents p,.chest-contents li{font-size:14px}.chest-contents ul{padding-left:20px;display:grid;gap:5px}
+#dialog-content .shop-receipt{display:block;padding:12px}#dialog-content .shop-receipt h2{font-size:16px;margin:0 0 6px}.received-card{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:6px}.received-card .item-art{width:34px;height:34px;flex:0 0 34px;margin:0}.received-card b{margin-left:auto;white-space:nowrap}
+@keyframes loot-reveal{from{opacity:0;transform:translate(-50%,8px) scale(.94)}to{opacity:1;transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.loot-reward{animation:none}}
