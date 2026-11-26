@@ -1,0 +1,2 @@
+export const API='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/chiikawa-mine/api';
+export const LIVE_HOSTS=['jparkapps.xyz','www.jparkapps.xyz','parkjae000.github.io'];
