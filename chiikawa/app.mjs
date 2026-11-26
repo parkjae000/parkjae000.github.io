@@ -119,10 +119,19 @@ function placeStructures(){
  const k=world.clientWidth/W;
  for(const node of document.querySelectorAll('[data-structure]')){
   const f=g.facilities.find(f=>f.id===node.dataset.structure),p=visual(f);
-  const lot=f.footprint.length?facilityBounds(f):null,width=lot?lot.width-8:244;
-  node.style.width=width*k+'px';
-  node.style.left=((lot?p.x:429)-width/2)*k+'px';
-  node.style.top=((lot?lot.top+lot.height-7:p.y+28)-camera)*k-node.offsetHeight+'px';
+  if(f.id==='forge'){
+   const cells=E.forgePanelCells,center=coord((cells.left+cells.right)/2,g.camp.row+cells.bottom+.5);
+   const width=((cells.right-cells.left+1)*STEP-8)*k,height=((cells.bottom-cells.top+1)*STEP-8)*k;
+   node.style.width=width+'px';
+   const scale=Math.min(1,height/node.offsetHeight,width/Math.max(node.scrollWidth,1));
+   node.style.transform='scale('+scale+')';
+   node.style.left=center.x*k-width/2+'px';
+   node.style.top=(center.y-4-camera)*k-node.offsetHeight+'px';
+  }else{
+   const lot=facilityBounds(f),width=lot.width-8;
+   node.style.width=width*k+'px';node.style.left=(p.x-width/2)*k+'px';
+   node.style.top=(lot.top+lot.height-7-camera)*k-node.offsetHeight+'px';
+  }
  }
  for(const node of document.querySelectorAll('[data-info]')){
   const f=g.facilities.find(f=>f.id===node.dataset.info),p=visual(f);
@@ -492,9 +501,9 @@ lootLayer.addEventListener('pointerup',e=>{
  if(hit.other){chooseCharge(hit.other);return;}
  if(hit.target&&E.chargePreview(g,gesture.id,hit.target.id)){triggerCharge(hit.target);return;}
  if(hit.p){
-  const origin=coord(0,0),x=Math.round((hit.p.x-origin.x)/STEP),y=Math.round((hit.p.y-origin.y+STEP*.27)/STEP);
+  const origin=coord(0,0),x=Math.round((hit.p.x-origin.x)/STEP),y=Math.round((hit.p.y-origin.y)/STEP);
   const charge=g.charges.find(c=>c.id===gesture.id);
-  if(charge&&E.freeTiles(g,charge).some(([cx,cy])=>cx===x&&cy===y))action(()=>client.mutate('moveCharge',{charge:gesture.id,x,y}));
+  if(charge&&E.lootTiles(g,charge).some(([cx,cy])=>cx===x&&cy===y))action(()=>client.mutate('moveCharge',{charge:gesture.id,x,y}));
  }
  selectedCharge=null;updateBoardItems();
 });

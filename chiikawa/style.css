@@ -96,11 +96,16 @@
 #dialog-content .auto-steps p{font-size:13px;margin:4px 0}
 
 #board-items{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.board-loot,.board-loot:active{position:absolute;pointer-events:auto;transform:translate(-50%,-72%);border:0;background:none;padding:0;min-width:0;min-height:0;touch-action:none;user-select:none}
+.board-loot,.board-loot:active{position:absolute;pointer-events:auto;transform:translate(-50%,-50%);border:0;background:none;padding:0;min-width:0;min-height:0;touch-action:none;user-select:none}
 .loot-body{position:relative;display:block;width:100%;height:100%;isolation:isolate}
 .loot-body::before{content:'';position:absolute;bottom:12%;left:14%;width:72%;height:15%;border-radius:50%;background:#6c4c423b;z-index:-1}
 .loot-body i{display:block;position:absolute;inset:0 4% 12%;background:url('atlas.webp') no-repeat 33.333% 66.667% / 400% 400%}
-.board-loot.charge i{inset:-4% 0 10%;background:url('candy-firework.webp') center/contain no-repeat}
+.board-loot.charge i{inset:0 0 10%;background:url('candy-firework.webp') center/contain no-repeat}
 .loot-body b{position:absolute;bottom:0;left:50%;transform:translateX(-50%);white-space:nowrap;line-height:1.15;font-size:clamp(9px,2.7vw,12px);font-weight:850;color:#493448;background:#fff3d5;border:1px solid #995f5f;border-radius:5px;padding:0 3px}
 .board-loot[aria-pressed="true"] .loot-body,.board-loot.lifted .loot-body{filter:drop-shadow(0 0 3px #ffdb64)}
 .board-loot.lifted{z-index:3}.board-loot.lifted .loot-body{pointer-events:none}
+
+.production[data-structure="forge"]{transform-origin:center bottom}
+.production[data-structure="forge"] .upgrade-card{min-height:0}
+.production[data-structure="forge"] .upgrade-buy{min-height:24px;flex-direction:row;gap:5px}
+.production[data-structure="forge"] .upgrade-buy strong{font-size:16px}

@@ -165,13 +165,20 @@ export function freeTiles(s,except=null){
  const used=new Set([...s.friends,...boardItems(s)].filter(o=>o.id!==except?.id).map(o=>o.x+','+o.y));
  return [...openTiles(s)].filter(k=>!used.has(k)).map(k=>k.split(',').map(Number));
 }
+// Positions are relative to the active camp. Both the renderer and item placement use this footprint.
+export const forgePanelCells=Object.freeze({left:2,right:4,top:1,bottom:2});
+function underForgePanel(s,x,y){
+ const rect=forgePanelCells,row=y-s.camp.row;
+ return x>=rect.left&&x<=rect.right&&row>=rect.top&&row<=rect.bottom;
+}
+export const lootTiles=(s,except=null)=>freeTiles(s,except).filter(([x,y])=>!underForgePanel(s,x,y));
 const landingCache=new WeakMap();
 export function deliverySpot(s){
  const key=[s.camp.row,...s.friends,...boardItems(s)].map(o=>typeof o==='number'?o:o.x+','+o.y).join('/');
  const cached=landingCache.get(s);
  if(cached?.key===key)return cached.spot;
  let best=null,distance=Infinity;
- for(const [x,y] of freeTiles(s)){
+ for(const [x,y] of lootTiles(s)){
   const d=Math.abs(6-x)+Math.abs(s.camp.row+1-y);
   if(d<distance){best={x,y};distance=d;}
  }
@@ -180,14 +187,14 @@ export function deliverySpot(s){
 // Older inventory entries have no board coordinates. Keep each one until a tile opens.
 export function placeStoredItems(s,relocate=false){
  const items=boardItems(s);
- if(relocate)for(const o of items)if(campBlocked(s,o.x,o.y)){delete o.x;delete o.y;}
+ for(const o of items)if(underForgePanel(s,o.x,o.y)||(relocate&&campBlocked(s,o.x,o.y))){delete o.x;delete o.y;}
  for(const item of items)if(!Number.isInteger(item.x)||!Number.isInteger(item.y)){
   const spot=deliverySpot(s);if(!spot)break;Object.assign(item,spot);
  }
 }
 export function moveCharge(s,id,x,y){
  const charge=s.charges?.find(c=>c.id===id);
- if(!charge||!freeTiles(s,charge).some(([cx,cy])=>cx===x&&cy===y))error('폭죽을 빈 바닥에 놓아 주세요.');
+ if(!charge||!lootTiles(s,charge).some(([cx,cy])=>cx===x&&cy===y))error('폭죽을 빈 바닥에 놓아 주세요.');
  Object.assign(charge,{x,y});return charge;
 }
 // Offsets from a target to the floor cells where a worker can stand.
