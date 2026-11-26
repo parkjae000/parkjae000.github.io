@@ -4,13 +4,15 @@ export const fail=(message,code='invalid',status=400)=>Object.assign(new Error(m
 export const dayKey=now=>new Date(now+KST).toISOString().slice(0,10);
 export const TASKS=[{id:'visit',name:'오늘의 출석',goal:1,gems:10,elixir:20},{id:'rocks',name:'바위 20개 채굴',goal:20,gems:5,elixir:30},{id:'hires',name:'친구 3명 채용',goal:3,gems:3,elixir:20},{id:'merges',name:'친구 2번 합성',goal:2,gems:3,elixir:20}];
 export function rollDay(g,now){const key=dayKey(now);if(g.daily?.key!==key){g.daily={key,visit:1,rocks:0,hires:0,merges:0,claims:[]};g.wheel.free=false;g.wheel.extra=0;g.wheel.nextAt=0;}}
-export function startGame(now=Date.now(),seed=17){const g=E.createState(1,seed);g.version=VERSION;g.lastAt=now;g.revision=0;g.stats={bestStage:1,rocks:0,hires:0,merges:0,upgrades:0,manualAssignments:0,facilityStarted:0,activated:0,collections:0,automated:0};g.introSeen=false;g.guide={step:10,paused:true,rewarded:true};rollDay(g,now);g.friends.forEach(w=>E.move(g,w.id,w.x,w.y));return g;}
+export function startGame(now=Date.now(),seed=17){const g=E.createState(1,seed);g.version=VERSION;g.lastAt=now;g.revision=0;g.stats={bestStage:1,rocks:0,hires:0,merges:0,upgrades:0,manualAssignments:0,facilityStarted:0,activated:0,collections:0,automated:0};g.introSeen=true;g.guide={step:10,paused:true,rewarded:true};rollDay(g,now);g.friends.forEach(w=>E.move(g,w.id,w.x,w.y));return g;}
 export function advance(g,now){if(g.version!==VERSION){
   E.preserveEarnedMultipliers(g.facilities);
   g.cards.capacity??={level:0,count:0};
-  g.introSeen=true;g.version=VERSION;
+  g.version=VERSION;
   if(g.guide)g.guide.paused=true;
  }
+ // Older clients still read this flag when opening a saved account.
+ g.introSeen=true;
  g.auto=false;if(!Number.isFinite(now))throw fail('시간을 확인해 주세요.');const last=g.lastAt,until=Math.max(last,now),from=Math.max(last,until-OFFLINE_CAP),beforeGold=g.gold,beforeRocks=g.stats.rocks;let cursor=from;rollDay(g,cursor);const births=[];
  while(cursor<until){const midnight=Math.floor((cursor+KST)/DAY)*DAY+DAY-KST,end=Math.min(until,midnight),count=g.rocks.filter(r=>r.done).length;const result=E.advance(g,(end-cursor)/1000);births.push(...result.births);const dug=g.rocks.filter(r=>r.done).length-count;g.stats.rocks+=dug;g.daily.rocks+=dug;cursor=end;rollDay(g,cursor);}
  g.lastAt=until;return {seconds:Math.max(0,(until-from)/1000),gold:g.gold-beforeGold,rocks:g.stats.rocks-beforeRocks,births};}

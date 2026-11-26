@@ -30,8 +30,6 @@
 .upgrade-progress .preview-fill{background:repeating-linear-gradient(130deg,#eaba64 0 4px,#f9d98e 4px 8px)}
 .upgrade-progress .current-fill{background:linear-gradient(#ffdb63,#ecab29)}
 .upgrade-progress b{color:#fffbea;font-size:13px;text-shadow:0 1px 2px #543a14,1px 0 2px #543a14,-1px 0 2px #543a14}
-.intro-art{display:block;width:100%;height:auto;max-height:30dvh;object-fit:cover;border-radius:12px}
-.intro-tips{list-style:none;margin:12px 0;padding:0}.intro-tips li{padding:7px 2px}.intro-tips b,.intro-tips span{display:block}.intro-tips b{color:#624633;font-size:16px}.intro-tips span{margin-top:2px;color:#594d45;line-height:1.45;font-size:14px}.intro-start{position:sticky;bottom:0}
 
 .status button.crew{width:auto;min-width:44px;padding:0 3px;border:0;background:transparent;color:inherit;box-shadow:none}
 .repair-card:disabled{filter:saturate(.4);color:#493e39}
