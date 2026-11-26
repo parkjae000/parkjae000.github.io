@@ -1,37 +1,77 @@
-// Shared mining rules. The server owns saved state and validates all commands.
-export const ECONOMY_VERSION='1.2.0';
-export const COLS=7,MAX_LEVEL=200,CAPACITY=8;
+// Shared by the live client and the save service.
+import {MILESTONES} from './main-mine.mjs';
+export const ECONOMY_VERSION='1.3.0';
+export const COLS=7,CAPACITY=8;
 export const CHARACTERS=[{name:'우사기',idle:2,hit:5},{name:'하치와레',idle:1,hit:4},{name:'치이카와',idle:0,hit:3}];
 export const appearance=level=>CHARACTERS[(Math.max(1,Math.floor(level))-1)%3];
-export const scale=stage=>2.3**Math.floor((Math.min(stage,120)-1)/4)*1.055**Math.min(stage-1,120);
-export const startingGold=stage=>Math.round(240*scale(stage));
-export const maxCardLevel=id=>id==='capacity'?4:20;
-const BASE={forge:{name:'기본 찻집',yield:12,cycle:4,cost:35,growth:1.18,required:0,art:16},tea:{name:'숲속 찻집',yield:48,cycle:6,cost:60,growth:1.16,required:1,art:10},bakery:{name:'간식 공방',yield:120,cycle:8,cost:90,growth:1.17,required:2,art:11}};
+export const startingGold=()=>80;
+// Display names follow the snack theme. Campaign milestone and cost rows are keyed to the corresponding shaft.
+const PRODUCTS=[
+ ['forge','기본 찻집','🍵',1,2,16],['tea','숲속 찻집','🫖',2,6,10],['bakery','간식 공방','🥐',3,12,11],
+ ['candy','별사탕 가게','🍬',4,24,11],['honey','꿀단지 가게','🍯',6,48,10],['jam','과일잼 공방','🍓',9,90,11],
+ ['pudding','푸딩 가게','🍮',12,180,10],['waffle','와플 공방','🧇',20,270,11],['mochi','경단 가게','🍡',30,420,10],
+ ['cake','케이크 공방','🍰',45,720,11],['cocoa','코코아 가게','☕',60,1080,10],['berry','베리 타르트 공방','🫐',80,1440,11],['parfait','파르페 가게','🍨',100,1800,10]
+];
+const BASE=Object.fromEntries(PRODUCTS.map(([id,name,product,stage,cycle,art],index)=>{
+ const growth=1.43+index*.03,first=MILESTONES[id][0],steps=first[0]-1;
+ const cost=Math.round(first[2]*(growth-1)/(growth**steps-1));
+ return [id,{id,name,product,stage,cycle,tier:index,art,growth,cost,yield:index?Math.round(cost*cycle/8):9}];
+}));
 export const facilityDef=id=>BASE[id];
-const MILESTONE_INTERVAL={forge:10,tea:20,bakery:40};
+export const maxFacilityLevel=id=>MILESTONES[id].at(-1)[0];
+export const maxCardLevel=id=>id==='capacity'?4:id==='goldenCannon'?5:BASE[id]?14:id.startsWith('manager-')?12:20;
+export const cardName=id=>BASE[id]?BASE[id].name+' 매뉴얼':id.startsWith('manager-')?BASE[id.slice(8)].name+' 숙련 매뉴얼':({capacity:'친구 정원 확장',pickaxe:'숙련 작업',discount:'채용 협약',goldenCannon:'황금 대포',speed:'쾌속 운반',delivery:'배달 시계',profit:'황금 수레',critChance:'정밀 채굴',critDamage:'강력한 일격'})[id];
+export function prepareCards(s){
+ const ids=['pickaxe','discount','capacity','forge','tea','bakery'];
+ for(const d of Object.values(BASE))if(s.stage>=d.stage){ids.push(d.id);if(d.tier&&(s.stage>=d.stage+6||d.id==='tea'&&s.stage>=6))ids.push('manager-'+d.id);}
+ for(const [id,stage] of [['speed',3],['delivery',4],['profit',6],['critChance',8],['critDamage',12],['goldenCannon',50]])if(s.stage>=stage)ids.push(id);
+ for(const id of ids)s.cards[id]??={level:0,count:0};
+}
+export function automation(s,id){
+ const firstShaft={2:['tea',1],3:['tea',2],4:['tea',3],5:['tea',4],6:['manager-tea',3],8:['manager-tea',4],9:['tea',5]};
+ if(id==='tea'&&s.stage>=67&&s.stage<=74)return {card:'tea',level:13};
+ if(id==='tea'&&s.stage>=76&&s.stage<=95)return {card:'manager-tea',level:11};
+ if(id==='tea'&&firstShaft[s.stage]){const [card,level]=firstShaft[s.stage];return {card,level};}
+ const d=BASE[id],age=Math.max(0,s.stage-d.stage),expert=age>=6 && Math.floor((age-6)/4)%2===0;
+ return {card:expert?'manager-'+id:id,level:Math.min(expert?12:14,1+Math.floor(age/6)+(expert?0:Math.min(d.tier-1,2)))};
+}
+const researchLevel=(s,id)=>s.cards[id]?.level||0;
+export const facilityCycle=(s,f)=>BASE[f.id].cycle/(1+.1*researchLevel(s,'speed'));
 export function milestoneBar(f){
- const interval=MILESTONE_INTERVAL[f.id],previous=Math.floor(f.level/interval)*interval;
- const next=Math.min(MAX_LEVEL,previous+interval);
- return {previous,next,interval,progress:f.level===MAX_LEVEL?1:(f.level-previous)/interval};
+ const table=MILESTONES[f.id],index=table.findIndex(([level])=>level>f.level);
+ if(index<0){const level=table.at(-1)[0];return {previous:level,next:level,interval:0,progress:1,bonus:1};}
+ const [next,bonus]=table[index],previous=index?table[index-1][0]:0;
+ return {previous,next,interval:next-previous,progress:(f.level-previous)/(next-previous),bonus};
 }
-export function milestones(f){
- return 2**Math.floor(f.level/MILESTONE_INTERVAL[f.id])*(f.earnedMultiplier||1);
-}
-export function preserveEarnedMultipliers(facilities){
- for(const f of facilities){
-  const oldSteps=Number(f.level>=5)+Number(f.level>=10)+Math.floor(f.level/25);
-  f.earnedMultiplier=2**Math.max(0,oldSteps-Math.floor(f.level/MILESTONE_INTERVAL[f.id]));
- }
-}
-export const hireLevel=s=>Math.min(30,1+Math.floor((s.stage-1)/4)+Math.floor(s.hires/10));
+const payouts=Object.fromEntries(Object.entries(MILESTONES).map(([id,rows])=>{
+ let m=1,i=0;return [id,Array.from({length:rows.at(-1)[0]+1},(_,level)=>{if(rows[i]?.[0]===level)m*=rows[i++][1];return m;})];
+}));
+export const milestones=f=>payouts[f.id][Math.min(maxFacilityLevel(f.id),f.level)]*(f.earnedMultiplier||1);
+export const hiresPerLevel=8;
+export const hireLevel=s=>Math.min(40,1+researchLevel(s,'goldenCannon')+Math.floor(s.hires/hiresPerLevel)+s.checkpoints.filter(t=>t.done).length+(s.hireBonus||0));
 export const cannonLevel=s=>Math.max(1,hireLevel(s)-1);
-export const capacity=s=>CAPACITY+Math.min(4,s.cards.capacity?.level||0);
-export const hirePrice=s=>Math.ceil(45*s.scale*1.32**Math.min(s.hires,20)*1.08**Math.max(0,s.hires-20)*.85**s.checkpoints.filter(t=>t.done).length*.94**s.cards.discount.level);
-export const workerPower=(s,w)=>4*2.3**(w.level-1)*1.18**s.cards.pickaxe.level;
-export const cycleYield=(s,f)=>Math.max(1,Math.round(BASE[f.id].yield*s.scale*1.08**(f.level-1)*milestones(f)*1.25**s.cards[f.id].level));
-export const facilityRate=(s,f)=>cycleYield(s,f)/BASE[f.id].cycle;
-export const upgradePrice=(s,f,level=f.level)=>Math.ceil(BASE[f.id].cost*s.scale*BASE[f.id].growth**(level-1));
-export function quoteUpgrade(s,f,limit=200){if(!f.active||f.level>=MAX_LEVEL)return {count:0,cost:0};let count=0,cost=0;const remaining=milestoneBar(f).next-f.level;while(count<Math.min(limit,remaining)&&f.level+count<MAX_LEVEL){const next=upgradePrice(s,f,f.level+count);if(cost+next>s.gold+1e-7)break;cost+=next;count++;}return {count,cost:count?cost:upgradePrice(s,f)};}
+export const capacity=s=>CAPACITY+Math.min(4,researchLevel(s,'capacity'));
+export const hirePrice=s=>Math.ceil(8*4**Math.min(475,Math.max(0,s.hires-(s.hirePriceAnchor||0)))*(s.hirePriceFactor??1)*.85**s.checkpoints.filter(t=>t.done).length*.94**researchLevel(s,'discount'));
+export const workerPower=(s,w)=>4*2.1**(w.level-1)*1.18**researchLevel(s,'pickaxe')*(1+.025*researchLevel(s,'critChance')*(1+.25*researchLevel(s,'critDamage')));
+export const cycleYield=(s,f)=>Math.max(1,Math.round(BASE[f.id].yield*(f.payoutScale||1)*1.12**(f.level-1)*milestones(f)*3**researchLevel(s,f.id)*4**researchLevel(s,'manager-'+f.id)*1.35**researchLevel(s,'profit')));
+export const facilityRate=(s,f)=>cycleYield(s,f)/facilityCycle(s,f);
+// Geometric single-level prices distribute the published block totals. Rounded prefix differences keep bulk and individual buys equal.
+const prices=Object.fromEntries(Object.entries(MILESTONES).map(([id,rows])=>{
+ const result=[],growth=BASE[id].growth;let start=1;
+ for(const [end,,block] of rows){const span=end-start;let previous=0;for(let step=1;step<=span;step++){
+  const prefix=Math.round(block*(growth**step-1)/(growth**span-1));result[start+step-1]=Math.max(1,prefix-previous);previous=prefix;
+ } start=end;}return [id,result];
+}));
+export const upgradePrice=(s,f,level=f.level)=>Math.ceil((prices[f.id][level]??0)*(f.priceScale||1));
+export function quoteUpgrade(s,f,limit=200){
+ if(!f.active||f.level>=maxFacilityLevel(f.id))return {count:0,cost:0};
+ const remaining=Math.min(limit,milestoneBar(f).next-f.level);let count=0,cost=0;
+ while(count<remaining){const price=upgradePrice(s,f,f.level+count);if(cost+price>s.gold+1e-7)break;cost+=price;count++;}
+ return {count,cost:count?cost:upgradePrice(s,f)};
+}
+// Approximate community timing observations for ordinary rocks, normalized to a Lv.1 worker.
+const ROCK_SECONDS=[0,20,40,180,420,1260,3960,16680,76200,252000,460440,743400,1333584,2433600];
+function rockSeconds(level){return ROCK_SECONDS[level]??ROCK_SECONDS.at(-1)*1.65**(level-13);}
 const id=s=>'u'+(++s.sequence);
 function random(s){s.seed=(Math.imul(s.seed,1664525)+1013904223)>>>0;return s.seed/4294967296;}
 const error=text=>{throw new Error(text);};
@@ -59,14 +99,19 @@ function layoutRoll(stage,x,y){
 }
 export function createState(stage=2,seed=17,permanent=null){
  const segments=mapPlan(stage),rows=segments[0].bottom+1;
- const s={version:ECONOMY_VERSION,stage,scale:scale(stage),seed,sequence:0,rows,segments,camp:{segment:0,row:segments[0].campRow,moves:0},gold:startingGold(stage),elixir:60,gems:96,hires:0,elapsed:0,freeAt:2400,barrelAt:25,barrel:null,auto:false,cards:Object.fromEntries(['forge','tea','bakery','pickaxe','discount','capacity'].map(k=>[k,{level:0,count:k==='capacity'?0:8}])),friends:[],rocks:[],bedrock:[],facilities:[],checkpoints:[],ledger:{forge:0,tea:0,bakery:0,rocks:0,barrels:0},merges:0,wheel:{free:false,extra:0,nextAt:0},shop:{freeAt:0},cleared:false};
+ const s={version:ECONOMY_VERSION,stage,seed,sequence:0,rows,segments,camp:{segment:0,row:segments[0].campRow,moves:0},gold:startingGold(stage),elixir:60,gems:96,hires:0,elapsed:0,freeAt:2400,barrelAt:25,barrel:null,auto:false,cards:Object.fromEntries(['forge','tea','bakery','pickaxe','discount','capacity'].map(k=>[k,{level:0,count:k==='capacity'?0:8}])),friends:[],rocks:[],bedrock:[],facilities:[],checkpoints:[],ledger:{forge:0,tea:0,bakery:0,rocks:0,barrels:0},merges:0,wheel:{free:false,extra:0,nextAt:0},shop:{freeAt:0},cleared:false};
  if(permanent){for(const k of ['elixir','gems','cards','wheel','shop'])s[k]=structuredClone(permanent[k]);s.wheel.nextAt=Math.max(0,s.wheel.nextAt-permanent.elapsed);s.shop.freeAt=Math.max(0,s.shop.freeAt-permanent.elapsed);}
  s.facilities=[{id:'forge',level:1,active:true,repaired:true,auto:true,progress:0,ready:0,hp:0,max:0,footprint:[]}];
- const workScale=Math.min(s.scale,2.8*2.3**(hireLevel(s)-1));
- const sideIds=stage===1?[]:stage===2?['tea']:['tea','bakery'];
- for(const [i,kind] of sideIds.entries()){
-  const segment=i?segments.at(-1):segments[0],start=segment.top+(stage<4?(i?1:3):layoutRoll(stage,i,2)%(segment.bottom-segment.top-3)),hp=Math.ceil((stage<=2?180+i*80:400+i*180)*workScale);
-  s.facilities.push({id:kind,level:1,active:false,repaired:false,auto:false,progress:0,ready:0,hp,max:hp,port:[i?4:2,start+2],visual:{x:i?5.7:.3,y:start+1.1},footprint:Array.from({length:6},(_,j)=>[i?5+j%2:j%2,start+1+Math.floor(j/2)])});
+ prepareCards(s);
+ const available=Object.values(BASE).filter(d=>d.tier&&stage>=d.stage&&!(stage===7&&d.id==='tea'));
+ const slots=segments.length*2;
+ const selected=available.length>slots?[...available.slice(0,1),...available.slice(1-slots)]:available;
+ for(const [i,d] of selected.entries()){
+  const segment=segments[Math.min(segments.length-1,Math.floor(i*segments.length/selected.length))],right=i%2===1;
+  const start=segment.top+(stage<4?(right?1:3):layoutRoll(stage,i,2)%Math.max(1,segment.bottom-segment.top-3));
+  const hp=Math.ceil(4*rockSeconds(Math.min(14,Math.max(2,d.tier+1))));
+  s.ledger[d.id]=0;
+  s.facilities.push({id:d.id,level:1,active:false,repaired:false,auto:false,progress:0,ready:0,hp,max:hp,port:[right?4:2,start+2],visual:{x:right?5.7:.3,y:start+1.1},footprint:Array.from({length:6},(_,j)=>[right?5+j%2:j%2,start+1+Math.floor(j/2)])});
  }
  // Permanent outcrops occupy real tiles. Keep facility doors and a route around each outcrop diggable.
  if(stage>=3)for(const seg of segments){
@@ -85,13 +130,15 @@ export function createState(stage=2,seed=17,permanent=null){
  const fixed=new Set(s.bedrock.map(p=>p.join(',')));
  for(const segment of segments)for(let y=segment.top;y<=segment.bottom;y++)for(let x=0;x<COLS;x++){
   if(fixed.has(x+','+y)||s.facilities.some(f=>f.footprint.some(p=>p[0]===x&&p[1]===y)))continue;
-  const depth=segment.bottom-y+(segment.index*3),roll=layoutRoll(stage,x,y)%100,kind=roll<6?'chest':roll<20?'gold':roll<37?'crystal':'rock',hp=Math.ceil((stage<=2?40:100)*workScale*1.14**depth*(kind==='crystal'?1.3:kind==='gold'?1.2:1)*(1+(x%3)*.08));
-  s.rocks.push({id:'r'+x+'-'+y,x,y,kind,type:{rock:6,crystal:7,gold:8,chest:9}[kind],level:1+Math.floor((stage-1)/4)+Math.floor(depth/2),hp,max:hp,depth,done:false});
+  const depth=segment.bottom-y+(segment.index*3),roll=layoutRoll(stage,x,y)%100,kind=roll<6?'chest':roll<20?'gold':roll<37?'crystal':'rock';
+  const level=1+Math.min(5,Math.floor(Math.log2(stage)/1.5))+Math.floor((segment.bottom-y)/3)+segment.index*2;
+  const hp=Math.round(4*rockSeconds(level)*(kind==='crystal'?1.3:kind==='gold'?1.2:1));
+  s.rocks.push({id:'r'+x+'-'+y,x,y,kind,type:{rock:6,crystal:7,gold:8,chest:9}[kind],level,hp,max:hp,depth,done:false});
  }
- for(const segment of segments.slice(1)){const hp=Math.ceil(220*workScale*(1+segment.index*.2));s.checkpoints.push({id:'checkpoint-'+segment.index,x:2+layoutRoll(stage,segment.index,9)%3,y:segment.campRow+3,toSegment:segment.index,hp,max:hp,done:false,kind:'checkpoint'});}
+ for(const segment of segments.slice(1)){const hp=Math.ceil(4*rockSeconds(2+segment.index*2));s.checkpoints.push({id:'checkpoint-'+segment.index,x:2+layoutRoll(stage,segment.index,9)%3,y:segment.campRow+3,toSegment:segment.index,hp,max:hp,done:false,kind:'checkpoint'});}
  // Compatibility alias for older read-only audits; real layout uses the checkpoint array.
  s.checkpoint=s.checkpoints[0]||{id:'no-checkpoint',done:true};
- const hp=Math.ceil((stage<=2?260:650)*workScale);s.exit={id:'exit',x:3,y:-1,hp,max:hp,done:false,kind:'exit'};
+ const hp=Math.ceil(4*rockSeconds(2+Math.min(5,Math.floor(Math.log2(stage)/1.5))+2*(segments.length-1))*1.5);s.exit={id:'exit',x:3,y:-1,hp,max:hp,done:false,kind:'exit'};
  for(let i=0;i<3;i++){
   const w={id:id(s),level:hireLevel(s),x:2+i,y:s.camp.row,target:null,paused:false};
   mineNearby(s,w);s.friends.push(w);
@@ -107,7 +154,7 @@ export function crewInfo(s){
   !sorted.some(w=>w!==lowest&&w.level===lowest.level)&&!parcels.some(b=>b.level===lowest.level);
  return {pair,lowest,partner:missing?lowest:null,full,stranded:full&&!parcels.length&&!pair&&!!lowest};
 }
-export const deliveryInterval = s => 2400 * .9 ** s.checkpoints.filter(gate => gate.done).length;
+export const deliveryInterval = s => 2400 / (1+.1*researchLevel(s,'delivery')) * .9 ** s.checkpoints.filter(gate => gate.done).length;
 export const targets=s=>[...s.rocks.filter(r=>!r.done),...s.facilities.filter(f=>!f.repaired),...s.checkpoints.filter(t=>!t.done),...(s.exit.done?[]:[s.exit])];
 function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5);}
 export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(x!==t.x||!t.done)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
@@ -178,21 +225,47 @@ export function merge(s,aId,bId){const a=s.friends.find(w=>w.id===aId),b=s.frien
  const jobs=targets(s);
  const work=[b.target,a.target].map(id=>jobs.find(t=>t.id===id)).find(t=>t&&validTask(b,t));
  b.target=work?.id||null;b.paused=false;if(!work)mineNearby(s,b);s.friends=s.friends.filter(w=>w!==a);s.merges++;return b;}
-export function upgrade(s,fId,count=null){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 복구하고 가동해 주세요.');const q=quoteUpgrade(s,f,count??200);if(!q.count||count!=null&&q.count!==count)error('시설 강화에 필요한 골드가 부족해요.');const before=milestones(f);s.gold-=q.cost;f.level+=q.count;const bonuses=Math.round(Math.log2(milestones(f)/before));s.elixir+=bonuses*10;return {...q,bonuses,level:f.level};}
+export function upgrade(s,fId,count=null){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 복구하고 가동해 주세요.');const q=quoteUpgrade(s,f,count??200);if(!q.count||count!=null&&q.count!==count)error('시설 강화에 필요한 골드가 부족해요.');const threshold=milestoneBar(f).next;s.gold-=q.cost;f.level+=q.count;const bonuses=Number(f.level===threshold);s.elixir+=bonuses*10;return {...q,bonuses,level:f.level};}
 export function activate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.repaired)error('친구가 가게 옆에서 가게를 다 캐야 열려요.');if(f.active)return f;f.active=true;if(s.stats)s.stats.activated=(s.stats.activated||0)+1;f.progress=0;s.elixir+=20;for(const c of ['tea','bakery'])s.cards[c].count+=2;return f;}
-export function collect(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.ready)error('아직 생산 중이에요.');const amount=f.ready;s.gold+=amount;s.ledger[f.id]+=amount;f.ready=0;f.progress=0;return amount;}
-export function researchCost(s,card){const c=s.cards[card];return {cards:2+c.level*2,elixir:Math.ceil(12*1.55**c.level)};}
-export function cardPreview(s,card){const c=s.cards[card],cost=researchCost(s,card),next={...s,cards:{...s.cards,[card]:{...c}}},cap=maxCardLevel(card);next.cards[card].level=Math.min(cap,c.level+1);const f=s.facilities.find(f=>f.id===card)||{id:card,level:1};let current,value,label,unit;
- if(BASE[card]){current=cycleYield(s,f);value=cycleYield(next,f);label=BASE[card].name+' · '+BASE[card].cycle+'초 생산';unit='골드';}
- else if(card==='capacity'){current=capacity(s);value=capacity(next);label='친구와 미개봉 보급 정원';unit='칸';}
- else if(card==='pickaxe'){current=workerPower(s,{level:1});value=workerPower(next,{level:1});label='Lv.1 친구 작업 능력';unit='/초';}
- else {current=hirePrice(s);value=hirePrice(next);label='현재 소환 레벨 채용 비용';unit='골드';}
- return {current,next:value,label,unit,cost,max:c.level>=cap,art:BASE[card]?.art??(card==='pickaxe'?18:19)};
+export function collect(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.ready)error('아직 생산 중이에요.');const amount=f.ready;s.gold+=amount;s.ledger[f.id]=(s.ledger[f.id]||0)+amount;f.ready=0;f.progress=0;return amount;}
+export function researchCost(s,card){
+ const level=s.cards[card].level;
+ if(BASE[card]||card.startsWith('manager-')){
+  const cards=[2,2,5,10,20,50,100,200,400,800,1200,2000,4000,8000];
+  const prices=card.startsWith('manager-')?[12,100,200,400,1000,2400,4000,8000,16000,32000,64000,96000]:[12,50,100,200,300,400,800,1500,3000,6000,8000,24000,48000,72000];
+  return {cards:cards[Math.min(level,cards.length-1)],elixir:prices[Math.min(level,prices.length-1)]};
+ }
+ return {cards:2+level*2,elixir:Math.ceil(12*1.55**level)};
 }
-export function research(s,card){const c=s.cards[card];if(!c||c.level>=maxCardLevel(card))error('최대 연구 레벨이에요.');const cost=researchCost(s,card);if(c.count<cost.cards||s.elixir<cost.elixir)error('카드 또는 연구 포인트가 부족해요.');c.count-=cost.cards;s.elixir-=cost.elixir;c.level++;return c;}
-export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');if(s.cards[f.id].level<BASE[f.id].required)error(`${BASE[f.id].name} 카드를 Lv.${BASE[f.id].required}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
+export function cardPreview(s,card){
+ const c=s.cards[card],cost=researchCost(s,card),cap=maxCardLevel(card);
+ const next={...s,cards:{...s.cards,[card]:{...c,level:Math.min(cap,c.level+1)}}};
+ const facility=BASE[card]||BASE[card.replace('manager-','')];
+ let measure,label,unit,art=18;
+ if(facility){const f=s.facilities.find(f=>f.id===facility.id)||{id:facility.id,level:1};measure=state=>cycleYield(state,f);label=facility.name+' · 1회 생산량';unit='골드';art=facility.art;}
+ else if(card==='capacity'){measure=capacity;label='친구와 미개봉 보급 정원';unit='칸';art=19;}
+ else if(card==='goldenCannon'){measure=state=>1+researchLevel(state,card);label='새 동굴 첫 채용';unit='레벨';art=12;}
+ else if(card==='speed'){measure=state=>Math.round(facilityCycle(state,{id:'tea'})*100)/100;label='숲속 찻집 한 번 생산하는 시간';unit='초';art=16;}
+ else if(card==='profit'){measure=state=>facilityRate(state,s.facilities[0]);label='기본 찻집 초당 수입';unit='골드';art=16;}
+ else if(card==='delivery'){measure=state=>Math.round(deliveryInterval(state));label='무료 친구 배달 간격';unit='초';art=12;}
+ else if(card==='discount'){measure=hirePrice;label='현재 친구 채용 비용';unit='골드';art=19;}
+ else if(card==='critChance'){measure=state=>2.5*researchLevel(state,card);label='평균 작업량에 반영되는 치명타 확률';unit='%';}
+ else if(card==='critDamage'){measure=state=>2+.25*researchLevel(state,card);label='치명타 피해 배율';unit='배';}
+ else {measure=state=>workerPower(state,{level:1});label='Lv.1 친구 작업 능력';unit='/초';}
+ return {current:measure(s),next:measure(next),label,unit,cost,max:c.level>=cap,art};
+}
+export function research(s,card){
+ const c=s.cards[card];if(!c||c.level>=maxCardLevel(card))error('최대 연구 레벨이에요.');
+ const cost=researchCost(s,card);if(c.count<cost.cards||s.elixir<cost.elixir)error('카드 또는 연구 포인트가 부족해요.');
+ const oldSpeed=1+.1*researchLevel(s,'speed'),oldDelivery=deliveryInterval(s);
+ c.count-=cost.cards;s.elixir-=cost.elixir;c.level++;
+ if(card==='speed')for(const f of s.facilities)f.progress*=oldSpeed/(1+.1*c.level);
+ if(card==='delivery')s.freeAt=s.elapsed+Math.max(0,s.freeAt-s.elapsed)*deliveryInterval(s)/oldDelivery;
+ return c;
+}
+export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');const req=automation(s,f.id);if(researchLevel(s,req.card)<req.level)error(`${cardName(req.card)}을 Lv.${req.level}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
 function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
-function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.round(t.max*.45*(t.kind==='gold'?1.5:1));s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
+function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.max(1,Math.round(regularIncome(s)*10*(1+.12*(t.level-1))*(t.kind==='gold'?1.5:1))); s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
 function validTask(w,t){
  if(t.port)return facilityApproaches(t).some(([x,y])=>w.x===x&&w.y===y);
  return approachFor(t).some(([dx,dy])=>w.x===t.x+dx&&w.y===t.y+dy);
@@ -215,8 +288,15 @@ export function advance(s,seconds){
  const births=[];
  let work=collectWork(s);
  while(remaining>1e-8&&iterations++<100000){
- let step=remaining;if(!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(occupiedSlots(s)<capacity(s)&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);for(const f of s.facilities.filter(f=>f.active&&(f.auto||!f.ready)))step=Math.min(step,BASE[f.id].cycle-f.progress);if(step<1e-8)step=Math.min(remaining,1e-7);
- for(const f of s.facilities.filter(f=>f.active&&(f.auto||!f.ready))){f.progress+=step;if(f.progress>=BASE[f.id].cycle-1e-7){const amount=cycleYield(s,f);f.progress=Math.max(0,f.progress-BASE[f.id].cycle);if(f.auto){s.gold+=amount;s.ledger[f.id]+=amount;}else {f.ready=amount;f.progress=0;}}}
+ let step=remaining;if(!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(occupiedSlots(s)<capacity(s)&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);if(step<1e-8)step=Math.min(remaining,1e-7);
+ for(const f of s.facilities){
+  if(!f.active||(!f.auto&&f.ready))continue;
+  const cycle=facilityCycle(s,f),elapsed=f.progress+step,cycles=Math.floor((elapsed+1e-8)/cycle);
+  if(!cycles){f.progress=elapsed;continue;}
+  const amount=cycleYield(s,f);
+  if(f.auto){const earned=amount*cycles;f.progress=Math.max(0,elapsed-cycles*cycle);s.gold+=earned;s.ledger[f.id]=(s.ledger[f.id]||0)+earned;}
+  else {f.ready=amount;f.progress=0;}
+ }
  for(const {t,power}of work.values())t.hp=Math.max(0,t.hp-power*step);if(occupiedSlots(s)>=capacity(s))s.freeAt=Math.max(s.elapsed,s.freeAt)+step;
  s.elapsed+=step;remaining-=step;
  let finished=false;
@@ -289,4 +369,23 @@ export function buy(s,offer){
  let price=0,result={type:offer};if(offer==='free'){if(s.elapsed<s.shop.freeAt)error('무료 상자를 준비 중이에요.');s.shop.freeAt=s.elapsed+14400;s.elixir+=15;for(let i=0;i<3;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}result.text='카드 3장 · 연구 15를 받았어요.';return result;}
  if(offer==='chest')price=35;else if(offer==='research')price=25;else if(offer==='time')price=20;else if(offer.startsWith('card-')&&s.cards[offer.slice(5)])price=12;else error('상품을 다시 선택해 주세요.');if(s.gems<price)error('보석이 부족해요.');s.gems-=price;
  if(offer==='chest'){s.elixir+=60;for(const c of Object.values(s.cards))c.count+=2;result.text='카드 각 2장 · 연구 60을 받았어요.';}else if(offer==='research'){s.elixir+=80;result.text='연구 포인트 80을 받았어요.';}else if(offer==='time'){advance(s,300);result.text='시설 생산과 지정한 작업을 5분 진행했어요.';}else {s.cards[offer.slice(5)].count+=3;result.text='선택한 카드 3장을 받았어요.';}return result;
+}
+
+// Keep the current mine playable across the economy patch. Anchors expire when the player leaves it.
+export function migrateEconomy(s){
+ prepareCards(s);
+ const scale=s.scale||1,oldBaseline=1+Math.floor((s.stage-1)/4);
+ const oldHire=Math.min(30,oldBaseline+Math.floor(s.hires/10));
+ s.hireBonus=Math.max(0,oldHire-hireLevel(s));
+ s.hirePriceAnchor=s.hires;s.hirePriceFactor=45*scale*1.32**Math.min(s.hires,20)*1.08**Math.max(0,s.hires-20)/8;
+ const old={forge:[4,12,35,1.18,10],tea:[6,48,60,1.16,20],bakery:[8,120,90,1.17,40]};
+ for(const f of s.facilities){
+  const [cycle,yieldBase,price,growth,interval]=old[f.id];
+  const steps=s.version==='1.2.0'?Math.floor(f.level/interval):Math.max(Math.floor(f.level/interval),Number(f.level>=5)+Number(f.level>=10)+Math.floor(f.level/25));
+  const previousYield=Math.max(1,Math.round(yieldBase*scale*1.08**(f.level-1)*2**steps*(f.earnedMultiplier||1)*1.25**researchLevel(s,f.id)));
+  delete f.earnedMultiplier;
+  f.payoutScale=previousYield*facilityCycle(s,f)/cycle/cycleYield(s,f);
+  f.priceScale=price*scale*growth**(f.level-1)/upgradePrice(s,f);
+  f.progress=Math.min(.999999,f.progress/cycle)*facilityCycle(s,f);
+ }
 }

@@ -74,3 +74,14 @@
 .departure-gold{background:#f5e9cf;border-radius:12px;padding:10px 12px;margin-bottom:12px}.departure-gold p{display:flex;align-items:center;gap:8px;justify-content:space-between}.departure-gold p:last-child{margin-bottom:0!important}.departure-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:360px){.balances{gap:4px}.balances>span{gap:2px;padding:2px 3px}.balances i,.balances svg{width:18px;height:18px}.balances b{font-size:13px}}
 .guide-example{font-weight:750;padding:9px 12px;border-left:4px solid #bd913c;background:#fff1ce;border-radius:4px}
+
+.facility-clock{position:absolute;transform:translateX(-50%);height:36px;padding:0 1px 9px;border:0;background:transparent;pointer-events:auto;touch-action:manipulation;color:#fff8e8;z-index:1;font-family:inherit}
+.clock-face{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;height:25px;padding:0 3px 3px;border:1.5px solid #f6ddb0;border-radius:9px;background:#4b3b37;box-shadow:0 2px 3px #54362866;overflow:hidden;line-height:1;font-variant-numeric:tabular-nums}
+.clock-face::after{content:'';position:absolute;inset:auto 2px 1px;height:3px;border-radius:3px;background:linear-gradient(to right,#ffcd68 var(--cycle),#8a7365 var(--cycle))}
+.clock-face i{font-style:normal;font-size:10px;font-weight:750}.clock-face b{font-size:13px;font-weight:850}.facility-clock.automatic i{color:#c4ebb9}.facility-clock.ready .clock-face{background:#fff3c8;border-color:#936538;color:#513c27;padding-bottom:0}.facility-clock.ready .clock-face::after{display:none}.facility-clock.ready i{font-size:17px}.facility-clock.ready::after{content:'';position:absolute;top:24px;left:50%;width:8px;height:8px;transform:translateX(-50%) rotate(45deg);border:solid #936538;border-width:0 1.5px 1.5px 0;background:#fff3c8}.facility-clock:focus-visible{outline:2px solid #1f6e71;border-radius:9px}
+.original-toolbar #hire{position:relative;gap:1px}.original-toolbar #hire-meter{display:block;align-self:stretch;position:relative;margin:0 5px;height:9px;border-radius:4px;line-height:9px;background:linear-gradient(to right,#ffcf58 var(--paid),#577445 var(--paid));font:800 8px/9px system-ui;color:white;text-shadow:0 1px 2px #313929;letter-spacing:.4px}
+.production:not([data-structure="forge"]) .upgrade-card{min-height:39px;padding:2px}
+.production:not([data-structure="forge"]) .upgrade-progress b{font-size:11px;line-height:14px}
+.production:not([data-structure="forge"]) .upgrade-buy{flex-direction:row;flex-wrap:wrap;min-height:18px;gap:0 3px;margin-top:1px;padding:1px}
+.production:not([data-structure="forge"]) .upgrade-buy strong,.production:not([data-structure="forge"]) .upgrade-buy>span{font-size:10px;line-height:13px}
+.production:not([data-structure="forge"]) .upgrade-buy svg{width:11px;height:11px}

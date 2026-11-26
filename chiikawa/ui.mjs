@@ -1,7 +1,7 @@
 export const $=(s,r=document)=>r.querySelector(s);
 export const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const fmt=n=>{n=Number(n)||0;for(const [v,s]of [[1e16,'경'],[1e12,'조'],[1e8,'억'],[1e4,'만']])if(n>=v)return (n/v).toFixed(n/v>=100?0:1).replace(/\.0$/,'')+s;return Math.floor(n).toLocaleString('ko-KR');};
+export const fmt=n=>{n=Number(n)||0;if(n>=1e20){const group=Math.floor(Math.log10(n)/3),suffix=String.fromCharCode(65+Math.floor((group-5)/26),65+(group-5)%26);return (n/10**(group*3)).toFixed(2).replace(/\.?0+$/,'')+suffix;}for(const [v,s]of [[1e16,'경'],[1e12,'조'],[1e8,'억'],[1e4,'만']])if(n>=v)return (n/v).toFixed(n/v>=100?0:1).replace(/\.0$/,'')+s;return Math.floor(n).toLocaleString('ko-KR');};
 export const duration=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return s>=86400?`${Math.floor(s/86400)}일 ${Math.floor(s%86400/3600)}시간`:s>=3600?`${Math.floor(s/3600)}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
 export const facilityName=id=>({forge:'기본 처리라인',packing:'상온 포장라인',cold:'냉장 처리라인',produce:'신선 작업라인'}[id]||id);
 export function icon(name){
