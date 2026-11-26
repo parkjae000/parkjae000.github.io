@@ -2,7 +2,7 @@ import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
 import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
-import {guidePage} from './guide.mjs?v=130';
+import {guidePage} from './guide.mjs?v=132';
 import {watchRelease} from './release.mjs?v=124';
 import {GameSession} from './session.mjs';
 import {API,LIVE_HOSTS} from './config.mjs';
@@ -380,9 +380,13 @@ function deliveryStatus(){
 }
 function crewPanel(){
  const c=E.crewInfo(g),parcels=g.workerBarrels?.length||0;
- const explanation=parcels&&c.full&&c.pair?'상자는 바닥에서 기다려요. 친구 둘을 합쳐 자리를 만들고 열어 주세요.':c.pair?'같은 레벨 친구 둘을 합치면 한 칸이 비어요.':c.stranded?'지금은 합칠 짝이 없어요. 다음 일반 보급통을 열면 가장 낮은 친구에게 짝이 도착해 그 자리에서 합쳐져요.':c.partner?'다음 일반 보급통에 Lv.'+c.partner.level+' 친구의 합성 짝이 들어 있어요.':'같은 레벨 둘을 겹치면 한 단계 높은 친구가 돼요.';
+ let explanation='같은 레벨 둘을 겹치면 한 단계 높은 친구가 돼요.';
+ if(c.supplyPartner){
+  const level=c.supplyPartner.level;
+  explanation='대포의 ‘짝 Lv.'+level+'’ 보급을 열어 주세요. '+(c.full?'정원이 가득 차서 그 자리에서 Lv.'+(level+1)+'로 합쳐져요.':'Lv.'+level+' 친구가 나와요. 같은 레벨인 두 친구를 겹쳐 Lv.'+(level+1)+'로 합쳐 주세요.');
+ }else if(c.pair)explanation=parcels&&c.full?'친구 둘을 먼저 합쳐 자리를 만들면 기다리는 상자를 열 수 있어요.':'같은 레벨 친구 둘을 합치면 한 칸이 비어요.';
  const cards=g.cards.capacity;
- return `<div class="facts"><span>사용 중인 정원</span><strong>${E.occupiedSlots(g)} / ${E.capacity(g)}칸</strong><span>지도 위 친구</span><strong>${g.friends.length}명</strong><span>미개봉 친구 보급</span><strong>${parcels}개</strong></div><p>${explanation}</p>${parcels?'<button class="dialog-button" id="open-worker-parcel">친구 보급 열기 · '+parcels+'개</button>':''}${c.pair?'<button class="dialog-button" data-crew-merge="'+c.pair.level+'">Lv.'+c.pair.level+' 친구 둘 합치기</button>':''}${g.barrel&&(c.stranded||c.partner)?'<button class="dialog-button" id="open-barrel">합성 짝 보급 열기</button>':''}<p id="supply-status">${deliveryStatus()}</p>${cards?.level<4?'<button class="dialog-button" data-panel="cards">정원 확장 카드 보기</button>':''}`;
+ return `<div class="facts"><span>사용 중인 정원</span><strong>${E.occupiedSlots(g)} / ${E.capacity(g)}칸</strong><span>지도 위 친구</span><strong>${g.friends.length}명</strong><span>미개봉 친구 보급</span><strong>${parcels}개</strong></div><p>${explanation}</p>${parcels?'<button class="dialog-button" id="open-worker-parcel">친구 보급 열기 · '+parcels+'개</button>':''}${c.pair?'<button class="dialog-button" data-crew-merge="'+c.pair.level+'">Lv.'+c.pair.level+' 친구 둘 합치기</button>':''}${g.barrel&&c.supplyPartner?'<button class="dialog-button" id="open-barrel">합성 짝 보급 열기</button>':''}<p id="supply-status">${deliveryStatus()}</p>${cards?.level<4?'<button class="dialog-button" data-panel="cards">정원 확장 카드 보기</button>':''}`;
 }
 function panel(name){if(!g)return;settle();if(name==='menu'){open('내 모험 · '+player.nickname,`<div class="facts"><span>현재 구역</span><strong>${g.stage}구역</strong><span>누적 채굴</span><strong>${g.stats.rocks}개</strong><span>누적 합성</span><strong>${g.stats.merges}번</strong><span>진행 저장</span><strong>${client.status==='saved'?'저장 완료':client.status==='offline'?'연결 확인 중':'저장 중'}</strong></div><div class="menu-actions"><button data-panel="chat">친구들과 채팅</button><button data-panel="rankings">전체 랭킹</button><button data-panel="supply">보급·무료 배달</button><button data-panel="help">플레이 안내</button></div><button class="dialog-button" id="sync-game">저장 확인</button><button class="logout-button" id="logout">로그아웃</button><p class="account-note">닉네임과 PIN으로 다른 기기에서도 이어 할 수 있어요. 자리비움 중 생산·지정 작업은 최대 8시간 반영돼요.</p>`,name);}
  else if(name==='cards'){open('카드 연구',`<div class="wallet-line">${icon('elixir')} 연구 <b>${fmt(g.elixir)}</b><span>구역을 넘어 유지돼요</span></div><p class="panel-intro">골드는 시설 강화에, 카드와 연구는 영구 성장에 사용해요.</p>${Object.keys(g.cards).map(id=>cardMarkup(id)).join('')}`,name);}
@@ -438,7 +442,8 @@ function updateBoardItems(){
    lootLayer.append(node);
   }
   old.delete(item.id);
-  const label=kind==='supply'?'보급':kind==='worker'?'친구 '+item.level:'Lv.'+item.level;
+  const partner=kind==='supply'?E.crewInfo(g).supplyPartner:null;
+  const label=kind==='supply'?(partner?'짝 Lv.'+partner.level:'보급'):kind==='worker'?'친구 '+item.level:'Lv.'+item.level;
   const name=kind==='charge'?'별사탕 폭죽 '+label:label+' 상자 열기';
   if(node.getAttribute('aria-label')!==name){node.setAttribute('aria-label',name);node.querySelector('b').textContent=label;}
   if(charge)node.setAttribute('aria-pressed',String(selectedCharge===item.id));
@@ -599,7 +604,7 @@ function refreshPanel(force=false){if(!dialog.open||!g)return;const time=Date.no
  }else if(modalName.startsWith('facility:')){const f=g.facilities.find(f=>f.id===modalName.slice(9)),slot=$('#facility-collect'),cycle=$('#facility-cycle');if(f&&slot){if(f.ready&&!slot.querySelector('[data-collect]'))slot.innerHTML=`<button class="dialog-button" data-collect="${f.id}">완료된 골드 ${fmt(f.ready)} 받기</button>`;if(cycle)cycle.textContent=!f.active?'가게와 맞닿은 칸에 친구를 놓고 가게를 캐 주세요.':f.ready?'생산 완료! 골드를 받으면 다음 생산이 시작돼요.':`${f.auto?'자동 수령 중 · ':''}다음 생산까지 ${duration((E.facilityCycle(g,f)-f.progress)*1000)}`;}}else if(modalName==='events'){for(const node of document.querySelectorAll('[data-task]')){const t=TASKS.find(t=>t.id===node.dataset.task),amount=g.daily[t.id]||0,claimed=g.daily.claims.includes(t.id);node.querySelector('p').textContent=`${Math.min(amount,t.goal)}/${t.goal} · 보석 ${t.gems} + 연구 ${t.elixir}`;node.querySelector('.material-bar>i').style.width=Math.min(100,amount/t.goal*100)+'%';const b=node.querySelector('button');if(serverButtons.has(b))continue;b.disabled=claimed||amount<t.goal;b.textContent=claimed?'받음':'받기';}}
  else if(modalName==='wheel'&&!wheelSpinning){const free=$('#spin-free'),extra=$('#spin-extra');if(free){free.disabled=g.wheel.free;free.textContent=g.wheel.free?'무료 회전 완료':'무료로 돌리기';}if(extra){extra.disabled=g.wheel.extra>=5||g.elapsed<g.wheel.nextAt;extra.textContent=g.wheel.extra>=5?'추가 회전 5회 완료':g.elapsed<g.wheel.nextAt?duration((g.wheel.nextAt-g.elapsed)*1000)+' 후 추가 회전':'추가 회전 · '+g.wheel.extra+'/5';}}
  else if(modalName==='crew'){
-  const key=[...g.friends.map(w=>w.id+':'+w.level),g.workerBarrels?.length,E.capacity(g),g.barrel?.id].join('/');
+  const key=[...g.friends.map(w=>w.id+':'+w.level),...(g.workerBarrels||[]).map(b=>b.id+':'+b.level),E.cannonLevel(g),E.capacity(g),g.barrel?.id].join('/');
   const body=$('#dialog-content');if(body.dataset.crew!==key){body.innerHTML=crewPanel();body.dataset.crew=key;}
   const status=$('#supply-status');if(status)status.innerHTML=deliveryStatus();
  }else if(modalName==='supply'){const status=$('#supply-status');if(status)status.innerHTML=`${deliveryStatus()}`;const b=$('#open-barrel');if(b)b.disabled=!g.barrel||!!pendingBarrel;const wb=$('#open-worker-parcel');if(wb){wb.hidden=!g.workerBarrels?.length;wb.textContent='친구 보급 열기 · '+(g.workerBarrels?.length||0)+'개';}}

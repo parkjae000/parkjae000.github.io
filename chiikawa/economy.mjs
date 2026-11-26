@@ -150,9 +150,11 @@ export function crewInfo(s){
  const parcels=s.workerBarrels||[],sorted=[...s.friends].sort((a,b)=>a.level-b.level);
  const pair=sorted.find((w,i)=>w.level<40&&sorted[i+1]?.level===w.level);
  const lowest=sorted.find(w=>w.level<40),full=occupiedSlots(s)>=capacity(s);
- const missing=lowest&&lowest.level<cannonLevel(s)-1&&
-  !sorted.some(w=>w!==lowest&&w.level===lowest.level)&&!parcels.some(b=>b.level===lowest.level);
- return {pair,lowest,partner:missing?lowest:null,full,stranded:full&&!pair&&!!lowest};
+ const deliveryLevel=cannonLevel(s);
+ const partner=sorted.find(w=>w.level<deliveryLevel&&
+  !sorted.some(other=>other!==w&&other.level===w.level)&&!parcels.some(box=>box.level===w.level));
+ const stranded=full&&!pair&&!!lowest;
+ return {pair,lowest,partner:partner??null,full,stranded,supplyPartner:partner||(stranded?lowest:null)};
 }
 export const deliveryInterval = s => 2400 / (1+.1*researchLevel(s,'delivery')) * .9 ** s.checkpoints.filter(gate => gate.done).length;
 export const targets=s=>[...s.rocks.filter(r=>!r.done),...s.facilities.filter(f=>!f.repaired),...s.checkpoints.filter(t=>!t.done),...(s.exit.done?[]:[s.exit])];
@@ -397,9 +399,9 @@ export function openBarrel(s){
  placeStoredItems(s);
  const box=s.barrel,at=Number.isInteger(box.x)?{x:box.x,y:box.y}:deliverySpot(s);
  const r=random(s),crew=crewInfo(s);let result;
- if(crew.stranded){
+ if(crew.supplyPartner&&(crew.full||!at)){
   // The incoming partner merges on contact without occupying a ninth tile.
-  const w=crew.lowest;w.level++;s.merges++;
+  const w=crew.supplyPartner;w.level++;s.merges++;
   result={type:'partner',text:'합성 짝 도착! Lv.'+(w.level-1)+' 친구가 Lv.'+w.level+'이 되었어요.'};
  }else if(at&&!crew.full&&(crew.partner||r<.15)){
   const level=crew.partner?.level??Math.max(1,cannonLevel(s)-1),w=addFriend(s,level,at);
