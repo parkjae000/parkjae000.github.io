@@ -157,14 +157,15 @@ export function crewInfo(s){
 export const deliveryInterval = s => 2400 / (1+.1*researchLevel(s,'delivery')) * .9 ** s.checkpoints.filter(gate => gate.done).length;
 export const targets=s=>[...s.rocks.filter(r=>!r.done),...s.facilities.filter(f=>!f.repaired),...s.checkpoints.filter(t=>!t.done),...(s.exit.done?[]:[s.exit])];
 function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5);}
-export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(x!==t.x||!t.done)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
+export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(!t.done||Math.abs(x-t.x)>1)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
  const seen=new Set(),queue=[[3,s.camp.row]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i],k=x+','+y;if(seen.has(k)||blocked.has(k)||x<0||x>=COLS||y<0||y>s.rows+2)continue;seen.add(k);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
 export function freeTiles(s,worker=null){return [...openTiles(s)].map(k=>k.split(',').map(Number)).filter(([x,y])=>!(x===6&&y===s.camp.row)&&!s.friends.some(w=>w.id!==worker?.id&&w.x===x&&w.y===y));}
 // Offsets from a target to the floor cells where a worker can stand.
 export const EXIT_APPROACH=[[0,1],[-1,1],[1,1]];
 const ordinaryApproach=[[0,1],[-1,0],[1,0],[0,-1]];
-const approachFor=t=>t.id==='exit'?EXIT_APPROACH:ordinaryApproach;
+export const isWideGate=t=>t.id==='exit'||t.kind==='checkpoint';
+const approachFor=t=>isWideGate(t)?EXIT_APPROACH:ordinaryApproach;
 // A shop can be worked along any exposed edge of the tiles occupied by its building.
 const facilityEdges=new WeakMap();
 export function facilityApproaches(f){
@@ -206,7 +207,8 @@ function nearbyRock(s,w){
 }
 function mineNearby(s,w){
  const facility=s.facilities.find(f=>!f.repaired&&validTask(w,f));
- const target=!s.exit.done&&validTask(w,s.exit)?s.exit:facility||nearbyRock(s,w);
+ const gate=!s.exit.done&&validTask(w,s.exit)?s.exit:s.checkpoints.find(t=>!t.done&&validTask(w,t));
+ const target=gate||facility||nearbyRock(s,w);
  w.target=target?.id??null;
  w.paused=!target;
  return target;

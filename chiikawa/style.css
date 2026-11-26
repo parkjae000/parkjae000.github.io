@@ -85,3 +85,15 @@
 .production:not([data-structure="forge"]) .upgrade-buy{flex-direction:row;flex-wrap:wrap;min-height:18px;gap:0 3px;margin-top:1px;padding:1px}
 .production:not([data-structure="forge"]) .upgrade-buy strong,.production:not([data-structure="forge"]) .upgrade-buy>span{font-size:10px;line-height:13px}
 .production:not([data-structure="forge"]) .upgrade-buy svg{width:11px;height:11px}
+
+#production-clocks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.facility-clock,.facility-clock:active{transform:translateX(-50%);height:44px;padding:0;display:flex;justify-content:center;align-items:flex-start;-webkit-tap-highlight-color:transparent}
+.facility-clock .clock-face{width:calc(100% - 8px);pointer-events:none}
+.facility-clock.ready::after{pointer-events:none}
+.gold-payout{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);padding:2px 6px;border-radius:6px;background:#55391e;color:#ffdf83;white-space:nowrap;font:850 13px/1.25 system-ui,sans-serif;pointer-events:none;animation:facility-income 1.3s both}
+@keyframes facility-income{0%,65%{opacity:1}100%{opacity:0;translate:0 -7px}}
+@media(prefers-reduced-motion:reduce){.gold-payout{animation-name:quiet-income}@keyframes quiet-income{0%,95%{opacity:1}100%{opacity:0}}}
+.production button.facility-label{pointer-events:auto;min-height:20px;padding:2px 5px;margin:2px 0 0;border:1px solid #c8a677;border-radius:5px;background:#fff1cf;color:#624628;font-size:10px;line-height:1.2}
+.auto-steps{background:#f4ead5;border:1px solid #d9bf90;border-radius:10px;padding:12px;margin-bottom:12px}
+.auto-steps h2{font-size:16px;margin:0 0 7px}
+#dialog-content .auto-steps p{font-size:13px;margin:4px 0}
