@@ -19,3 +19,7 @@
 .guide-inline{font-size:13px;line-height:1.7;padding:10px;border-radius:9px;background:#f5e4ac;border:1px solid #ddc67d;color:#82673e;margin:8px 0!important}
 
 .trophy svg{width:35px;height:35px;color:#ad8850}.place-2 .trophy svg{color:#99978b}.place-3 .trophy svg{color:#a78669}
+
+#charges{order:3;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 10px;background:#fff1da;color:#664e44;border-top:1px solid #d7bc9e;font-size:12px;flex:none}
+#charge-items{display:flex;gap:4px}#charge-items button{touch-action:none;min-height:36px;min-width:42px;padding:3px 6px;border-radius:8px;background:#ffe4a8;border:1px solid #c08c59;color:#624232;font-weight:800}#charge-items [aria-pressed=true]{outline:2px solid #976e3c}
+#charge-tip{flex:1 0 100%;line-height:1.2}
