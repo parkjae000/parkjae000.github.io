@@ -70,7 +70,7 @@ function updateStructures(force=false){const signature=[g.stage,g.stats.rocks,g.
  return;
  }structureKey=state;
  $('#structures').innerHTML=g.facilities.map(f=>{const d=E.facilityDef(f.id),q=E.quoteUpgrade(g,f),bar=E.milestoneBar(f),preview=Math.min(1,(f.level+(q.count||0)-bar.previous)/(bar.next-bar.previous||1));if(!f.active){const accessible=f.repaired||available.has(f.port.join(',')),workers=g.friends.filter(w=>w.target===f.id),dps=workers.reduce((sum,w)=>sum+E.workerPower(g,w),0);return `<div class="production" data-structure="${f.id}"><button class="repair-card ${f.repaired?'active-ready':''}" data-repair="${f.id}" ${accessible?'':'disabled'} aria-label="${d.name} ${f.repaired?'가동':'복구'}">${f.repaired?'가동하기':dps?'복구 중 '+duration(f.hp/dps*1000):accessible?'시설 복구':'진입로 막힘'}<small>${d.name}</small></button></div>`;}
- return `<div class="production" data-structure="${f.id}"><span class="yield" title="${d.cycle}초 생산량 · 현재 → 표시된 강화 후">${icon('gold')}<b>${fmt(E.cycleYield(g,f))}${q.count?' → '+fmt(E.cycleYield(g,{...f,level:f.level+q.count})):''}</b></span><button id="upgrade-${f.id}" class="upgrade-card" data-upgrade="${f.id}" data-count="${q.count}" ${!q.count?'disabled':''} aria-label="${d.name} Lv.${f.level} · ${d.cycle}초마다 ${fmt(E.cycleYield(g,f))} 골드 · ${q.count?'+'+q.count+'레벨 강화 '+fmt(q.cost)+' 골드':'강화 골드 부족'}"><span class="upgrade-progress"><i class="preview-fill" style="width:${preview*100}%"></i><i class="current-fill" style="width:${bar.progress*100}%"></i><b>${f.level>=E.MAX_LEVEL?'MAX':'Lv.'+f.level+' / '+bar.next}</b></span><span class="upgrade-buy"><strong>${f.level>=200?'MAX':'+'+(q.count||1)}</strong><span>${icon('gold')}${f.level>=200?'최대':fmt(q.cost)}</span></span></button><span class="facility-label">${d.name} · ${d.cycle}초</span></div><button id="info-${f.id}" class="facility-info-hit" data-info="${f.id}" aria-label="${d.name} 생산 및 자동화 · ${f.auto?'자동 수령':f.ready?'생산 골드 수령 가능':'직접 수령'}"></button>`;}).join('')+[...g.checkpoints.filter(t=>!t.done),g.exit].map(t=>`<button class="gate-hit ${t.id==='exit'&&t.done?'exit-next':''}" data-gate="${t.id}" aria-label="${t.id==='exit'?(E.readyForNext(g)?'다음 구역으로':'출구 작업'):'중간 개방문 '+t.toSegment+' 작업'}">${t.id==='exit'&&t.done?'다음 구역으로 ›':''}</button>`).join('');placeStructures();}
+ return `<div class="production" data-structure="${f.id}"><span class="yield" title="${d.cycle}초 생산량 · 현재 → 표시된 강화 후">${icon('gold')}<b>${fmt(E.cycleYield(g,f))}${q.count?' → '+fmt(E.cycleYield(g,{...f,level:f.level+q.count})):''}</b></span><button id="upgrade-${f.id}" class="upgrade-card" data-upgrade="${f.id}" data-count="${q.count}" ${!q.count?'disabled':''} aria-label="${d.name} Lv.${f.level} · ${d.cycle}초마다 ${fmt(E.cycleYield(g,f))} 골드 · ${q.count?'+'+q.count+'레벨 강화 '+fmt(q.cost)+' 골드':'강화 골드 부족'}"><span class="upgrade-progress"><i class="preview-fill" style="width:${preview*100}%"></i><i class="current-fill" style="width:${bar.progress*100}%"></i><b>${f.level>=E.MAX_LEVEL?'MAX':'Lv.'+f.level+' / '+bar.next}</b></span><span class="upgrade-buy"><strong>${f.level>=200?'MAX':'+'+(q.count||1)}</strong><span>${icon('gold')}${f.level>=200?'최대':fmt(q.cost)}</span></span></button><span class="facility-label">${d.name} · ${d.cycle}초</span></div><button id="info-${f.id}" class="facility-info-hit" data-info="${f.id}" aria-label="${d.name} 생산 및 자동화 · ${f.auto?'자동 수령':f.ready?'생산 골드 수령 가능':'직접 수령'}"></button>`;}).join('')+[...g.checkpoints.filter(t=>!t.done),g.exit].map(t=>`<button class="gate-hit ${t.id==='exit'&&t.done?'exit-next':''}" data-gate="${t.id}" aria-label="${t.id==='exit'?(E.readyForNext(g)?'다음 구역으로':'출구 작업 · 앞줄 세 칸'):'중간 개방문 '+t.toSegment+' 작업'}">${t.id==='exit'&&t.done?'다음 구역으로 ›':''}</button>`).join('');placeStructures();}
 function placeStructures(){
  if(!g)return;
  const k=world.clientWidth/W;
@@ -87,6 +87,7 @@ function placeStructures(){
  }
  for(const node of document.querySelectorAll('[data-gate]')){
   const t=[...g.checkpoints,g.exit].find(t=>t.id===node.dataset.gate),p=coord(t.x,t.y);
+  if(t.id==='exit'&&!t.done)node.style.width=E.EXIT_APPROACH.length*STEP*k+'px';
   node.style.left=p.x*k-node.offsetWidth/2+'px';
   node.style.top=(p.y-(t.done?10:40)-camera)*k-node.offsetHeight/2+'px';
  }
@@ -104,7 +105,24 @@ function updateSelection(){
  cancel.title=detail;cancel.setAttribute('aria-label',detail+' · 선택 해제');
 }
 function drawGround(){ctx.fillStyle='#b5a2b9';ctx.fillRect(0,Math.min(0,camera),W,H+Math.max(0,-camera));ctx.drawImage(ground,0,0,W,H);const ceiling=coord(3,-1).y-60;if(ceiling>0){rect(0,Math.min(0,camera),W,ceiling-Math.min(0,camera),0,'#bdadbb');for(let x=15;x<W;x+=145)sprite(14,x,ceiling+28,210);} ctx.strokeStyle='#936c5c16';ctx.lineWidth=1;for(let x=0;x<=7;x++){const p=LEFT+x*STEP;ctx.beginPath();ctx.moveTo(p,coord(0,-1).y);ctx.lineTo(p,H-90);ctx.stroke();}for(let y=coord(0,0).y-STEP/2;y<H-90;y+=STEP){ctx.beginPath();ctx.moveTo(LEFT,y);ctx.lineTo(W-LEFT,y);ctx.stroke();}}
-function gate(t){const p=coord(t.x,t.y);rect(LEFT,p.y-13,p.x-LEFT-70,16,4,'#b98b66','#8b674f');rect(p.x+70,p.y-13,W-LEFT-p.x-70,16,4,'#b98b66','#8b674f');if(t.done)return;if(!t.done)sprite(13,p.x,p.y+18,157);rect(p.x-63,p.y-24,126,31,8,t.done?'#789465':'#80624f','#d8bb8e');text(t.id==='exit'?(E.readyForNext(g)?'다음 구역':'출구'):(t.done?'개방 완료':'개방 '+t.toSegment),p.x,p.y-8,23,'#fff1cb',null);}
+function gate(t){
+ const p=coord(t.x,t.y),exit=t.id==='exit',half=exit?E.EXIT_APPROACH.length*STEP/2:70;
+ rect(LEFT,p.y-13,p.x-LEFT-half,16,4,'#b98b66','#8b674f');
+ rect(p.x+half,p.y-13,W-LEFT-p.x-half,16,4,'#b98b66','#8b674f');
+ if(t.done)return;
+ if(exit){
+  rect(p.x-half+2,p.y-24,half*2-4,23,4,'#c79d74','#8b674f');
+  for(const [dx] of E.EXIT_APPROACH){
+   if(!dx)continue;
+   const post=p.x+dx*STEP;
+   rect(post-7,p.y-32,14,41,4,'#ac805d','#795b46');
+   rect(post-3,p.y-26,6,6,2,'#f6d091');
+  }
+ }
+ sprite(13,p.x,p.y+18,157);
+ rect(p.x-63,p.y-24,126,31,8,'#80624f','#d8bb8e');
+ text(exit?'출구':'개방 '+t.toSegment,p.x,p.y-8,23,'#fff1cb',null);
+}
 function workbar(t,p){const dps=g.friends.filter(w=>w.target===t.id).reduce((n,w)=>n+E.workerPower(g,w),0);if(!dps&&t.hp===t.max)return;rect(p.x-29,p.y-72,58,8,3,'#8e7568');if(t.hp>0)rect(p.x-28,p.y-71,56*t.hp/t.max,6,2,'#c5d9a0');if(dps)text(duration(t.hp/dps*1000),p.x,p.y-89,22,'#fff8e8','#705c51');}
 function drawFacility(f,time){const p=visual(f),d=E.facilityDef(f.id);sprite(d.art,p.x,p.y,f.id==='forge'?218:148,false,f.active?1:.88);if(!f.active){if(!f.repaired)workbar(f,p);return;}const at={x:p.x-38,y:p.y-63},progress=f.ready?1:f.progress/d.cycle;ctx.lineWidth=6;ctx.strokeStyle='#8c715777';ctx.beginPath();ctx.arc(at.x,at.y,23,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=f.ready?'#a8ce7b':'#f4ca62';ctx.beginPath();ctx.arc(at.x,at.y,23,-Math.PI/2,-Math.PI/2+Math.PI*2*progress);ctx.stroke();if(f.ready){sprite(9,p.x-44,p.y-17,63);text('✓',at.x,at.y,28,'#efffd3','#6d964d');}else {text(f.auto?'✓':'↻',at.x,at.y,26,f.auto?'#d5edb9':'#a5d6e1','#6c7657');}}
 function drawFriends(time,dt){for(const w of g.friends){if(drag?.active&&drag.id===w.id||delivery?.id===w.id&&time-delivery.at<650)continue;const p=coord(w.x,w.y),m=movers.get(w.id)||{...p},moving=Math.hypot(m.x-p.x,m.y-p.y)>2,k=Math.min(1,dt*12);m.x+=(p.x-m.x)*k;m.y+=(p.y-m.y)*k;movers.set(w.id,m);const t=w.target&&(g.rocks.find(t=>t.id===w.target)||g.facilities.find(t=>t.id===w.target)||g.checkpoints.find(t=>t.id===w.target)||(w.target==='exit'?g.exit:null)),look=E.appearance(w.level),phase=(time/1000+unitPhase(w.id))%.82,frame=t&&phase>.28&&phase<.63?look.hit:look.idle;
@@ -206,7 +224,7 @@ function friendAt(p,exclude) {
  }
  return best;
 }
-function targetAt(p){return E.targets(g).filter(t=>!t.port).map(t=>({t,p:coord(t.x,t.y)})).filter(z=>Math.abs(z.p.x-p.x)<47&&p.y>z.p.y-81&&p.y<z.p.y+20).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-29-p.y)-Math.hypot(b.p.x-p.x,b.p.y-29-p.y))[0]?.t;}
+function targetAt(p){return E.targets(g).filter(t=>!t.port).map(t=>({t,p:coord(t.x,t.y)})).filter(z=>Math.abs(z.p.x-p.x)<(z.t.id==='exit'?E.EXIT_APPROACH.length*STEP/2:47)&&p.y>z.p.y-81&&p.y<z.p.y+20).sort((a,b)=>Math.hypot(a.p.x-p.x,a.p.y-29-p.y)-Math.hypot(b.p.x-p.x,b.p.y-29-p.y))[0]?.t;}
 function facilityAt(p){return g.facilities.find(f=>{if(f.footprint.length){const b=facilityBounds(f);return p.x>=b.left&&p.x<b.left+b.width&&p.y>=b.top&&p.y<b.top+b.height;}
  const at=visual(f);return Math.abs(at.x-p.x)<90&&p.y>at.y-155&&p.y<at.y+25;});}
 function dropAt(p,actor){
@@ -232,7 +250,18 @@ function scrollDragAtEdge(dt){
  const next=Math.max(cameraMin(),Math.min(H-VH,camera+speed*STEP*9*dt));
  if(next!==camera){d.point.y+=next-camera;camera=next;placeStructures();}
 }
-function orderTarget(t){const chosen=g.friends.find(w=>w.id===selected),workers=chosen?[chosen]:g.friends.slice().sort((a,b)=>(!!a.target-!!b.target)||E.workerPower(g,b)-E.workerPower(g,a)),w=workers.find(w=>E.destination(g,t,w));if(w){const job=assignTo(w,t);if(job)movers.set(w.id,coord(job.x,job.y));}else notice('앞의 바위를 캐서 작업 자리를 열어 주세요.');}
+function orderTarget(t){
+ const chosen=g.friends.find(w=>w.id===selected);
+ const workers=chosen?[chosen]:g.friends.filter(w=>t.id!=='exit'||w.target!==t.id)
+  .sort((a,b)=>(!!a.target-!!b.target)||E.workerPower(g,b)-E.workerPower(g,a));
+ const w=workers.find(w=>E.destination(g,t,w));
+ if(w){
+  const job=assignTo(w,t);
+  if(job)movers.set(w.id,coord(job.x,job.y));
+ }else if(t.id==='exit'){
+  notice('출구 앞줄에 연결된 빈 작업 칸이 필요해요.');
+ }else notice('앞의 바위를 캐서 작업 자리를 열어 주세요.');
+}
 function assignTo(w,t){return action(()=>{const assigned=E.assign(g,w.id,t.id);selected=null;updateSelection();return assigned;});}
 cv.addEventListener('pointerdown',e=>{
  if(!g||drag||!e.isPrimary||e.button!==0)return;
@@ -297,7 +326,7 @@ function panel(name){if(!g)return;settle();if(name==='menu'){open('내 모험 ·
  else if(name==='events'){open('오늘의 업무',`<p class="panel-intro">매일 자정(한국시간)에 새 업무가 시작돼요.</p>${TASKS.map(t=>{const amount=g.daily[t.id]||0,claimed=g.daily.claims.includes(t.id);return `<article class="daily-card" data-task="${t.id}"><div><h2>${t.name}</h2><p>${Math.min(amount,t.goal)}/${t.goal} · 보석 ${t.gems} + 연구 ${t.elixir}</p><div class="material-bar"><i style="width:${Math.min(100,amount/t.goal*100)}%"></i></div></div><button data-daily="${t.id}" ${claimed||amount<t.goal?'disabled':''}>${claimed?'받음':'받기'}</button></article>`;}).join('')}`,name);}
  else if(name==='crew'){open('친구 정원',crewPanel(),name);}
  else if(name==='supply'){open('센터 보급',`<div class="supply-art">${art(12)}</div><p id="supply-status">${deliveryStatus()}</p><p>무료 친구 보급은 열기 전에도 정원 한 칸을 써요. 별사탕 폭죽은 같은 레벨 친구가 5분 동안 할 일을 즉시 처리해요. 같은 레벨 폭죽 둘을 합칠 수도 있어요.</p><p>개방문을 열면 기본 찻집·대포·소환 위치가 다음 공간으로 함께 이동해요. 보급 골드는 기본 찻집과 자동화 시설 수입에 비례해요.</p><button class="dialog-button" id="open-barrel" ${g.barrel?'':'disabled'}>도착한 보급 열기</button><button class="dialog-button" id="open-worker-parcel" ${g.workerBarrels?.length?'':'hidden'}>친구 보급 열기</button>`,name);}
- else if(name==='help'){open('플레이 안내','<p><b>친구를 바위로 끌어 놓으면 바로 채굴해요.</b><br>친구를 먼저 누르고 바위를 눌러도 돼요. 작업 시간과 체력 막대가 줄어들면 실제로 채굴 중이에요.</p><p>바위를 다 캐면 친구는 같은 자리에서 상하좌우 한 칸에 닿는 자원을 이어서 캐요. 여러 개면 남은 체력이 적은 것부터 캐고, 네 방향이 모두 비면 쉬어요.</p><p>출구 바로 앞 칸에 친구를 놓으면 출구를 캐요. 개방 후 남은 자원을 더 캐거나 출구의 ‘다음 구역으로’ 버튼으로 떠날 수 있어요.</p><p>숫자 없는 암벽은 캘 수 없어요. 옆 광석을 캐서 돌아가세요.</p><p>빈 바닥을 위아래로 밀면 지도를 움직일 수 있어요.</p><p>1·4·7레벨 우사기, 2·5·8레벨 하치와레, 3·6·9레벨 치이카와가 반복돼요. 같은 레벨 둘을 합치면 더 강해져요.</p><p>초반 1~3구역에는 중간 개방문이 없어요. 4·12·30·60·100구역에서 개방문이 하나씩 늘어나고, 그 사이에도 채굴 구간이 길어져요. 개방문을 열면 바로 뒤의 작은 공간으로 찻집과 대포가 전진해요.</p><p>기본 찻집은 자동 생산해요. 다른 시설은 길을 열어 복구한 다음 가동해야 해요. 골드 강화와 카드 자동화 연구는 별개예요.</p><p><b>진행은 계정에 자동 저장돼요.</b> 자리비움 동안 최대 8시간 생산과 지정 작업을 반영해요. 자리를 비운 동안에도 친구가 서 있는 칸에 붙은 자원까지 이어서 캐요.</p>',name);}
+ else if(name==='help'){open('플레이 안내','<p><b>친구를 바위로 끌어 놓으면 바로 채굴해요.</b><br>친구를 먼저 누르고 바위를 눌러도 돼요. 작업 시간과 체력 막대가 줄어들면 실제로 채굴 중이에요.</p><p>바위를 다 캐면 친구는 같은 자리에서 상하좌우 한 칸에 닿는 자원을 이어서 캐요. 여러 개면 남은 체력이 적은 것부터 캐고, 네 방향이 모두 비면 쉬어요.</p><p>출구 앞줄의 왼쪽·가운데·오른쪽 칸에 친구를 한 명씩 놓을 수 있어요. 세 친구가 함께 출구를 캐면 작업 능력이 더해져요. 개방 후 남은 자원을 더 캐거나 출구의 ‘다음 구역으로’ 버튼으로 떠날 수 있어요.</p><p>숫자 없는 암벽은 캘 수 없어요. 옆 광석을 캐서 돌아가세요.</p><p>빈 바닥을 위아래로 밀면 지도를 움직일 수 있어요.</p><p>1·4·7레벨 우사기, 2·5·8레벨 하치와레, 3·6·9레벨 치이카와가 반복돼요. 같은 레벨 둘을 합치면 더 강해져요.</p><p>초반 1~3구역에는 중간 개방문이 없어요. 4·12·30·60·100구역에서 개방문이 하나씩 늘어나고, 그 사이에도 채굴 구간이 길어져요. 개방문을 열면 바로 뒤의 작은 공간으로 찻집과 대포가 전진해요.</p><p>기본 찻집은 자동 생산해요. 다른 시설은 길을 열어 복구한 다음 가동해야 해요. 골드 강화와 카드 자동화 연구는 별개예요.</p><p><b>진행은 계정에 자동 저장돼요.</b> 자리비움 동안 최대 8시간 생산과 지정 작업을 반영해요. 자리를 비운 동안에도 친구가 서 있는 칸에 붙은 자원까지 이어서 캐요.</p>',name);}
  else if(name==='chat'){open('친구들과 채팅','<p class="panel-intro">간식 동굴을 탐험하는 친구들과 이야기를 나눠요.</p><div id="chat-list" class="chat-list" aria-live="polite"></div><form id="chat-form" method="post"><label class="sr-only" for="chat-input">메시지</label><input id="chat-input" name="message" maxlength="200" placeholder="메시지 입력" autocomplete="off" required><button type="submit">보내기</button></form><p id="chat-error" role="status" class="panel-intro"></p>',name);markChatRead();renderChat();loadChat();}
  else if(name==='rankings'){open('동굴 탐험 랭킹','<p class="panel-intro">도달 구역 → 누적 채굴 → 합성 횟수 순이에요.</p><div id="ranking-list" aria-live="polite">불러오는 중…</div>',name);loadRankings();}}
 async function startSpin(extra){if(wheelSpinning)return;wheelSpinning=true;wheelResult=null;wheelContext={level:E.hireLevel(g)+1,full:E.occupiedSlots(g)>=E.capacity(g)};panel('wheel');try{const result=await client.confirm('wheel',{extra});if(modalName==='wheel'&&dialog.open){const rotor=$('#wheel-rotor'),start=wheelRotation;wheelRotation=start+1800+((360-result.index*45-start%360)%360);if(rotor){if(!reduced){rotor.style.transition='transform 3.8s cubic-bezier(.12,.7,.12,1)';requestAnimationFrame(()=>rotor.style.transform=`rotate(${wheelRotation}deg)`);await new Promise(resolve=>setTimeout(resolve,3900));}else rotor.style.transform=`rotate(${wheelRotation}deg)`;}}wheelResult=result;if(result.id)launch(result.id);if(modalName!=='wheel')notice('룰렛 획득 · '+result.label);}catch(e){notice(e.message);}finally{wheelSpinning=false;if(modalName==='wheel'&&dialog.open)panel('wheel');}}

@@ -112,7 +112,17 @@ export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).ma
  const seen=new Set(),queue=[[3,s.camp.row]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i],k=x+','+y;if(seen.has(k)||blocked.has(k)||x<0||x>=COLS||y<0||y>s.rows+2)continue;seen.add(k);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
 export function freeTiles(s,worker=null){return [...openTiles(s)].map(k=>k.split(',').map(Number)).filter(([x,y])=>!(x===6&&y===s.camp.row)&&!s.friends.some(w=>w.id!==worker?.id&&w.x===x&&w.y===y));}
-function spotFor(open,t,w=null){const spots=(t.port?[t.port]:[[t.x,t.y+1],[t.x-1,t.y],[t.x+1,t.y],[t.x,t.y-1]]).filter(p=>open.has(p.join(',')));spots.sort((a,b)=>{const score=p=>w?Math.abs(p[0]-w.x)+Math.abs(p[1]-w.y):-p[1];return score(a)-score(b);});return spots[0]?{x:spots[0][0],y:spots[0][1]}:null;}
+// Offsets from a target to the floor cells where a worker can stand.
+export const EXIT_APPROACH=[[0,1],[-1,1],[1,1]];
+const ordinaryApproach=[[0,1],[-1,0],[1,0],[0,-1]];
+const approachFor=t=>t.id==='exit'?EXIT_APPROACH:ordinaryApproach;
+function spotFor(open,t,w=null){
+ const spots=t.port?[t.port]:approachFor(t).map(([dx,dy])=>[t.x+dx,t.y+dy]);
+ const reachable=spots.filter(p=>open.has(p.join(',')));
+ const distance=p=>w?Math.abs(p[0]-w.x)+Math.abs(p[1]-w.y):-p[1];
+ reachable.sort((a,b)=>distance(a)-distance(b));
+ return reachable.length?{x:reachable[0][0],y:reachable[0][1]}:null;
+}
 export function destination(s,t,w=null){return spotFor(new Set(freeTiles(s,w).map(p=>p.join(','))),t,w);}
 export function assign(s,workerId,targetId){const w=s.friends.find(w=>w.id===workerId),t=targets(s).find(t=>t.id===targetId);if(!w||!t)error('일할 친구와 대상을 다시 선택해 주세요.');const p=destination(s,t,w);if(!p)error('앞의 바위를 캐서 연결된 작업 자리를 열어 주세요.');Object.assign(w,p);w.target=t.id;w.paused=false;return w;}
 // Rock coordinates stay fixed for the lifetime of a board, including after mining.
@@ -168,7 +178,10 @@ export function research(s,card){const c=s.cards[card];if(!c||c.level>=(card==='
 export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');if(s.cards[f.id].level<BASE[f.id].required)error(`${BASE[f.id].name} 카드를 Lv.${BASE[f.id].required}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
 function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
 function destroyed(s,t){t.hp=0;if(t.port){t.repaired=true;return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.round(t.max*.45*(t.kind==='gold'?1.5:1));s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
-function validTask(w,t){return t.port?w.x===t.port[0]&&w.y===t.port[1]:Math.abs(w.x-t.x)+Math.abs(w.y-t.y)===1;}
+function validTask(w,t){
+ if(t.port)return w.x===t.port[0]&&w.y===t.port[1];
+ return approachFor(t).some(([dx,dy])=>w.x===t.x+dx&&w.y===t.y+dy);
+}
 function collectWork(s){
  const active=new Map(targets(s).map(t=>[t.id,t]));
  const work=new Map();
