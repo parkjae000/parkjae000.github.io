@@ -134,10 +134,10 @@ function nearbyRock(s,w){
  return next;
 }
 function mineNearby(s,w){
- const rock=nearbyRock(s,w);
- w.target=rock?.id??null;
- w.paused=!rock;
- return rock;
+ const target=!s.exit.done&&validTask(w,s.exit)?s.exit:nearbyRock(s,w);
+ w.target=target?.id??null;
+ w.paused=!target;
+ return target;
 }
 export function move(s,workerId,x,y){
  const w=s.friends.find(w=>w.id===workerId);
@@ -247,8 +247,8 @@ export function openBarrel(s){
  const charge={id:id(s),level:Math.max(1,...s.friends.map(w=>w.level))};
  (s.charges??=[]).push(charge);result={type:'charge',text:'별사탕 폭죽 Lv.'+charge.level+' 획득! 바위로 끌어 놓으세요.'};
  }else if(r<.4){const amount=8+Math.floor(random(s)*12);s.elixir+=amount;result={type:'elixir',text:'연구 포인트 +'+amount};}else {const amount=Math.round(regularIncome(s)*20);s.gold+=amount;s.ledger.barrels+=amount;result={type:'gold',amount,text:'보급 골드 +'+Math.floor(amount).toLocaleString('ko-KR')};}s.barrel=null;s.barrelAt=s.elapsed+25;return result;}
-export function readyForNext(s){return s.exit.done&&s.facilities.every(f=>f.active);}
-export function nextMine(s){if(!readyForNext(s))error('모든 시설과 출구를 개방해 주세요.');return createState(s.stage+1,s.seed,s);}
+export function readyForNext(s){return s.exit.done;}
+export function nextMine(s){if(!readyForNext(s))error('출구 채굴을 먼저 마쳐 주세요.');return createState(s.stage+1,s.seed,s);}
 export const WHEEL_REWARDS=[{type:'gems',amount:10,label:'보석 10'},{type:'elixir',amount:25,label:'연구 25'},{type:'cards',amount:4,label:'카드 4장'},{type:'time',amount:60,label:'시간 1분'},{type:'gems',amount:30,label:'보석 30'},{type:'elixir',amount:60,label:'연구 60'},{type:'cards',amount:8,label:'카드 8장'},{type:'worker',amount:1,label:'친구 +1레벨'}];
 export function spin(s,extra=false){if(extra){if(s.wheel.extra>=5||s.elapsed<s.wheel.nextAt)error('추가 회전 준비 중이에요.');s.wheel.extra++;s.wheel.nextAt=s.elapsed+7200;}else {if(s.wheel.free)error('무료 회전을 이미 사용했어요.');s.wheel.free=true;}
  const index=Math.floor(random(s)*WHEEL_REWARDS.length),reward={...WHEEL_REWARDS[index],index};if(reward.type==='gems')s.gems+=reward.amount;else if(reward.type==='elixir')s.elixir+=reward.amount;else if(reward.type==='cards'){const keys=Object.keys(s.cards);for(let i=0;i<reward.amount;i++)s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}else if(reward.type==='time')advance(s,reward.amount);else if(occupiedSlots(s)<capacity(s))reward.id=addFriend(s,hireLevel(s)+1).id;else {s.elixir+=40;reward.label='정원 가득 · 연구 40';reward.type='elixir';reward.amount=40;}return reward;}
