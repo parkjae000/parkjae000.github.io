@@ -4,7 +4,7 @@ export const fail=(message,code='invalid',status=400)=>Object.assign(new Error(m
 export const dayKey=now=>new Date(now+KST).toISOString().slice(0,10);
 export const TASKS=[{id:'visit',name:'오늘의 출석',goal:1,gems:10,elixir:20},{id:'rocks',name:'바위 20개 채굴',goal:20,gems:5,elixir:30},{id:'hires',name:'친구 3명 채용',goal:3,gems:3,elixir:20},{id:'merges',name:'친구 2번 합성',goal:2,gems:3,elixir:20}];
 export function rollDay(g,now){const key=dayKey(now);if(g.daily?.key!==key){g.daily={key,visit:1,rocks:0,hires:0,merges:0,claims:[]};g.wheel.free=false;g.wheel.extra=0;g.wheel.nextAt=0;}}
-export function startGame(now=Date.now(),seed=17){const g=E.createState(1,seed);g.version=VERSION;g.lastAt=now;g.revision=0;g.stats={bestStage:1,rocks:0,hires:0,merges:0,upgrades:0,manualAssignments:0,facilityStarted:0,activated:0,collections:0,automated:0};g.introSeen=true;g.guide={step:10,paused:true,rewarded:true};rollDay(g,now);g.friends.forEach(w=>E.move(g,w.id,w.x,w.y));return g;}
+export function startGame(now=Date.now(),seed=17){const g=E.createState(1,seed);g.version=VERSION;g.lastAt=now;g.revision=0;g.stats={bestStage:1,rocks:0,hires:0,merges:0,upgrades:0,manualAssignments:0,facilityStarted:0,activated:0,collections:0,automated:0};g.introSeen=true;g.guide={step:10,paused:true,rewarded:true};rollDay(g,now);return g;}
 export function advance(g,now){if(g.version!==VERSION){
   E.preserveEarnedMultipliers(g.facilities);
   g.cards.capacity??={level:0,count:0};
