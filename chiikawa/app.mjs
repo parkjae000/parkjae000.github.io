@@ -2,7 +2,7 @@ import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
 import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
-import {guidePage} from './guide.mjs?v=132';
+import {guidePage} from './guide.mjs?v=133';
 import {watchRelease} from './release.mjs?v=124';
 import {GameSession} from './session.mjs';
 import {API,LIVE_HOSTS} from './config.mjs';
@@ -375,8 +375,11 @@ function rewardArt(reward){if(reward.type==='gems')return icon('gem');if(reward.
 function wheelMarkup(){const context=wheelContext||{level:E.hireLevel(g)+1,full:E.occupiedSlots(g)>=E.capacity(g)};const colors=['#a6d2be','#e8c5ab','#b9c5e0','#eddc9d','#bcd6a1','#d0b3d5','#a9d2d2','#e9bcaa'];let paths='';for(let i=0;i<8;i++){const a=(i*45-112.5)*Math.PI/180,b=(i*45-67.5)*Math.PI/180;paths+=`<path d="M160 160 L${160+151*Math.cos(a)} ${160+151*Math.sin(a)} A151 151 0 0 1 ${160+151*Math.cos(b)} ${160+151*Math.sin(b)}Z" fill="${colors[i]}" stroke="#fff2ce" stroke-width="2"/>`;}
  return `<div class="wheel-stage"><div class="wheel-pointer"></div><div id="wheel-rotor" class="wheel-rotor" style="transform:rotate(${wheelRotation}deg)"><svg viewBox="0 0 320 320" aria-hidden="true">${paths}</svg>${E.WHEEL_REWARDS.map((r,i)=>{const a=i*45*Math.PI/180,x=50+Math.sin(a)*32,y=50-Math.cos(a)*32;return `<span class="wheel-prize" style="left:${x}%;top:${y}%;transform:translate(-50%,-50%) rotate(${i*45}deg)">${r.type==='worker'&&context.full?art(17):rewardArt(r)}<b>${r.type==='worker'?(context.full?'연구40':'Lv.'+context.level):r.type==='time'?'1분':r.amount+(r.type==='cards'?'장':'' )}</b></span>`;}).join('')}</div><div class="wheel-hub">✿</div></div>`;}
 function deliveryStatus(){
- const timer=!E.deliverySpot(g)?'빈 바닥이 생길 때까지 '+duration((g.freeAt-g.elapsed)*1000)+'에서 멈춤':duration((g.freeAt-g.elapsed)*1000)+' 후';
- return `무료 친구 Lv.${E.cannonLevel(g)} · ${timer}<br>일반 보급통 · ${g.barrel?'지도에 도착':'배달 준비 중'}`;
+ const total=g.workerBarrels?.length||0,limit=E.WORKER_PARCEL_LIMIT;
+ const wait=duration(Math.max(0,g.freeAt-g.elapsed)*1000);
+ const reserve=Math.max(0,total-limit);
+ const timer=E.workerDeliveryFull(g)?'상자 한도 도달 · 배송 일시정지':!E.deliverySpot(g)?'빈 바닥 대기 · '+wait+' 남음':wait+' 후 도착';
+ return `무료 친구 Lv.${E.cannonLevel(g)} · ${timer}<br>친구 상자 ${Math.min(total,limit)}/${limit}개${reserve?' · 보관 중 '+reserve+'개':''}<br>일반 보급통 · ${g.barrel?'지도에 도착':'배달 준비 중'}`;
 }
 function crewPanel(){
  const c=E.crewInfo(g),parcels=g.workerBarrels?.length||0;

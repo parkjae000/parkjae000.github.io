@@ -162,7 +162,9 @@ function campBlocked(s,x,y){return y>=s.camp.row+1&&y<=s.camp.row+2&&(x<=1||x>=5
 export function openTiles(s){const blocked=new Set(s.rocks.filter(r=>!r.done).map(r=>r.x+','+r.y));for(const p of s.bedrock||[])blocked.add(p.join(','));for(const f of s.facilities)for(const p of f.footprint)blocked.add(p.join(','));for(const t of s.checkpoints)for(let x=0;x<COLS;x++)if(!t.done||Math.abs(x-t.x)>1)blocked.add(x+','+t.y);for(let y=s.camp.row+1;y<=s.camp.row+2;y++)for(let x=0;x<COLS;x++)if(campBlocked(s,x,y))blocked.add(x+','+y);
  const seen=new Set(),queue=[[3,s.camp.row]];for(let i=0;i<queue.length;i++){const [x,y]=queue[i],k=x+','+y;if(seen.has(k)||blocked.has(k)||x<0||x>=COLS||y<0||y>s.rows+2)continue;seen.add(k);queue.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}return seen;
 }
-export const boardItems=s=>[...(s.barrel?[s.barrel]:[]),...(s.workerBarrels||[]),...(s.charges||[])];
+export const WORKER_PARCEL_LIMIT=3;
+export const workerDeliveryFull=s=>(s.workerBarrels?.length||0)>=WORKER_PARCEL_LIMIT;
+export const boardItems=s=>[...(s.barrel?[s.barrel]:[]),...(s.workerBarrels||[]).slice(0,WORKER_PARCEL_LIMIT),...(s.charges||[])];
 export function freeTiles(s,except=null){
  const used=new Set([...s.friends,...boardItems(s)].filter(o=>o.id!==except?.id).map(o=>o.x+','+o.y));
  return [...openTiles(s)].filter(k=>!used.has(k)).map(k=>k.split(',').map(Number));
@@ -188,6 +190,9 @@ export function deliverySpot(s){
 }
 // Older inventory entries have no board coordinates. Keep each one until a tile opens.
 export function placeStoredItems(s,relocate=false){
+ // Old saves can hold more than the current map limit. Keep them in arrival order.
+ const parcels=s.workerBarrels||[];
+ for(let i=WORKER_PARCEL_LIMIT;i<parcels.length;i++){delete parcels[i].x;delete parcels[i].y;}
  const items=boardItems(s);
  for(const o of items)if(underForgePanel(s,o.x,o.y)||(relocate&&campBlocked(s,o.x,o.y))){delete o.x;delete o.y;}
  for(const item of items)if(!Number.isInteger(item.x)||!Number.isInteger(item.y)){
@@ -325,7 +330,7 @@ function collectWork(s){
 }
 function dispatchDue(s){
  placeStoredItems(s);
- if(s.elapsed>=s.freeAt){
+ if(!workerDeliveryFull(s)&&s.elapsed>=s.freeAt){
   const spot=deliverySpot(s);
   if(spot){(s.workerBarrels??=[]).push({id:id(s),level:cannonLevel(s),...spot});s.freeAt=s.elapsed+deliveryInterval(s);}
  }
@@ -340,8 +345,8 @@ export function advance(s,seconds){
  dispatchDue(s);
  let work=collectWork(s);
  while(remaining>1e-8&&iterations++<100000){
- const space=deliverySpot(s);
- let step=remaining;if(space&&!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(space&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);if(step<1e-8)step=Math.min(remaining,1e-7);
+ const space=deliverySpot(s),workerDeliveryRunning=space&&!workerDeliveryFull(s);
+ let step=remaining;if(space&&!s.barrel&&s.barrelAt>s.elapsed)step=Math.min(step,s.barrelAt-s.elapsed);if(workerDeliveryRunning&&s.freeAt>s.elapsed)step=Math.min(step,s.freeAt-s.elapsed);for(const {t,power}of work.values())step=Math.min(step,t.hp/power);if(step<1e-8)step=Math.min(remaining,1e-7);
  for(const f of s.facilities){
   if(!f.active||(!f.auto&&f.ready))continue;
   const cycle=facilityCycle(s,f),elapsed=f.progress+step,cycles=Math.floor((elapsed+1e-8)/cycle);
@@ -350,7 +355,7 @@ export function advance(s,seconds){
   if(f.auto){const earned=amount*cycles;f.progress=Math.max(0,elapsed-cycles*cycle);s.gold+=earned;s.ledger[f.id]=(s.ledger[f.id]||0)+earned;}
   else {f.ready=amount;f.progress=0;}
  }
- for(const {t,power}of work.values())t.hp=Math.max(0,t.hp-power*step);if(!space)s.freeAt=Math.max(s.elapsed,s.freeAt)+step;
+ for(const {t,power}of work.values())t.hp=Math.max(0,t.hp-power*step);if(!workerDeliveryRunning)s.freeAt=Math.max(s.elapsed,s.freeAt)+step;
  s.elapsed+=step;remaining-=step;
  let finished=false;
  for(const {t} of work.values())if(t.hp<1e-6){destroyed(s,t);finished=true;}
@@ -362,9 +367,13 @@ export function unpackWorker(s, barrelId) {
  const barrels=s.workerBarrels || [];
  const index=barrels.findIndex(barrel=>barrel.id===barrelId);
  if(index<0)error('이미 열었거나 아직 도착하지 않은 친구 보급이에요.');
+ if(index>=WORKER_PARCEL_LIMIT)error('지도에 먼저 도착한 친구 상자를 열어 주세요.');
  const [barrel]=barrels.splice(index,1);
- try { return addFriend(s,barrel.level,Number.isInteger(barrel.x)?barrel:null); }
+ let friend;
+ try { friend=addFriend(s,barrel.level,Number.isInteger(barrel.x)?barrel:null); }
  catch(err) { barrels.splice(index,0,barrel);throw err; }
+ placeStoredItems(s);
+ return friend;
 }
 export const regularIncome=s=>s.facilities.filter(f=>f.active&&f.auto).reduce((n,f)=>n+facilityRate(s,f),0);
 export function chargePreview(s, chargeId, targetId) {
