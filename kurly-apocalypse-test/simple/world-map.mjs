@@ -1,11 +1,11 @@
-import {clusterNodes,marchPosition} from './world-model.mjs?v=world-1';
+import {clusterNodes,marchPosition} from './world-model.mjs?v=world-2';
 const asset=n=>new URL('./assets/'+n+'.webp',import.meta.url).href;
 const picture=n=>{const i=new Image();i.src=asset(n);return i;};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function mountWorldMap(host,{world,clock=Date.now,onSelect=()=>{},onCamera=()=>{},camera=null}){
  const canvas=document.createElement('canvas');canvas.className='c-world-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label','세계 지도. 드래그로 이동, 두 손가락이나 더하기와 빼기로 확대. 방향키로 이동할 수 있어요.');host.append(canvas);
  const ctx=canvas.getContext('2d'),terrain=picture('world-terrain'),buildings=picture('world-buildings'),truck=picture('truck-directions'),me=world.nodes.find(n=>n.id===world.meId);
- let cam=camera?{...camera}:{x:me?.x||1200,y:me?.y||900,zoom:.7},w=1,h=1,groups=[],dead=false,raf=0,last=0,dragged=false,pointers=new Map(),pinch=null,accessibleKey='';
+ let cam=camera?{...camera}:{x:me?.x||1200,y:me?.y||900,zoom:.55},w=1,h=1,groups=[],dead=false,raf=0,last=0,dragged=false,pointers=new Map(),pinch=null,accessibleKey='';
  const access=document.createElement('div');access.className='c-map-access';access.setAttribute('aria-label','화면 안의 거점');host.append(access);
  function save(){onCamera({...cam});canvas.dataset.camera=JSON.stringify(cam);}
  function constrain(){const b=world.bounds;cam.zoom=clamp(cam.zoom,.2,1.6);cam.x=clamp(cam.x,b.left,b.right);cam.y=clamp(cam.y,b.top,b.bottom);save();}
@@ -34,5 +34,5 @@ export function mountWorldMap(host,{world,clock=Date.now,onSelect=()=>{},onCamer
  canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('wheel',e=>{e.preventDefault();const p=point(e);zoom(Math.exp(-e.deltaY*.0015),p.x,p.y);},{passive:false});
  canvas.addEventListener('keydown',e=>{if(['+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='+'||e.key==='=')zoom(1.3);else if(e.key==='-')zoom(1/1.3);else{cam.x+=({ArrowLeft:-1,ArrowRight:1}[e.key]||0)*90/cam.zoom;cam.y+=({ArrowUp:-1,ArrowDown:1}[e.key]||0)*90/cam.zoom;constrain();}}});
  const observer=new ResizeObserver(()=>{const r=host.getBoundingClientRect();w=Math.max(1,r.width);h=Math.max(1,r.height);const ratio=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);});observer.observe(host);constrain();raf=requestAnimationFrame(paint);
- return {update(next){world=next;},zoom,home(){const own=world.nodes.find(n=>n.id===world.meId);if(own){cam.x=own.x;cam.y=own.y;cam.zoom=.7;constrain();}},get camera(){return {...cam};},get dragging(){return pointers.size>0;},destroy(){dead=true;cancelAnimationFrame(raf);observer.disconnect();canvas.remove();access.remove();}};
+ return {update(next){world=next;},zoom,home(){const own=world.nodes.find(n=>n.id===world.meId);if(own){cam.x=own.x;cam.y=own.y;cam.zoom=.55;constrain();}},get camera(){return {...cam};},get dragging(){return pointers.size>0;},destroy(){dead=true;cancelAnimationFrame(raf);observer.disconnect();canvas.remove();access.remove();}};
 }
