@@ -1,4 +1,4 @@
-import {mountCycleUI} from './cycle-ui.mjs?v=cycle-3';
+import {mountCycleUI} from './cycle-ui.mjs?v=cycle-4';
 import {capacityUsed} from '../test/production.mjs?v=simple-2';
 import {n,short,toolBonus,toolCost,toolName,soldierStats,heroId,heroXpPlan} from './model.mjs?v=simple-2';
 import {SimpleBattle} from './battle.mjs?v=simple-2';

@@ -1,0 +1,38 @@
+import {clusterNodes,marchPosition} from './world-model.mjs?v=world-1';
+const asset=n=>new URL('./assets/'+n+'.webp',import.meta.url).href;
+const picture=n=>{const i=new Image();i.src=asset(n);return i;};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+export function mountWorldMap(host,{world,clock=Date.now,onSelect=()=>{},onCamera=()=>{},camera=null}){
+ const canvas=document.createElement('canvas');canvas.className='c-world-canvas';canvas.tabIndex=0;canvas.setAttribute('aria-label','세계 지도. 드래그로 이동, 두 손가락이나 더하기와 빼기로 확대. 방향키로 이동할 수 있어요.');host.append(canvas);
+ const ctx=canvas.getContext('2d'),terrain=picture('world-terrain'),buildings=picture('world-buildings'),truck=picture('truck-directions'),me=world.nodes.find(n=>n.id===world.meId);
+ let cam=camera?{...camera}:{x:me?.x||1200,y:me?.y||900,zoom:.7},w=1,h=1,groups=[],dead=false,raf=0,last=0,dragged=false,pointers=new Map(),pinch=null,accessibleKey='';
+ const access=document.createElement('div');access.className='c-map-access';access.setAttribute('aria-label','화면 안의 거점');host.append(access);
+ function save(){onCamera({...cam});canvas.dataset.camera=JSON.stringify(cam);}
+ function constrain(){const b=world.bounds;cam.zoom=clamp(cam.zoom,.2,1.6);cam.x=clamp(cam.x,b.left,b.right);cam.y=clamp(cam.y,b.top,b.bottom);save();}
+ const screen=p=>({x:(p.x-cam.x)*cam.zoom+w/2,y:(p.y-cam.y)*cam.zoom+h/2});
+ function zoom(factor,x=w/2,y=h/2){const z=cam.zoom;cam.zoom=clamp(z*factor,.2,1.6);cam.x+=(x-w/2)*(1/z-1/cam.zoom);cam.y+=(y-h/2)*(1/z-1/cam.zoom);constrain();}
+ function select(group){if(group.nodes.length>1){cam.x=group.x;cam.y=group.y;zoom(1.8);return;}onSelect(group.nodes[0]);}
+ function syncAccessible(){const key=groups.map(g=>g.nodes.map(n=>n.id).join(',')).join('|');if(key===accessibleKey)return;accessibleKey=key;access.replaceChildren();for(const group of groups){const b=document.createElement('button');b.type='button';b.textContent=group.nodes.length>1?'센터 '+group.nodes.length+'개 확대':group.nodes[0].name;b.addEventListener('click',()=>select(group));access.append(b);}}
+ function label(text,x,y,color='#57425c'){ctx.font='700 11px system-ui';const tw=Math.min(144,ctx.measureText(text).width+16);ctx.fillStyle='#fff9eeeF';ctx.beginPath();ctx.roundRect(x-tw/2,y-11,tw,21,6);ctx.fill();ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y,tw-10);}
+ function paint(t){raf=requestAnimationFrame(paint);if(dead||document.hidden||t-last<33)return;last=t;ctx.clearRect(0,0,w,h);ctx.fillStyle='#b2b590';ctx.fillRect(0,0,w,h);
+  // Repeat the terrain rather than stretch it when a large server expands.
+  if(terrain.complete&&terrain.naturalWidth){const size=2400,sy=1600;const left=Math.floor((cam.x-w/2/cam.zoom)/size),top=Math.floor((cam.y-h/2/cam.zoom)/sy);for(let x=left;x<=left+Math.ceil(w/cam.zoom/size)+1;x++)for(let y=top;y<=top+Math.ceil(h/cam.zoom/sy)+1;y++){const p=screen({x:x*size,y:y*sy});ctx.drawImage(terrain,p.x,p.y,size*cam.zoom,sy*cam.zoom);}}
+  const at=clock();for(const march of world.marches){if(at>=march.endsAt)continue;const from=screen(march.from),to=screen(march.to);ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.strokeStyle=march.mine?'#f9df83cc':'#e8e3d59a';ctx.lineWidth=march.mine?3:1.5;ctx.setLineDash([7,7]);ctx.lineDashOffset=-t/90;ctx.stroke();ctx.setLineDash([]);}
+  groups=clusterNodes(world.nodes,cam,w,h).sort((a,b)=>a.sy-b.sy);syncAccessible();
+  for(const group of groups){const n=group.nodes[0],x=group.sx,y=group.sy,multiple=group.nodes.length>1,size=clamp(144*cam.zoom,38,170);if(multiple){ctx.fillStyle=n.kind==='area'?'#c59b43':'#79569e';ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff8e8';ctx.font='800 15px system-ui';ctx.textAlign='center';ctx.fillText(String(group.nodes.length),x,y+5);continue;}
+   ctx.fillStyle=n.mine?'#a570c657':'#53433130';ctx.beginPath();ctx.ellipse(x,y,size*.38,size*.13,0,0,Math.PI*2);ctx.fill();if(n.mine){ctx.strokeStyle='#e5c46e';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,y,size*.43,size*.17,0,0,Math.PI*2);ctx.stroke();}
+   const frame=n.kind==='area'?3:n.level>=7?2:n.level>=4?1:0;if(buildings.complete&&buildings.naturalWidth)ctx.drawImage(buildings,frame*256,0,256,256,x-size/2,y-size*.86,size,size);
+   if(cam.zoom>=.5||n.mine){label(n.name,x,y+size*.15,n.mine?'#7b3bb0':n.kind==='area'?'#8a6226':'#57425c');if(cam.zoom>=.65){ctx.font='700 9px system-ui';ctx.fillStyle='#4c4058';ctx.textAlign='center';ctx.fillText(n.kind==='area'?(n.mine?'내 거점':n.ownerName||'중립'):n.mine?'내 센터 · Lv.'+n.level:'Lv.'+n.level,x,y+size*.15+20);}}
+   if(n.shieldUntil>at){ctx.strokeStyle='#b9e1ffb0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y-size*.35,size*.48,size*.51,0,Math.PI,0);ctx.stroke();}
+  }
+  for(const m of world.marches){if(at>=m.endsAt)continue;const p=marchPosition(m,at),q=screen(p),size=clamp(68*cam.zoom,31,65);if(q.x<-size||q.x>w+size||q.y<-size||q.y>h+size)continue;if(p.fighting){const pulse=(t%850)/850;ctx.strokeStyle=`rgba(255,204,88,${1-pulse})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(q.x,q.y-size*.2,8+pulse*26,0,Math.PI*2);ctx.stroke();}if(truck.complete&&truck.naturalWidth)ctx.drawImage(truck,p.frame*256,0,256,256,q.x-size/2,q.y-size*.75,size,size);}
+ }
+ function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+ canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{...point(e),start:point(e)});if(pointers.size===1)dragged=false;if(pointers.size===2){const a=[...pointers.values()];pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};dragged=true;}});
+ canvas.addEventListener('pointermove',e=>{const old=pointers.get(e.pointerId);if(!old)return;const p=point(e);pointers.set(e.pointerId,{...p,start:old.start});if(pointers.size===2){const a=[...pointers.values()],distance=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);if(pinch?.distance>0)zoom(distance/pinch.distance,(a[0].x+a[1].x)/2,(a[0].y+a[1].y)/2);pinch={distance};return;}if(Math.hypot(p.x-old.start.x,p.y-old.start.y)>6)dragged=true;if(dragged){cam.x-=(p.x-old.x)/cam.zoom;cam.y-=(p.y-old.y)/cam.zoom;constrain();}});
+ function up(e){const p=point(e),cancel=e.type==='pointercancel';pointers.delete(e.pointerId);pinch=null;if(!dragged&&!cancel){const group=[...groups].reverse().find(g=>Math.abs(g.sx-p.x)<clamp(72*cam.zoom,22,85)&&p.y>g.sy-clamp(125*cam.zoom,32,150)&&p.y<g.sy+35);if(group)select(group);}}
+ canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);canvas.addEventListener('wheel',e=>{e.preventDefault();const p=point(e);zoom(Math.exp(-e.deltaY*.0015),p.x,p.y);},{passive:false});
+ canvas.addEventListener('keydown',e=>{if(['+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='+'||e.key==='=')zoom(1.3);else if(e.key==='-')zoom(1/1.3);else{cam.x+=({ArrowLeft:-1,ArrowRight:1}[e.key]||0)*90/cam.zoom;cam.y+=({ArrowUp:-1,ArrowDown:1}[e.key]||0)*90/cam.zoom;constrain();}}});
+ const observer=new ResizeObserver(()=>{const r=host.getBoundingClientRect();w=Math.max(1,r.width);h=Math.max(1,r.height);const ratio=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);});observer.observe(host);constrain();raf=requestAnimationFrame(paint);
+ return {update(next){world=next;},zoom,home(){const own=world.nodes.find(n=>n.id===world.meId);if(own){cam.x=own.x;cam.y=own.y;cam.zoom=.7;constrain();}},get camera(){return {...cam};},get dragging(){return pointers.size>0;},destroy(){dead=true;cancelAnimationFrame(raf);observer.disconnect();canvas.remove();access.remove();}};
+}
