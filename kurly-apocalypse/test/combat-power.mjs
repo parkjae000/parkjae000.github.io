@@ -1,3 +1,4 @@
+import {simplePower} from '../simple/model.mjs?v=simple-1';
 import {conquestTowerStats} from './conquest-stats.mjs?v=td-ux-20';
 import {FORCE_IDS,FORCES,TOWER_DEFS,HERO_DEFS,towerStats,heroStats,MATCHUPS,forceStats} from './progression.mjs?v=td-ux-20';
 export function attackPower(growth,roster={}){
@@ -13,7 +14,7 @@ export function defensePower(growth,items=[],support=null,strength=1,conquest=fa
  }).filter(Boolean);
  return {defense:defenses.reduce((n,d)=>n+d.power,0),baseDefense:defenses.reduce((n,d)=>n+d.base,0),supportDefense:defenses.reduce((n,d)=>n+d.bonus,0),defenses};
 }
-export function combatPower(td){
+export function combatPower(td){if(td.simpleMode)return simplePower(td);
  const c=td.campaign||{},roster=Object.fromEntries(FORCE_IDS.map(id=>[id,(c.roster?.[id]||0)+(c.pending?.forceTotals?.[id]||0)+(c.external?.[id]||0)])),a=attackPower(td.growth,roster),d=defensePower(td.growth,td.items);
  return {...a,...d,army:a.attack,total:a.attack+d.defense,basis:'td-power-1'};
 }

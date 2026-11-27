@@ -5,7 +5,7 @@ export const WORKER_MAX_LEVEL=20;
 export const SUMMON_MAX_LEVEL=6;
 export const WORKER_LEVEL_MULTIPLIER=2.4;
 export const workerBaseDps=level=>5*Math.pow(WORKER_LEVEL_MULTIPLIER,level-1);
-export function workerMiningDps(worker,g){if(worker.parked)return 0;return workerBaseDps(worker.level)*Math.pow(1.2,(g.levels.mine||1)-1)*(1+.03*(g.captures||[]).length)*(1+.02*(g.miningMastery||0));}
+export function workerMiningDps(worker,g){if(worker.parked)return 0;return workerBaseDps(worker.level)*Math.pow(1.2,(g.levels.mine||1)-1)*(1+.03*(g.captures||[]).length)*(1+.02*(g.miningMastery||0))*(g.simple?1+.04*Math.max(0,Math.min(19,(g.simple.toolLevel||1)-1)):1);}
 export const canMergeWorkers=(a,b)=>!!a&&!!b&&a.id!==b.id&&a.level===b.level&&a.level<WORKER_MAX_LEVEL;
 export const OFFLINE_MINING_MS=8*3600000;
 export const RESEARCH_PREPARED_LEVEL=30;

@@ -1,5 +1,5 @@
-import {previewMiningDrop,projectMiningTime} from './mining-ui.js?v=20261125-v246-smooth-input';
-import {canMergeWorkers} from './balance.js?v=20261124-v227-worker-floor';
+import {previewMiningDrop,projectMiningTime} from './mining-ui.js?v=20261127-v300-simple';
+import {canMergeWorkers} from './balance.js?v=20261127-v300-simple';
 export function mergeMiningDelta(state,delta){
  const td=state?.td;if(!td||!delta||delta.world!==td.world||delta.id!==td.me.id)return false;
  if(delta.serverTime<td.serverTime){const g=state.me.game;g.boxes=td.growth.boxes;g.cash=td.campaign.cash;g.inventory=td.growth.inventory;return false;}

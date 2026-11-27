@@ -23,7 +23,7 @@ export function staffQuote(g,kind,id,steps=1){
  const quote=kind==='facility'?facilityQuote(g,id,steps):upgradeQuote(g,kind,id,steps);if(!quote.nextGrowth)return quote;
  const jobs=g.researchJobs||[],key=kind+':'+(id||''),duplicate=jobs.some(j=>j.key===key),full=jobs.length>=researchStaffCount(g);
  const level=kind==='capacity'?g.capacityLevel:kind==='force'?g.forceLevels[id]:g.facilityLevels?.[id]||1;
- let seconds=0;for(let i=0;i<steps;i++)seconds+=researchSeconds(kind,id,level+i+1);
+ let seconds=0;for(let i=0;i<steps;i++)seconds+=Math.min(g.simplePolicy?(kind==='facility'&&id==='center'?28800:14400):Infinity,researchSeconds(kind,id,level+i+1));
  const reason=duplicate?'이미 연구 중':full?'사용 가능한 스탭 없음':quote.reason||'';
  return {...quote,enabled:quote.enabled&&!duplicate&&!full,reason,key,seconds,staffRequired:1,mode:'staff'};
 }
