@@ -1,0 +1,27 @@
+/* The app follows the visible viewport, including the keyboard's resize and pan. */
+html:has(body.chat-screen){overflow:hidden;overscroll-behavior:none}
+body.chat-screen{overflow:hidden;overscroll-behavior:none}
+.app.server-chat-open{position:fixed;top:var(--chat-top,0px);left:50%;right:auto;bottom:auto;transform:translateX(-50%);width:100%;max-width:1120px;height:var(--chat-vh,100dvh);max-height:var(--chat-vh,100dvh);min-height:0!important;display:flex;flex-direction:column;margin:0;padding:0 0 var(--nav-h,70px);overflow:hidden}
+.server-chat-open>.app-header{flex:0 0 auto}
+.server-chat-open>#main{flex:1;min-height:0;overflow:hidden}
+.server-chat-open #tabServer{display:flex!important;flex-direction:column;align-items:stretch;height:100%;min-height:0;width:100%;max-width:1100px;gap:0;overflow:hidden;padding:10px 13px;animation:none}
+.server-chat-open .server-tabs{flex-shrink:0;width:100%;max-width:620px;align-self:center;margin-bottom:8px}
+.server-chat-open #tabServer>.page-title{flex-shrink:0;margin:0 0 8px;min-height:40px}
+.server-chat-open #tabServer>.page-title h2{font-size:20px}
+.server-chat-open .card-chat{position:relative!important;inset:auto!important;width:100%!important;max-width:100%!important;display:flex;flex-direction:column;flex:1;min-height:0;margin:0!important;overflow:hidden;box-shadow:none}
+.server-chat-open .card-chat>.card-head{height:58px!important;min-height:58px!important;flex-shrink:0;padding:9px 13px!important}
+.server-chat-open .card-chat .chat-list{flex:1;min-height:0;height:auto!important;max-height:none!important;padding:14px 12px;overflow-x:hidden;overflow-y:auto;overflow-anchor:none;scroll-behavior:auto}
+.server-chat-open .chat-compose{flex-shrink:0;padding:9px 10px}
+.server-chat-open .chat-compose textarea{resize:none;min-height:44px;max-height:88px;font-size:16px}
+.server-chat-open .chat-compose .btn{min-height:44px}
+.server-chat-open .chat-latest{position:absolute;bottom:76px;right:18px;z-index:2;font-size:13px;max-width:calc(100% - 36px)}
+.chat-unread{display:flex;align-items:center;gap:10px;flex-shrink:0;color:#9d657c;font-size:12px;line-height:24px;text-align:center;scroll-margin-top:12px}
+.chat-unread::before,.chat-unread::after{content:'';height:1px;background:#cba5b8;flex:1}
+.server-chat-open.chat-expanded,.server-chat-open.chat-keyboard{padding-bottom:0}
+.server-chat-open:is(.chat-expanded,.chat-keyboard)>.app-header,.server-chat-open:is(.chat-expanded,.chat-keyboard) #tabServer>.page-title,.server-chat-open:is(.chat-expanded,.chat-keyboard) .server-tabs,.server-chat-open:is(.chat-expanded,.chat-keyboard)>.navbar{display:none!important}
+.server-chat-open.chat-expanded #tabServer{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.server-chat-open.chat-expanded .card-chat{border-radius:0}
+.server-chat-open.chat-keyboard #tabServer{padding:0}
+.server-chat-open.chat-keyboard .card-chat{border-radius:0}
+.server-chat-open.chat-keyboard .chat-compose{padding-bottom:9px}
+@media(max-width:600px){.server-chat-open #tabServer{padding:8px 10px}.server-chat-open .server-tabs .btn{padding:8px;min-height:39px}.server-chat-open #tabServer>.page-title h2{font-size:18px}.server-chat-open #tabServer>.page-title [data-invite]{font-size:12px;min-height:35px;padding:7px 10px}.server-chat-open .card-chat>.card-head h3{font-size:16px}.server-chat-open .card-chat>.card-head>.btn{font-size:12px}.server-chat-open .chat-compose .btn{padding:8px 11px}}
