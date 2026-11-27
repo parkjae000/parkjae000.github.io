@@ -1,6 +1,5 @@
-// Isolated fictional-account preview only. Never imported by the live app.
-import {quantity,toolCost,soldierStats,heroBonus} from './model.mjs?v=simple-1';
-import {upgradeGrowth} from '../test/progression.mjs';
+import {quantity,toolCost,soldierStats,heroBonus,heroXpPlan} from './model.mjs?v=simple-2';
+import {HERO_DEFS,upgradeGrowth} from '../test/progression.mjs';
 import {settleResearch} from '../test/research.mjs';
 import {RESEARCH_MINUTES,BOOST_MINUTES} from '../pass-catalog.mjs';
 import {useShieldReview} from '../test/shop.mjs';
@@ -15,9 +14,16 @@ export function settleSimpleBoss(g,now,skip=false){
 export function simpleAction(g,b,now){
  if(!g.simple||!String(b.type).startsWith('simple/'))return null;
  const t=g.td,c=t.campaign,inv=t.growth.inventory,s=g.simple;settleSimpleBoss(g,now);
+ if(b.type==='simple/ack'){s.ackAt ||= now;return {acknowledged:true};}
  if(b.type==='simple/defense'){const next=clone(t.growth),items=[['wall','wall',next.wallLevel],...Object.entries(next.towerLevels).map(([id,level])=>['tower',id,level])].filter(([,id,level])=>level<40);if(!items.length)throw Error('최고 단계에 도달했어요.');for(const [kind,id]of items)upgradeGrowth(next,kind,id);t.growth=next;return {message:'센터 방어가 강화되었어요.'};}
  if(b.type==='simple/tool'){
   if(s.toolLevel>=20)throw Error('최고 단계에 도달했어요.');const cost=toolCost(s.toolLevel);if(s.toolParts<cost)throw Error('도구 부품이 부족해요.');s.toolParts-=cost;s.toolLevel++;return {message:'도구 Lv.'+s.toolLevel};
+ }
+ if(b.type==='simple/hero-xp'){
+  const h=t.growth.heroes[b.hero],def=HERO_DEFS[b.hero];if(!def)throw Error('파트장을 확인해 주세요.');
+  const key=def.rarity==='희귀'?'rareHeroXp':'normalHeroXp',plan=heroXpPlan(h,inv[key],b.xp);
+  if(!plan.used&&plan.level===h.level)throw Error('경험치 교본이 부족해요.');
+  inv[key]=(inv[key]||0)-plan.used;h.level=plan.level;h.xp=plan.xp;return {used:plan.used,level:h.level};
  }
  if(b.type==='simple/hero'){
   const amount=quantity(b.quantity),next=clone(t.growth);let used=0;

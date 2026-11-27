@@ -1,12 +1,12 @@
 // All state stays in this page. No login, player data, or production writes.
-import {mountSimpleUI} from './ui.mjs?v=simple-1';
-import {short} from './model.mjs?v=simple-1';
-import {SimpleBattle} from './battle.mjs?v=simple-1';
-import {simpleAction} from './demo-actions.mjs?v=simple-1';
+import {mountSimpleUI} from './ui.mjs?v=simple-2';
+import {short} from './model.mjs?v=simple-2';
+import {SimpleBattle} from './battle.mjs?v=simple-2';
+import {simpleAction} from './demo-actions.mjs?v=simple-2';
 import {purchaseShop} from '../test/shop.mjs?v=td-ux-22';
-import {startResearch,settleResearch,upgradeMode} from '../test/research.mjs?v=simple-1';
+import {startResearch,settleResearch,upgradeMode} from '../test/research.mjs?v=simple-2';
 import {upgradeGrowth} from '../test/progression.mjs?v=td-ux-20';
-import {startProduction,settleProduction,setRoster} from '../test/production.mjs?v=simple-1';
+import {startProduction,settleProduction,setRoster} from '../test/production.mjs?v=simple-2';
 const td=await (await fetch('./demo-state.json')).json();td.serverTime=Date.now();td.campaign.shieldUntil=0;const game={td,simple:td.simple,inventory:td.growth.inventory,shop:{},forklift:{},pendingBattle:null,incomingRaid:null};
 function sync(){game.inventory=td.growth.inventory;td.simple=game.simple;td.simple.soldier={level:td.growth.forceLevels.army};td.serverTime=Date.now();document.getElementById('demoBoxes').textContent='📦 '+short(td.growth.boxes);document.getElementById('demoCash').textContent='💰 '+short(td.campaign.cash);}
 function finishBattle(){const p=td.campaign.pending;if(!p)return;const battle=new SimpleBattle(p);while(battle.status==='running')battle.step();const record={...p,summary:battle.summary(),endTick:battle.ticks,status:battle.status,result:battle.status==='victory'?'win':'lose',survivors:battle.alive,loot:{boxes:battle.status==='victory'?1200:0,cash:battle.status==='victory'?20:0}};td.campaign.pending=null;td.campaign.roster={army:battle.alive,air:0,navy:0};td.campaign.troops=battle.alive;td.campaign.history.unshift(record);return record;}
