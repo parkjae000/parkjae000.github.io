@@ -2,10 +2,12 @@ import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
 import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
-import {guidePage} from './guide.mjs?v=134';
+import {guidePage} from './guide.mjs?v=135';
 import {watchRelease} from './release.mjs?v=124';
 import {GameSession} from './session.mjs';
 import {API,LIVE_HOSTS} from './config.mjs';
+import {bonusDue} from './siren.mjs';
+import {SirenStage} from './siren-ui.mjs?v=135';
 const E={...Rules};
 const $=s=>document.querySelector(s),cv=$('#scene'),world=$('#world'),dialog=$('#dialog');
 let ctx=cv.getContext('2d');
@@ -16,7 +18,7 @@ $('#event-icon').innerHTML='<svg viewBox="0 0 48 40" aria-hidden="true"><path d=
 const atlas=new Image(),ground=new Image(),support=new Image();atlas.src='atlas.webp';ground.src='ground.webp';support.src='support.webp';await Promise.all([atlas.decode(),ground.decode(),support.decode()]);
 const W=780,STEP=86,LEFT=89,FONT='"Noto Sans CJK KR",system-ui,sans-serif',reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const serverButtons=new WeakSet();
-let modalRefreshAt=0;
+let modalRefreshAt=0,sirenView=null;
 let wheelSpinning=false,wheelResult=null,wheelRotation=0,campSeen=-1,shopReceipt=null,wheelContext=null;
 let g,player=null,authMode='register',offlineShown=false,H=1300,VH=1300,camera=0,selected=null,drag=null,frameAt=0,lastFrame=0,lastReal=Date.now(),hudAt=0,modalName=null,structureKey='',delivery=null,particles=[],movers=new Map(),celebrations=new Map();
 let chatOwner=null,chatMessages=[],chatAfter=null,chatRead=null,chatRequest=null,chatAlertTimer;
@@ -35,9 +37,11 @@ const client=new GameSession({api:LIVE_HOSTS.includes(location.hostname)?API:'/a
 for(const [name,type,fields] of [['assign','assign',['worker','target','stand']],['move','move',['worker','x','y']],['merge','merge',['a','b']],['recruit','recruit',[]],['upgrade','upgrade',['facility','count']],['activate','activate',['facility']],['collect','collect',['facility']],['research','research',['card']],['automate','automate',['facility']]]){E[name]=(_state,...args)=>{const payload=Object.fromEntries(fields.map((key,i)=>[key,args[i]]));const value=client.mutate(type,payload);return name==='collect'?value.result.amount:value.result;};}
 E.nextMine=()=>client.mutate('next').game;
 function updateSave(status){const el=$('#save-state');el.textContent=status==='saved'?'✓':status==='saving'?'↻':status==='offline'?'!':'…';el.dataset.status=status;el.title={saved:'서버 저장 완료',saving:'저장 중',offline:'연결을 복구하면 저장을 이어서 진행해요.'}[status]||'연결 확인 중';if(status==='signed-out')showWelcome();if(!g&&status==='offline'){$('#auth-loading').textContent='연결을 확인한 뒤 다시 시도해 주세요.';$('#retry-connection').hidden=false;}else $('#retry-connection').hidden=true;}
-function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;$('#auth-form').hidden=false;$('#auth-loading').hidden=true;if(dialog.open)dialog.close();g=null;resetChat(null);}
+function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;$('#auth-form').hidden=false;$('#auth-loading').hidden=true;if(dialog.open)dialog.close();g=null;sirenView?.destroy();sirenView=null;resetChat(null);}
 function acceptGame(game,p){if(!game){showWelcome();return;}const first=!g,changed=g&&g.stage!==game.stage,previous=g?.camp.moves;if(!first&&game!==g&&game.rocks.some((rock,i)=>rock.done!==g.rocks[i]?.done))terrainKey='';
- g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){itemStage=null;$('#board-items').replaceChildren();terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
+ g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){itemStage=null;$('#board-items').replaceChildren();terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 소환비용 75% 할인 · 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
+ if(!g.siren&&sirenView){sirenView.destroy();sirenView=null;}
+ if(g.siren&&!sirenView)openSiren();
  if(first&&!offlineShown&&client.base&&client.now()-client.base.lastAt>60000)offlineShown=true;}
 const coord=(x,y)=>({x:LEFT+(x+.5)*STEP,y:H-(g.rows+3.2)*STEP+y*STEP});
 function facilityBounds(f){
@@ -62,7 +66,7 @@ function text(s,x,y,size=34,color='#fff8ec',stroke='#5b4a49'){ctx.textAlign='cen
 function rect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}}
 function notice(message){$('#notice').textContent=message;}
 function action(fn,message=null){try{settle();const result=fn();if(message)notice(message);return result;}catch(e){notice(e.message);return null;}}
-function settle(){if(!g)return;const t=client.now();lastReal=t;const ids=new Set(g.friends.map(w=>w.id)),before={...g.ledger};simulate(g,t);if(campSeen!==g.camp.moves){if(campSeen>=0){focusCamp();notice('개방 완료! 찻집·대포·소환 위치가 앞으로 이동했어요.');}campSeen=g.camp.moves;}for(const w of g.friends)if(!ids.has(w.id))launch(w.id);for(const f of g.facilities)if(g.ledger[f.id]>before[f.id])showPayout(f.id,g.ledger[f.id]-before[f.id]);}
+function settle(){if(!g)return;const t=client.now();lastReal=t;const ids=new Set(g.friends.map(w=>w.id)),before={...g.ledger};simulate(g,t);if(campSeen!==g.camp.moves){if(campSeen>=0){focusCamp();notice('개방 완료! 소환비용 75% 할인 · 보급 위치가 앞으로 이동했어요.');}campSeen=g.camp.moves;}for(const w of g.friends)if(!ids.has(w.id))launch(w.id);for(const f of g.facilities)if(g.ledger[f.id]>before[f.id])showPayout(f.id,g.ledger[f.id]-before[f.id]);}
 function updateHUD(force=false){if(!g)return;$('#gold').textContent=fmt(g.gold);$('#elixir').textContent=fmt(g.elixir);$('#gems').textContent=fmt(g.gems);$('#scene-name').textContent='간식 동굴 '+g.stage;$('#crew-count').textContent=E.occupiedSlots(g)+'/'+E.capacity(g);const level=E.hireLevel(g),a=E.appearance(level);$('#hire-level').textContent='LV.'+level;const hires=g.hires%E.hiresPerLevel;$('#hire-meter').style.setProperty('--paid',hires/E.hiresPerLevel*100+'%');$('#hire-meter').textContent=level<40?hires+'/'+E.hiresPerLevel:'MAX';$('#hire-cost').textContent=E.occupiedSlots(g)>=E.capacity(g)?'정원 가득':fmt(E.hirePrice(g));$('#hire-portrait').style.backgroundPosition=(a.idle/3*100)+'% 0';$('#hire').disabled=E.occupiedSlots(g)>=E.capacity(g)||g.gold<E.hirePrice(g)||!E.deliverySpot(g);$('#hire-coin').hidden=E.occupiedSlots(g)>=E.capacity(g);$('#hire').setAttribute('aria-label',E.occupiedSlots(g)>=E.capacity(g)?'친구 정원 가득':`Lv.${level} ${a.name} 채용 · ${fmt(E.hirePrice(g))} 골드`);$('#wheel-count').textContent=g.wheel.extra+'/5';$('#wheel-button').title=g.wheel.free?'추가 회전 '+g.wheel.extra+'/5':'무료 회전 가능';$('#event-clock').textContent=g.daily.claims.length+'/4';$('#scene').setAttribute('aria-label','작업장 · '+g.friends.map(w=>E.appearance(w.level).name+' Lv.'+w.level).join(', '));$('#work-count').textContent=`작업 중 ${g.friends.filter(w=>w.target).length}/${g.friends.length}`;updateStructures(force);updateProductionClocks();updateBoardItems();updateSelection();refreshPanel(force);}
 let accessGame=null,accessSignature='',accessTiles;
 function showPayout(id,amount){
@@ -107,12 +111,12 @@ function updateProductionClocks(){
 function updateStructures(force=false){const signature=[g.stage,g.stats.rocks,g.camp.moves,...g.checkpoints.map(t=>t.done)].join('/');
  if(accessGame!==g||accessSignature!==signature){accessGame=g;accessSignature=signature;accessTiles=E.openTiles(g);}
  const reachable=f=>E.facilityApproaches(f).some(p=>accessTiles.has(p.join(',')));
- const state=g.facilities.map(f=>{const q=E.quoteUpgrade(g,f);return [f.id,f.level,f.active,f.repaired,!f.port||reachable(f),f.auto,E.cycleYield(g,f),!!f.ready,q.count,q.cost,g.friends.filter(w=>w.target===f.id).map(w=>w.id).join(',')].join(':');}).join('|')+';'+[...g.checkpoints,g.exit].map(t=>t.id+':'+t.done).join('|');if(state===structureKey){
+ const state=g.facilities.map(f=>{const q=E.quoteUpgrade(g,f);return [f.id,f.level,f.active,f.repaired,!f.port||reachable(f),f.auto,E.canAutomate(g,f),E.cycleYield(g,f),!!f.ready,q.count,q.cost,g.friends.filter(w=>w.target===f.id).map(w=>w.id).join(',')].join(':');}).join('|')+';'+[...g.checkpoints,g.exit].map(t=>t.id+':'+t.done).join('|');if(state===structureKey){
  for(const b of document.querySelectorAll('[data-repair]')){const f=g.facilities.find(f=>f.id===b.dataset.repair),rate=g.friends.filter(w=>w.target===f.id).reduce((n,w)=>n+E.workerPower(g,w),0);if(rate&&!f.repaired)b.firstChild.nodeValue='채굴 중 '+duration(f.hp/rate*1000);}
  return;
  }structureKey=state;
  $('#structures').innerHTML=g.facilities.map(f=>{const d=E.facilityDef(f.id),q=E.quoteUpgrade(g,f),bar=E.milestoneBar(f),preview=Math.min(1,(f.level+(q.count||0)-bar.previous)/(bar.next-bar.previous||1));if(!f.active){const accessible=reachable(f),workers=g.friends.filter(w=>w.target===f.id),dps=workers.reduce((sum,w)=>sum+E.workerPower(g,w),0);return `<div class="production" data-structure="${f.id}"><button class="repair-card ${accessible?'active-ready':''}" data-repair="${f.id}" ${accessible?'':'disabled'} aria-label="${d.name} 시설 채굴">${dps?'채굴 중 '+duration(f.hp/dps*1000):accessible?'시설 채굴':'옆길을 열어요'}<small>${d.name}</small></button></div>`;}
- return `<div class="production" data-structure="${f.id}"><span class="yield" title="${statFmt(E.facilityCycle(g,f))}초 생산량 · 현재 → 표시된 강화 후">${icon('gold')}<b>${fmt(E.cycleYield(g,f))}${q.count?' → '+fmt(E.cycleYield(g,{...f,level:f.level+q.count})):''}</b></span><button id="upgrade-${f.id}" class="upgrade-card" data-upgrade="${f.id}" data-count="${q.count}" ${!q.count?'disabled':''} aria-label="${d.name} Lv.${f.level} · ${statFmt(E.facilityCycle(g,f))}초마다 ${fmt(E.cycleYield(g,f))} 골드 · ${q.count?'+'+q.count+'레벨 강화 '+fmt(q.cost)+' 골드':'강화 골드 부족'}"><span class="upgrade-progress"><i class="preview-fill" style="width:${preview*100}%"></i><i class="current-fill" style="width:${bar.progress*100}%"></i><b>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'Lv.'+f.level+' / '+bar.next}</b></span><span class="upgrade-buy"><strong>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'+'+(q.count||1)}</strong><span>${icon('gold')}${f.level>=E.maxFacilityLevel(f.id)?'최대':fmt(q.cost)}</span></span></button><button class="facility-label" data-details="${f.id}" aria-label="${d.name} 생산 정보와 자동 수령 설정">${f.auto?d.name:'자동 수령 설정'} ›</button></div>`;}).join('')+[...g.checkpoints.filter(t=>!t.done),g.exit].map(t=>`<button class="gate-hit ${t.id==='exit'&&t.done?'exit-next':''}" data-gate="${t.id}" aria-label="${t.id==='exit'?(E.readyForNext(g)?'다음 구역으로':'출구 작업 · 앞줄 세 칸'):'중간 개방문 '+t.toSegment+' 작업 · 앞줄 세 칸'}">${t.id==='exit'&&t.done?'다음 구역으로 ›':''}</button>`).join('');syncClockButtons();placeStructures();}
+ return `<div class="production" data-structure="${f.id}"><span class="yield" title="${statFmt(E.facilityCycle(g,f))}초 생산량 · 현재 → 표시된 강화 후">${icon('gold')}<b>${fmt(E.cycleYield(g,f))}${q.count?' → '+fmt(E.cycleYield(g,{...f,level:f.level+q.count})):''}</b></span><button id="upgrade-${f.id}" class="upgrade-card" data-upgrade="${f.id}" data-count="${q.count}" ${!q.count?'disabled':''} aria-label="${d.name} Lv.${f.level} · ${statFmt(E.facilityCycle(g,f))}초마다 ${fmt(E.cycleYield(g,f))} 골드 · ${q.count?'+'+q.count+'레벨 강화 '+fmt(q.cost)+' 골드':'강화 골드 부족'}"><span class="upgrade-progress"><i class="preview-fill" style="width:${preview*100}%"></i><i class="current-fill" style="width:${bar.progress*100}%"></i><b>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'Lv.'+f.level+' / '+bar.next}</b></span><span class="upgrade-buy"><strong>${f.level>=E.maxFacilityLevel(f.id)?'MAX':'+'+(q.count||1)}</strong><span>${icon('gold')}${f.level>=E.maxFacilityLevel(f.id)?'최대':fmt(q.cost)}</span></span></button><button class="facility-label ${E.canAutomate(g,f)?'automation-ready':''}" ${E.canAutomate(g,f)?'data-automate':'data-details'}="${f.id}" aria-label="${d.name} ${E.canAutomate(g,f)?'자동 수령 바로 켜기':'생산 정보와 자동 수령 설정'}">${E.canAutomate(g,f)?'자동 수령 켜기':f.auto?d.name:'자동 수령 설정'} ›</button></div>`;}).join('')+[...g.checkpoints.filter(t=>!t.done),g.exit].map(t=>`<button class="gate-hit ${t.id==='exit'&&t.done?'exit-next':''}" data-gate="${t.id}" aria-label="${t.id==='exit'?(E.readyForNext(g)?'다음 구역으로':'출구 작업 · 앞줄 세 칸'):'중간 개방문 '+t.toSegment+' 작업 · 앞줄 세 칸'}">${t.id==='exit'&&t.done?'다음 구역으로 ›':''}</button>`).join('');syncClockButtons();placeStructures();}
 function placeStructures(){
  if(!g)return;
  positionLoot();
@@ -175,7 +179,8 @@ function gate(t){
  }
  sprite(13,p.x,p.y+18,157);
  rect(p.x-63,p.y-24,126,31,8,'#80624f','#d8bb8e');
- text(exit?'출구':'개방 '+t.toSegment,p.x,p.y-8,23,'#fff1cb',null);
+ text((exit?'출구':'개방')+' · '+t.level,p.x,p.y-8,23,'#fff1cb',null);
+ if(!exit)text('소환비용 −75%',p.x,p.y+34,19,'#fff1cb','#705a46');
 }
 function workbar(t,p){const dps=g.friends.filter(w=>w.target===t.id).reduce((n,w)=>n+E.workerPower(g,w),0);if(!dps&&t.hp===t.max)return;rect(p.x-29,p.y-72,58,8,3,'#8e7568');if(t.hp>0)rect(p.x-28,p.y-71,56*t.hp/t.max,6,2,'#c5d9a0');if(dps)text(duration(t.hp/dps*1000),p.x,p.y-89,22,'#fff8e8','#705c51');}
 function drawFacility(f,time){
@@ -237,7 +242,7 @@ function drawTerrain() {
  sceneryContext.fillStyle='#bdadbb';sceneryContext.fillRect(0,0,W,VH);
  sceneryContext.drawImage(terrain,0,start-camera);
 }
-function draw(time){requestAnimationFrame(draw);if(!g||document.hidden)return;frameAt=time;const dt=Math.min(.06,(time-lastFrame)/1000||.033);lastFrame=time;if(time-lastSimulation>=100){settle();lastSimulation=time;}if(time-hudAt>240){updateHUD();hudAt=time;}ctx.clearRect(0,0,W,VH);ctx.save();ctx.translate(0,-camera);drawTerrain();gate(g.exit);if(!g.exit.done)workbar(g.exit,coord(g.exit.x,g.exit.y));for(const checkpoint of g.checkpoints){gate(checkpoint);if(!checkpoint.done)workbar(checkpoint,coord(checkpoint.x,checkpoint.y));}
+function draw(time){requestAnimationFrame(draw);if(!g||document.hidden||sirenView)return;frameAt=time;const dt=Math.min(.06,(time-lastFrame)/1000||.033);lastFrame=time;if(time-lastSimulation>=100){settle();lastSimulation=time;}if(time-hudAt>240){updateHUD();hudAt=time;}ctx.clearRect(0,0,W,VH);ctx.save();ctx.translate(0,-camera);drawTerrain();gate(g.exit);if(!g.exit.done)workbar(g.exit,coord(g.exit.x,g.exit.y));for(const checkpoint of g.checkpoints){gate(checkpoint);if(!checkpoint.done)workbar(checkpoint,coord(checkpoint.x,checkpoint.y));}
  for(const r of g.rocks){if(r.done||r.hp>=r.max)continue;const p=coord(r.x,r.y);if(p.y>=camera-20&&p.y<=camera+VH+100)workbar(r,p);}
  for(const f of g.facilities)drawFacility(f,time);const cannon=cannonPoint(),shot=Math.max(delivery?.at??-1000,parcelFlight?.at??-1000),kick=time-shot<400?Math.sin((time-shot)/400*Math.PI)*9:0;sprite(12,cannon.x+kick,cannon.y,166);rect(cannon.x-38,cannon.y+2,76,24,8,'#fff1d0','#ad8b66');text('Lv.'+E.cannonLevel(g),cannon.x,cannon.y+14,20,'#856340',null);
  drawFriends(time,dt);
@@ -349,7 +354,13 @@ function showGuide(index){
 }
 function showDeparture(){
  const next=g.stage+1;
- open(next+'구역으로 떠날까?',`<div class="departure-gold"><p>떠나면 사라지는 골드 <b id="departure-balance">${Math.floor(g.gold).toLocaleString('ko-KR')}</b></p><p>${next}구역 시작 골드 <b>${E.startingGold(next).toLocaleString('ko-KR')}</b></p></div><p><b>골드는 이 동굴에서만 쓰는 돈이야.</b> 떠나면 지금 가진 골드는 전부 사라져. 새 동굴에서는 위에 적힌 시작 골드로 친구와 가게를 다시 키워.</p><p>보석·연구 포인트·카드와 카드 레벨은 그대로 가져가. 남은 상자를 더 캐고 싶으면 여기에 있어도 돼.</p><div class="departure-actions"><button id="stay-here" autofocus>계속 채굴</button><button data-leave-stage="${g.stage}">${next}구역으로 이동</button></div>`,'departure');
+ open(next+'구역으로 떠날까?',`<div class="departure-gold"><p>떠나면 사라지는 골드 <b id="departure-balance">${Math.floor(g.gold).toLocaleString('ko-KR')}</b></p><p>${next}구역 시작 골드 <b>${E.startingGold(next).toLocaleString('ko-KR')}</b></p></div>${bonusDue(g)&&g.siren?.status!=='finished'?'<div class="siren-invite"><img src="siren.webp" alt="세이렌"><div><h2>세이렌의 보물 바다</h2><p>30초 동안 조이스틱으로 헤엄치며 연구·카드·보석을 모아요. 시계 +5초 · 파도 확대 · 돌진 · 노래 폭발!</p></div></div>':''}<p><b>골드는 이 동굴에서만 쓰는 돈이야.</b> 떠나면 지금 가진 골드는 전부 사라져. 새 동굴에서는 위에 적힌 시작 골드로 친구와 가게를 다시 키워.</p><p>보석·연구 포인트·카드와 카드 레벨은 그대로 가져가. 남은 상자를 더 캐고 싶으면 여기에 있어도 돼.</p><div class="departure-actions"><button id="stay-here" autofocus>계속 채굴</button><button data-leave-stage="${g.stage}">${bonusDue(g)&&g.siren?.status!=='finished'?'세이렌 바다로 출발':next+'구역으로 이동'}</button></div>`,'departure');
+}
+function openSiren(){
+ if(!g?.siren||sirenView)return;
+ sirenView=new SirenStage({run:g.siren,now:()=>client.now(),confirm:(type,payload)=>client.confirm(type,payload),cardName:E.cardName,onNext:()=>{
+  const value=action(()=>E.nextMine(g));if(value){sirenView?.destroy();sirenView=null;}
+ }});
 }
 function openFacility(f){
  const d=E.facilityDef(f.id),cycle=E.facilityCycle(g,f),income=E.facilityRate(g,f),bar=E.milestoneBar(f),max=f.level>=E.maxFacilityLevel(f.id);
@@ -393,7 +404,7 @@ function crewPanel(){
  let explanation='같은 레벨 둘을 겹치면 한 단계 높은 친구가 돼요.';
  if(c.supplyPartner){
   const level=c.supplyPartner.level;
-  explanation='대포의 ‘짝 Lv.'+level+'’ 보급을 열어 주세요. '+(c.full?'정원이 가득 차서 그 자리에서 Lv.'+(level+1)+'로 합쳐져요.':'Lv.'+level+' 친구가 나와요. 같은 레벨인 두 친구를 겹쳐 Lv.'+(level+1)+'로 합쳐 주세요.');
+  explanation=c.full?'정원이 가득 차 있어요. 친구를 합치거나 합성 짝 보급을 열어 자리를 만들어 주세요.':'현재 개방 구역에 빈자리가 생기면 대포가 Lv.'+level+' 합성 짝을 바로 보내 줘요. 일반 보급 상자를 열 필요는 없어요.';
  }else if(c.pair)explanation=parcels&&c.full?'친구 둘을 먼저 합쳐 자리를 만들면 기다리는 상자를 열 수 있어요.':'같은 레벨 친구 둘을 합치면 한 칸이 비어요.';
  const cards=g.cards.capacity;
  return `<div class="facts"><span>사용 중인 정원</span><strong>${E.occupiedSlots(g)} / ${E.capacity(g)}칸</strong><span>지도 위 친구</span><strong>${g.friends.length}명</strong><span>미개봉 친구 보급</span><strong>${parcels}개</strong></div><p>${explanation}</p>${parcels?'<button class="dialog-button" id="open-worker-parcel">친구 보급 열기 · '+parcels+'개</button>':''}${c.pair?'<button class="dialog-button" data-crew-merge="'+c.pair.level+'">Lv.'+c.pair.level+' 친구 둘 합치기</button>':''}${g.barrel&&c.supplyPartner?'<button class="dialog-button" id="open-barrel">합성 짝 보급 열기</button>':''}<p id="supply-status">${deliveryStatus()}</p>${cards?.level<4?'<button class="dialog-button" data-panel="cards">정원 확장 카드 보기</button>':''}`;
@@ -417,7 +428,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
  if(b.dataset.details){openFacility(g.facilities.find(f=>f.id===b.dataset.details));return;}
  if(b.dataset.studyCard){panel('cards');const card=document.querySelector('[data-card="'+b.dataset.studyCard+'"]');card?.scrollIntoView({block:'start'});return;}
  if(b.id==='stay-here'){dialog.close();return;}
- if(b.dataset.leaveStage){if(Number(b.dataset.leaveStage)===g.stage&&g.exit.done)action(()=>E.nextMine(g));dialog.close();return;}
+ if(b.dataset.leaveStage){if(Number(b.dataset.leaveStage)===g.stage&&g.exit.done){if(bonusDue(g)&&g.siren?.status!=='finished'){serverAction(b,'sirenStart',{},()=>{dialog.close();openSiren();});}else{action(()=>E.nextMine(g));dialog.close();}}return;}
  if(b.dataset.crewMerge){
  const pair=g.friends.filter(w=>w.level===Number(b.dataset.crewMerge)).sort((a,b)=>Number(!!a.target)-Number(!!b.target));
  if(pair.length>=2&&action(()=>E.merge(g,pair[0].id,pair.at(-1).id))){dialog.close();notice('친구를 합쳐 한 칸이 비었어요.');}return;

@@ -51,7 +51,8 @@ export const hiresPerLevel=8;
 export const hireLevel=s=>Math.min(40,1+researchLevel(s,'goldenCannon')+Math.floor(s.hires/hiresPerLevel)+s.checkpoints.filter(t=>t.done).length+(s.hireBonus||0));
 export const cannonLevel=s=>Math.max(1,hireLevel(s)-1);
 export const capacity=s=>CAPACITY+Math.min(4,researchLevel(s,'capacity'));
-export const hirePrice=s=>Math.ceil(8*4**Math.min(475,Math.max(0,s.hires-(s.hirePriceAnchor||0)))*(s.hirePriceFactor??1)*.85**s.checkpoints.filter(t=>t.done).length*.94**researchLevel(s,'discount'));
+export const CHECKPOINT_HIRE_FACTOR=.25;
+export const hirePrice=s=>Math.ceil(8*4**Math.min(475,Math.max(0,s.hires-(s.hirePriceAnchor||0)))*(s.hirePriceFactor??1)*CHECKPOINT_HIRE_FACTOR**s.checkpoints.filter(t=>t.done).length*.94**researchLevel(s,'discount'));
 export const workerPower=(s,w)=>4*2.1**(w.level-1)*1.18**researchLevel(s,'pickaxe')*(1+.025*researchLevel(s,'critChance')*(1+.25*researchLevel(s,'critDamage')));
 export const cycleYield=(s,f)=>Math.max(1,Math.round(BASE[f.id].yield*(f.payoutScale||1)*1.12**(f.level-1)*milestones(f)*3**researchLevel(s,f.id)*4**researchLevel(s,'manager-'+f.id)*1.35**researchLevel(s,'profit')));
 export const facilityRate=(s,f)=>cycleYield(s,f)/facilityCycle(s,f);
@@ -139,18 +140,30 @@ export function createState(stage=2,seed=17,permanent=null){
  // Compatibility alias for older read-only audits; real layout uses the checkpoint array.
  s.checkpoint=s.checkpoints[0]||{id:'no-checkpoint',done:true};
  const hp=Math.ceil(4*rockSeconds(2+Math.min(5,Math.floor(Math.log2(stage)/1.5))+2*(segments.length-1))*1.5);s.exit={id:'exit',x:3,y:-1,hp,max:hp,done:false,kind:'exit'};
+ updateGateRules(s);
  for(let i=0;i<3;i++){
   const w={id:id(s),level:hireLevel(s),x:2+i,y:s.camp.row,target:null,paused:false};
   mineNearby(s,w);s.friends.push(w);
  }
  return s;
 }
+export function updateGateRules(s){
+ for(const t of [...s.checkpoints,s.exit]){
+  if(t.gateRules===135)continue;
+  const segment=s.segments[t.id==='exit'?s.segments.length-1:t.toSegment-1];
+  const rocks=s.rocks.filter(r=>r.y>=segment.top&&r.y<=segment.bottom);
+  t.level=1+Math.max(1,...rocks.map(r=>r.level));
+  const health=Math.ceil(Math.max(80,...rocks.map(r=>r.max))*(t.id==='exit'?1.4:1.25));
+  const progress=t.max>0?Math.max(0,Math.min(1,t.hp/t.max)):1;
+  t.max=health;t.hp=t.done?0:Math.ceil(health*progress);t.gateRules=135;
+ }
+}
 export const occupiedSlots = s => s.friends.length;
 export function crewInfo(s){
  const parcels=s.workerBarrels||[],sorted=[...s.friends].sort((a,b)=>a.level-b.level);
  const pair=sorted.find((w,i)=>w.level<40&&sorted[i+1]?.level===w.level);
  const lowest=sorted.find(w=>w.level<40),full=occupiedSlots(s)>=capacity(s);
- const deliveryLevel=cannonLevel(s);
+ const deliveryLevel=hireLevel(s);
  const partner=sorted.find(w=>w.level<deliveryLevel&&
   !sorted.some(other=>other!==w&&other.level===w.level)&&!parcels.some(box=>box.level===w.level));
  const stranded=full&&!pair&&!!lowest;
@@ -307,6 +320,7 @@ export function research(s,card){
  if(card==='delivery')s.freeAt=s.elapsed+Math.max(0,s.freeAt-s.elapsed)*deliveryInterval(s)/oldDelivery;
  return c;
 }
+export const canAutomate=(s,f)=>f.active&&!f.auto&&researchLevel(s,automation(s,f.id).card)>=automation(s,f.id).level;
 export function automate(s,fId){const f=s.facilities.find(f=>f.id===fId);if(!f?.active)error('먼저 시설을 가동해 주세요.');const req=automation(s,f.id);if(researchLevel(s,req.card)<req.level)error(`${cardName(req.card)}을 Lv.${req.level}까지 연구해 주세요.`);if(f.ready)collect(s,fId);f.auto=true;return f;}
 function forwardCamp(s,t){const segment=s.segments[t.toSegment];s.camp={segment:segment.index,row:segment.campRow,moves:s.camp.moves+1};placeStoredItems(s,true);for(const w of s.friends){if(w.target===t.id)w.target=null;if(!w.target||campBlocked(s,w.x,w.y)){const p=freeTiles(s,w).sort((a,b)=>Math.abs(a[1]-s.camp.row)*3+Math.abs(a[0]-3)-Math.abs(b[1]-s.camp.row)*3-Math.abs(b[0]-3))[0];if(p)Object.assign(w,{x:p[0],y:p[1],target:null});}}}
 function destroyed(s,t){landingCache.delete(s);t.hp=0;if(t.port){t.repaired=true;activate(s,t.id);return;}t.done=true;if(t.id==='exit'){s.cleared=true;return;}if(t.kind==='checkpoint'){forwardCamp(s,t);s.elixir+=20;for(const c of Object.values(s.cards))c.count+=2;s.freeAt=Math.min(s.freeAt,s.elapsed+deliveryInterval(s));return;}const reward=Math.max(1,Math.round(regularIncome(s)*10*(1+.12*(t.level-1))*(t.kind==='gold'?1.5:1))); s.gold+=reward;s.ledger.rocks+=reward;s.elixir+=t.kind==='chest'?12:2;if(t.kind==='chest')for(let i=0;i<8;i++){const keys=Object.keys(s.cards);s.cards[keys[Math.floor(random(s)*keys.length)]].count++;}}
@@ -329,6 +343,12 @@ function collectWork(s){
 }
 function dispatchDue(s){
  placeStoredItems(s);
+ // Rescue each lone worker below the paid summon level without a mystery-box tap.
+ // Existing workers/parcels of that level suppress duplicate rescue deliveries.
+ if(occupiedSlots(s)<capacity(s)){
+  const partner=crewInfo(s).partner,spot=partner&&deliverySpot(s);
+  if(spot)addFriend(s,partner.level,spot);
+ }
  if(!workerDeliveryFull(s)&&s.elapsed>=s.freeAt){
   const spot=deliverySpot(s);
   if(spot){(s.workerBarrels??=[]).push({id:id(s),level:cannonLevel(s),...spot});s.freeAt=s.elapsed+deliveryInterval(s);}

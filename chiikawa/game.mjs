@@ -1,4 +1,5 @@
 import * as E from './economy.mjs';
+import {bonusDue,startSiren,finishSiren} from './siren.mjs';
 export const VERSION='1.3.0',DAY=86400000,KST=9*3600000,OFFLINE_CAP=8*3600000;
 export const fail=(message,code='invalid',status=400)=>Object.assign(new Error(message),{code,status});
 export const dayKey=now=>new Date(now+KST).toISOString().slice(0,10);
@@ -10,6 +11,7 @@ export function advance(g,now){if(g.version!==VERSION){
   g.version=VERSION;
   if(g.guide)g.guide.paused=true;
  }
+ E.updateGateRules(g);
  E.placeStoredItems(g);
  // A saved entrance that had finished mining can start production without another tap.
  for(const f of g.facilities)if(f.repaired&&!f.active)E.activate(g,f.id);
@@ -42,7 +44,9 @@ export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let r
  case 'automate':result=E.automate(g,str(p.facility));g.stats.automated=(g.stats.automated||0)+1;break;
  // Old clients can still replay a queued toggle after reconnecting.
  case 'auto':g.auto=false;result={enabled:false};break;
- case 'next':{const n=E.nextMine(g);for(const key of ['lastAt','revision','stats','guide','daily','introSeen'])n[key]=g[key];n.version=VERSION;n.stats.bestStage=Math.max(n.stats.bestStage,n.stage);game=n;result={stage:n.stage};break;}
+ case 'sirenStart':result=startSiren(g,now,'siren-'+str(requestId,80));break;
+ case 'sirenFinish':{if(typeof p.inputs!=='string')throw fail('세이렌 조작 기록을 확인해 주세요.');result=finishSiren(g,str(p.runId),p.inputs,now);break;}
+ case 'next':{if(bonusDue(g)&&g.siren?.status!=='finished')throw fail('세이렌 보너스에서 보상을 정산한 뒤 이동해 주세요.');const n=E.nextMine(g);for(const key of ['lastAt','revision','stats','guide','daily','introSeen'])n[key]=g[key];n.version=VERSION;n.stats.bestStage=Math.max(n.stats.bestStage,n.stage);game=n;result={stage:n.stage};break;}
  case 'dismissIntro':g.introSeen=true;result={seen:true};break;
  // A client returning with an old queued tutorial action can discard it safely.
  case 'guide':result={paused:true};break;
