@@ -1,4 +1,4 @@
-import {MiningInputQueue,previewMiningInput,mergeMiningDelta} from './mining-input.mjs?v=20261127-v311-cycle-test';
+import {MiningInputQueue,previewMiningInput,mergeMiningDelta} from './mining-input.mjs?v=20261127-v312-cycle-test';
 import {gameRequestURL,fetchGame} from './game-network.mjs?v=20261126-v247-shield-raid';
 import {PATCH_ID,EVENT_ENDS_AT} from './patch-policy.mjs?v=20261126-v247-shield-raid';
 import {mountPatchUpdate} from './patch-update.js?v=20261126-v247-shield-raid';
@@ -6,7 +6,7 @@ import {BOOST_PASSES,RESEARCH_PASSES,FORKLIFT_PASSES} from './pass-catalog.mjs?v
 import {recruitQuote,recruitQuantityMarkup,summarizeRecruitPulls} from './recruit-quantity.mjs?v=20261126-v247-shield-raid';
 const recruitUseCounts={normal:1,rare:1};let updateNoticeController=null;
 import {expeditionHomeMarkup} from './expedition-home.js?v=20261126-v247-shield-raid';
-import {mountCombatPatch} from './combat-patch.js?v=20261127-v311-cycle-test';
+import {mountCombatPatch} from './combat-patch.js?v=20261127-v312-cycle-test';
 let patchNoticeController=null,tdWarOpen=false;
 import {combatPower as tdCombatPower} from './test/combat-power.mjs?v=td-ux-20';
 import {gameAPI,isTDWorld,tdTab,mergeTDState,tdAction} from './td-routing.js?v=20261126-v247-shield-raid';
@@ -17,15 +17,15 @@ let bossEventController=null;
 import {unlockReadyHeroes,unseenUnlockHeroes} from './hero-ready.js?v=20261124-v227-worker-floor';
 import {mountDeveloperTicker} from './developer-notice.js?v=20261124-v227-worker-floor';
 import {startUpdateMonitor} from './client-update.js?v=20261124-v227-worker-floor';
-import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding,previewMiningDrop,miningTargetRate,miningRates} from './mining-ui.js?v=20261127-v311-cycle-test';
+import {patchMiningMarkup,miningMultiplier,miningHp,miningSeconds,miningLanding,previewMiningDrop,miningTargetRate,miningRates} from './mining-ui.js?v=20261127-v312-cycle-test';
 import {chatResume,visibleChatRead,chatViewport} from './chat-view.js?v=20261124-v227-worker-floor';
 import {miningAttention,attackNotices,unreadAttacks,rankPlayers,battleNames,eventReadyCount,attendanceReadyCount} from './attention.js?v=20261124-v227-worker-floor';
 import {loadSceneAssets,paintMiner} from './scene-assets.js?v=20261124-v227-worker-floor';
 import {chatNotification} from './social.js?v=20261124-v227-worker-floor';
-import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261127-v311-cycle-test';
+import {WORKER_MAX_LEVEL,SUMMON_MAX_LEVEL,researchLimitKind,researchLimitLabel,workerBaseDps,workerMiningDps,canMergeWorkers,CLASS_TRAINING,researchCenterRequired,CLASS_RESEARCH,classResearchEffect,upgradeCost,researchMax,miningResearchEffect,combatResearchEffect,marchPower} from './balance.js?v=20261127-v312-cycle-test';
 import {FORMATIONS,TROOP_ROLES,buildFormation,formationFactors,HERO_RANGE} from './formation.js?v=20261124-v227-worker-floor';
 import {HEALTH_KINDS,battleHealthMarkup,buildBattleEvents,paintBattle} from './battle-scene.js?v=20261124-v227-worker-floor';
-const RELEASE='20261127-v311-cycle-test';
+const RELEASE='20261127-v312-cycle-test';
 for(const link of document.querySelectorAll('link[rel="stylesheet"]')){const url=new URL(link.getAttribute('href'),document.baseURI);if(url.origin===location.origin&&url.searchParams.get('v')!==RELEASE){url.searchParams.set('v',RELEASE);link.href=url.href;}}
 startUpdateMonitor(RELEASE);
 const API_BASE='https://pgupfypoxhjawtonnzzk.supabase.co/functions/v1/kurly-apocalypse-test';
@@ -140,7 +140,7 @@ async function ensureTDController(host){
  if(tdController&&!!tdController.simple!==!!state?.td?.simple){tdController.destroy();tdController=null;tdMounting=null;tdShownTab='';}
  if(tdController&&tdController.session.latest.me.id!==state?.me.id){tdController.destroy();tdController=null;tdMounting=null;tdShownTab='';}
  if(tdController)return tdController;if(tdMounting)return tdMounting;const actor=state.me.id;host.innerHTML='<div class="td-mount-loading"><span>병력과 전장을 불러오고 있어요…</span></div>';
- tdMounting=(async()=>{try{const {mountIntegratedTD}=state.td.simple?{mountIntegratedTD:(await import('./simple/ui.mjs?v=cycle-2')).mountSimpleUI}:await import('./test/integrated.mjs?v=td-ux-22');if(state?.me.id!==actor)return null;host.innerHTML='';const controller=await mountIntegratedTD({host,td:state.td,token:localStorage.getItem(TOKEN_KEY),api,onState:applyTDToShell,onNavigate:navigateTD});if(state?.me.id!==actor){controller.destroy();return null;}tdController=controller;return controller;}catch(error){host.innerHTML='<div class="td-mount-loading">'+h(error.message)+'</div>';toast(error.message,true);throw error;}finally{tdMounting=null;}})();return tdMounting;
+ tdMounting=(async()=>{try{const {mountIntegratedTD}=state.td.simple?{mountIntegratedTD:(await import('./simple/ui.mjs?v=cycle-3')).mountSimpleUI}:await import('./test/integrated.mjs?v=td-ux-22');if(state?.me.id!==actor)return null;host.innerHTML='';const controller=await mountIntegratedTD({host,td:state.td,token:localStorage.getItem(TOKEN_KEY),api,onState:applyTDToShell,onNavigate:navigateTD});if(state?.me.id!==actor){controller.destroy();return null;}tdController=controller;return controller;}catch(error){host.innerHTML='<div class="td-mount-loading">'+h(error.message)+'</div>';toast(error.message,true);throw error;}finally{tdMounting=null;}})();return tdMounting;
 }
 async function renderTDTab(){if(!state?.td?.simple&&selectedTab==='war'&&!tdWarOpen&&!state?.td?.campaign.pending&&!tdDestination){render();return;}const tab=selectedTab,host=$('tab'+tab[0].toUpperCase()+tab.slice(1));host.classList.add('td-mount');host.querySelector('.td-illustrated-home')?.remove();const controller=await ensureTDController(host);if(!controller)return;if(!isTDWorld(state)||!activeTDTab(selectedTab)){controller.hide();return;}const currentHost=$('tab'+selectedTab[0].toUpperCase()+selectedTab.slice(1));controller.update(state.td);if(tdShownTab!==selectedTab){tdShownTab=selectedTab;controller.show(currentHost,selectedTab==='center'?'production':selectedTab==='shop'?'shop':selectedTab==='event'?'event':selectedTab==='server'?'ranks':controller.session.campaign.pending?'battle':'expedition');}if(tdDestination){const d=tdDestination;tdDestination=null;if(d.editor)controller.edit(d.scope||'home');else{controller.open(d.page,d.category);if(d.item){controller.ui.selected=d.item;controller.ui.detail=true;controller.ui.render(false);}}}}
 function navigateTD(target,options={}){closeModal();if(target==='chat'){setTab('server');simpleChatOpen=true;serverPage='chat';render();return;}if(target==='war-home'){tdDestination=null;tdWarOpen=false;tdController?.hide();tdShownTab='';render();return;}if(target==='recruit'){recruitPool=options.pool==='rare'?'rare':'normal';openRecruitment();return;}if(target==='explore'){openExplore();return;}if(target==='mine'||target==='center'||target==='shop'){setTab(target);return;}if(target==='defense'){tdDestination={editor:true,scope:options.scope||'home'};setTab('war');renderTDTab();}}

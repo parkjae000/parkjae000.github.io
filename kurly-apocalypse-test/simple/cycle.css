@@ -2,3 +2,5 @@
 
 /* Constrain the live shell, then let only each panel scroll. */
 .app.cycle-game{height:100dvh;max-height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column}.app.cycle-game .app-header{flex:none}.app.cycle-game #main{flex:1;min-height:0;overflow:hidden;padding-bottom:76px;box-sizing:border-box}.app.cycle-game .tab-page:not(.hidden){height:100%;min-height:0;overflow:hidden;display:flex;flex-direction:column}.app.cycle-game #tabMine:not(.hidden){overflow:auto;display:block}.app.cycle-game .cycle-ui{flex:1;min-height:0;height:100%;max-height:100%}.app.cycle-game .c-scroll{min-height:0}.app.cycle-game .td-mount{min-height:0!important}
+
+.app.cycle-game{padding-bottom:70px!important}.app.cycle-game #main{padding-bottom:0!important}.app.cycle-game.td-integrated .tab-page:not(.hidden){padding:0!important}

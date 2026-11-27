@@ -1,11 +1,11 @@
-import {n,short,toolName,toolBonus,simplePower} from './model.mjs?v=cycle-2';
+import {n,short,toolName,toolBonus,simplePower} from './model.mjs?v=cycle-3';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const art=name=>new URL('../assets/'+name+'.webp',import.meta.url).href;
 const image=(name,cl='')=>`<img class="${cl}" src="${art(name)}" alt="" loading="lazy">`;
 const names={center:'내 센터',war:'출정 지도',event:'서버 협동',shop:'보급 상점',ranks:'친구와 경쟁',tool:'채굴 도구',research:'채굴 강화',report:'출정 보고'};
 const labels={army:'사원 강화',center:'센터 확장',mine:'채굴 효율',laborCost:'소환 비용',lossDiscovery:'획득 보상',careerLevel:'기본 일용직',mergeLuck:'합성 행운'};
 export async function mountCycleUI({host,td,api,onState=()=>{},onNavigate=()=>{}}){
- for(const [key,file]of [['simpleStyles','style.css?v=cycle-2'],['cycleStyles','cycle.css?v=cycle-2']])if(!document.querySelector('link[data-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+']')){const l=document.createElement('link');l.rel='stylesheet';l.href=new URL('./'+file,import.meta.url).href;l.dataset[key]='';document.head.append(l);await new Promise((resolve,reject)=>{l.onload=resolve;l.onerror=()=>reject(Error('TEST 화면 스타일을 불러오지 못했어요.'));});}
+ for(const [key,file]of [['simpleStyles','style.css?v=cycle-3'],['cycleStyles','cycle.css?v=cycle-3']])if(!document.querySelector('link[data-'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+']')){const l=document.createElement('link');l.rel='stylesheet';l.href=new URL('./'+file,import.meta.url).href;l.dataset[key]='';document.head.append(l);await new Promise((resolve,reject)=>{l.onload=resolve;l.onerror=()=>reject(Error('TEST 화면 스타일을 불러오지 못했어요.'));});}
  const root=document.createElement('section');root.className='simple-ui cycle-ui';host.append(root);
  const state={latest:td,page:'center',visible:true,dead:false,busy:false,notice:'',mode:'conquest',rank:'points',sheet:null,result:null,polled:0,polling:false,at:Date.now()};
  const d=()=>state.latest,g=()=>d().growth,c=()=>d().campaign,s=()=>d().simple,v=()=>s().cycle,now=()=>Date.now()+d().serverTime-state.at;
