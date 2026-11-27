@@ -1,5 +1,6 @@
 import * as E from './economy.mjs';
 import {bonusDue,startSiren,finishSiren} from './siren.mjs';
+import {openClearChest,confirmClearChest,clearChestReady} from './chests.mjs';
 export const VERSION='1.3.0',DAY=86400000,KST=9*3600000,OFFLINE_CAP=8*3600000;
 export const fail=(message,code='invalid',status=400)=>Object.assign(new Error(message),{code,status});
 export const dayKey=now=>new Date(now+KST).toISOString().slice(0,10);
@@ -22,7 +23,7 @@ export function advance(g,now){if(g.version!==VERSION){
  g.lastAt=until;return {seconds:Math.max(0,(until-from)/1000),gold:g.gold-beforeGold,rocks:g.stats.rocks-beforeRocks,births};}
 const str=(v,max=100)=>{if(typeof v!=='string'||!v||v.length>max)throw fail('작업 대상을 확인해 주세요.');return v;};
 const int=(v,min,max)=>{if(!Number.isInteger(v)||v<min||v>max)throw fail('작업 수치를 확인해 주세요.');return v;};
-export const PREDICTABLE=new Set(['assign','move','merge','recruit','upgrade','activate','collect','research','automate','auto','next','guide','dismissIntro','unpack','charge','moveCharge','mergeCharges']);
+export const PREDICTABLE=new Set(['assign','move','merge','recruit','upgrade','activate','collect','research','automate','auto','next','guide','dismissIntro','unpack','charge','moveCharge','mergeCharges','confirmClearChest']);
 export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let result,game=g;switch(type){
  case 'assign':{const target=str(p.target);const stand=p.stand==null?null:{x:int(p.stand.x,0,E.COLS-1),y:int(p.stand.y,0,g.rows+2)};result=E.assign(g,str(p.worker),target,stand);if(target.startsWith('r'))g.stats.manualAssignments++;if(g.facilities.some(f=>f.id===target))g.stats.facilityStarted++;break;}
  case 'move':result=E.move(g,str(p.worker),int(p.x,0,6),int(p.y,0,g.rows+2));if(result.target)g.stats.manualAssignments++;break;
@@ -44,9 +45,11 @@ export function perform(g,type,p={},requestId='local-action',now=g.lastAt){let r
  case 'automate':result=E.automate(g,str(p.facility));g.stats.automated=(g.stats.automated||0)+1;break;
  // Old clients can still replay a queued toggle after reconnecting.
  case 'auto':g.auto=false;result={enabled:false};break;
- case 'sirenStart':result=startSiren(g,now,'siren-'+str(requestId,80));break;
+ case 'clearChest':if(int(p.stage,1,1000000)!==g.stage)throw fail('현재 동굴의 보상 상자를 선택해 주세요.');result=openClearChest(g);break;
+ case 'confirmClearChest':if(int(p.stage,1,1000000)!==g.stage)throw fail('현재 동굴의 보상을 확인해 주세요.');result=confirmClearChest(g);break;
+ case 'sirenStart':if(!clearChestReady(g))throw fail('클리어 상자를 열고 보상을 확인한 뒤 출발해 주세요.');result=startSiren(g,now,'siren-'+str(requestId,80));break;
  case 'sirenFinish':{if(typeof p.inputs!=='string')throw fail('세이렌 조작 기록을 확인해 주세요.');result=finishSiren(g,str(p.runId),p.inputs,now);break;}
- case 'next':{if(bonusDue(g)&&g.siren?.status!=='finished')throw fail('세이렌 보너스에서 보상을 정산한 뒤 이동해 주세요.');const n=E.nextMine(g);for(const key of ['lastAt','revision','stats','guide','daily','introSeen'])n[key]=g[key];n.version=VERSION;n.stats.bestStage=Math.max(n.stats.bestStage,n.stage);game=n;result={stage:n.stage};break;}
+ case 'next':{if(!clearChestReady(g))throw fail('클리어 상자를 열고 보상을 확인한 뒤 이동해 주세요.');if(bonusDue(g)&&g.siren?.status!=='finished')throw fail('세이렌 보너스에서 보상을 정산한 뒤 이동해 주세요.');const n=E.nextMine(g);for(const key of ['lastAt','revision','stats','guide','daily','introSeen'])n[key]=g[key];n.version=VERSION;n.stats.bestStage=Math.max(n.stats.bestStage,n.stage);game=n;result={stage:n.stage};break;}
  case 'dismissIntro':g.introSeen=true;result={seen:true};break;
  // A client returning with an old queued tutorial action can discard it safely.
  case 'guide':result={paused:true};break;

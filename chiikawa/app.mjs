@@ -2,12 +2,14 @@ import {icon,fmt,duration,esc,unitPhase} from './ui.mjs?v=127';
 import {placementBoard,resolvePlacement} from './placement.mjs?v=129';
 import * as Rules from './economy.mjs';
 import {advance as simulate,TASKS} from './game.mjs';
-import {guidePage} from './guide.mjs?v=135';
+import {guidePage} from './guide.mjs?v=136';
 import {watchRelease} from './release.mjs?v=124';
 import {GameSession} from './session.mjs';
 import {API,LIVE_HOSTS} from './config.mjs';
 import {bonusDue} from './siren.mjs';
 import {SirenStage} from './siren-ui.mjs?v=135';
+import {clearChestQuote,claimedClearChest,clearChestReady} from './chests.mjs';
+import {ChestOpening} from './chest-ui.mjs?v=136';
 const E={...Rules};
 const $=s=>document.querySelector(s),cv=$('#scene'),world=$('#world'),dialog=$('#dialog');
 let ctx=cv.getContext('2d');
@@ -18,8 +20,8 @@ $('#event-icon').innerHTML='<svg viewBox="0 0 48 40" aria-hidden="true"><path d=
 const atlas=new Image(),ground=new Image(),support=new Image();atlas.src='atlas.webp';ground.src='ground.webp';support.src='support.webp';await Promise.all([atlas.decode(),ground.decode(),support.decode()]);
 const W=780,STEP=86,LEFT=89,FONT='"Noto Sans CJK KR",system-ui,sans-serif',reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const serverButtons=new WeakSet();
-let modalRefreshAt=0,sirenView=null;
-let wheelSpinning=false,wheelResult=null,wheelRotation=0,campSeen=-1,shopReceipt=null,wheelContext=null;
+let modalRefreshAt=0,sirenView=null,suppressedSiren=null,chestView=null,shopChestFlight=null;
+let wheelSpinning=false,wheelResult=null,wheelRotation=0,campSeen=-1,wheelContext=null;
 let g,player=null,authMode='register',offlineShown=false,H=1300,VH=1300,camera=0,selected=null,drag=null,frameAt=0,lastFrame=0,lastReal=Date.now(),hudAt=0,modalName=null,structureKey='',delivery=null,particles=[],movers=new Map(),celebrations=new Map();
 let chatOwner=null,chatMessages=[],chatAfter=null,chatRead=null,chatRequest=null,chatAlertTimer;
 const terrain=document.createElement('canvas');
@@ -39,9 +41,9 @@ E.nextMine=()=>client.mutate('next').game;
 function updateSave(status){const el=$('#save-state');el.textContent=status==='saved'?'✓':status==='saving'?'↻':status==='offline'?'!':'…';el.dataset.status=status;el.title={saved:'서버 저장 완료',saving:'저장 중',offline:'연결을 복구하면 저장을 이어서 진행해요.'}[status]||'연결 확인 중';if(status==='signed-out')showWelcome();if(!g&&status==='offline'){$('#auth-loading').textContent='연결을 확인한 뒤 다시 시도해 주세요.';$('#retry-connection').hidden=false;}else $('#retry-connection').hidden=true;}
 function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;$('#auth-form').hidden=false;$('#auth-loading').hidden=true;if(dialog.open)dialog.close();g=null;sirenView?.destroy();sirenView=null;resetChat(null);}
 function acceptGame(game,p){if(!game){showWelcome();return;}const first=!g,changed=g&&g.stage!==game.stage,previous=g?.camp.moves;if(!first&&game!==g&&game.rocks.some((rock,i)=>rock.done!==g.rocks[i]?.done))terrainKey='';
- g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){itemStage=null;$('#board-items').replaceChildren();terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 소환비용 75% 할인 · 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
+ g=game;player=p;if(p?.id!==chatOwner){resetChat(p?.id);if(p?.id)loadChat();}if(first||changed){suppressedSiren=null;itemStage=null;$('#board-items').replaceChildren();terrainKey='';parcelFlight=null;selectedCharge=null;chargeGesture=null;}$('#welcome').hidden=true;$('#app').hidden=false;lastReal=client.now();if(first||changed){selected=null;drag=null;delivery=null;movers.clear();structureKey='';$('#structures').replaceChildren();$('#production-clocks').replaceChildren();campSeen=g.camp.moves;fit();focusCamp();}else if(previous!==g.camp.moves){campSeen=g.camp.moves;focusCamp();notice('개방 완료! 소환비용 75% 할인 · 찻집과 대포가 앞으로 이동했어요.');}updateHUD(true);
  if(!g.siren&&sirenView){sirenView.destroy();sirenView=null;}
- if(g.siren&&!sirenView)openSiren();
+ if(g.siren&&!sirenView&&g.siren.id!==suppressedSiren)openSiren();
  if(first&&!offlineShown&&client.base&&client.now()-client.base.lastAt>60000)offlineShown=true;}
 const coord=(x,y)=>({x:LEFT+(x+.5)*STEP,y:H-(g.rows+3.2)*STEP+y*STEP});
 function facilityBounds(f){
@@ -347,18 +349,39 @@ cv.addEventListener('pointerup',e=>{
  if(w){selected=w.id;updateSelection();return;}if(t&&!f?.footprint.length){orderTarget(t);return;}if(f){if(!f.repaired){orderTarget(f);return;}if(f.ready){collectFacility(f);return;}openFacility(f);return;}if((g.bedrock||[]).some(([x,y])=>{const q=coord(x,y);return Math.abs(q.x-p.x)<STEP/2&&p.y>q.y-65&&p.y<q.y+15;})){notice('고정 암벽이에요. 옆의 숫자 바위를 캐서 길을 내세요.');return;}if(p.y<cannonPoint().y&&p.y>cannonPoint().y-160&&p.x>590){panel('supply');return;}selected=null;updateSelection();});
 for(const event of ['pointercancel','lostpointercapture'])cv.addEventListener(event,e=>{if(drag?.pointer===e.pointerId)drag=null;});$('#clear-selection').onclick=()=>{selected=null;updateSelection();};
 $('#hire').onclick=()=>{const w=action(()=>E.recruit(g));if(w)launch(w.id);};
-function open(title,html,name='custom'){modalName=name;$('#dialog-title').textContent=title;$('#dialog-content').innerHTML=html;if(!dialog.open)dialog.showModal();}
+function open(title,html,name='custom'){chestView?.destroy();chestView=null;modalName=name;$('#dialog-title').textContent=title;$('#dialog-content').innerHTML=html;if(!dialog.open)dialog.showModal();}
 function showGuide(index){
  open('그림으로 보는 게임 설명',guidePage(index),'help');
  $('#dialog-content').scrollTop=0;
 }
 function showDeparture(){
+ if(!clearChestReady(g)){showClearChest();return;}
  const next=g.stage+1;
  open(next+'구역으로 떠날까?',`<div class="departure-gold"><p>떠나면 사라지는 골드 <b id="departure-balance">${Math.floor(g.gold).toLocaleString('ko-KR')}</b></p><p>${next}구역 시작 골드 <b>${E.startingGold(next).toLocaleString('ko-KR')}</b></p></div>${bonusDue(g)&&g.siren?.status!=='finished'?'<div class="siren-invite"><img src="siren.webp" alt="세이렌"><div><h2>세이렌의 보물 바다</h2><p>30초 동안 조이스틱으로 헤엄치며 연구·카드·보석을 모아요. 시계 +5초 · 파도 확대 · 돌진 · 노래 폭발!</p></div></div>':''}<p><b>골드는 이 동굴에서만 쓰는 돈이야.</b> 떠나면 지금 가진 골드는 전부 사라져. 새 동굴에서는 위에 적힌 시작 골드로 친구와 가게를 다시 키워.</p><p>보석·연구 포인트·카드와 카드 레벨은 그대로 가져가. 남은 상자를 더 캐고 싶으면 여기에 있어도 돼.</p><div class="departure-actions"><button id="stay-here" autofocus>계속 채굴</button><button data-leave-stage="${g.stage}">${bonusDue(g)&&g.siren?.status!=='finished'?'세이렌 바다로 출발':next+'구역으로 이동'}</button></div>`,'departure');
+}
+function chestOptions(){return {art,cardArt:id=>E.cardPreview(g,id).art,cardName:E.cardName};}
+function showClearChest(){
+ if(!g?.exit.done)return;
+ const stage=g.stage;
+ open(stage+'번 동굴 클리어!','<div id="chest-host"></div>','clearChest');
+ chestView=new ChestOpening($('#chest-host'),{...chestOptions(),kind:'clear',quote:clearChestQuote(g),reward:claimedClearChest(g),claim:()=>client.confirm('clearChest',{stage}),continueLabel:'보상 확인하고 계속',onStay:()=>dialog.close(),onContinue:()=>{
+  if(g.stage!==stage)return;
+  if(action(()=>client.mutate('confirmClearChest',{stage})))showDeparture();
+ }});
+}
+function showShopChest(offer){
+ let flight=shopChestFlight;
+ if(!flight||!flight.pending){
+  flight={offer,pending:true};shopChestFlight=flight;
+  flight.request=()=>{if(!flight.promise){flight.pending=true;flight.promise=client.confirm('buy',{offer}).catch(e=>{flight.promise=null;throw e;}).finally(()=>{flight.pending=false;});}return flight.promise;};
+ }
+ open('보급 상자','<div id="chest-host"></div>','shopChest');
+ chestView=new ChestOpening($('#chest-host'),{...chestOptions(),kind:'shop',claim:()=>flight.request(),autoOpen:true,continueLabel:'확인',onContinue:()=>{shopChestFlight=null;panel('shop');}});
 }
 function openSiren(){
  if(!g?.siren||sirenView)return;
  sirenView=new SirenStage({run:g.siren,now:()=>client.now(),confirm:(type,payload)=>client.confirm(type,payload),cardName:E.cardName,onNext:()=>{
+  if(!clearChestReady(g)){suppressedSiren=g.siren.id;sirenView?.destroy();sirenView=null;showDeparture();return;}
   const value=action(()=>E.nextMine(g));if(value){sirenView?.destroy();sirenView=null;}
  }});
 }
@@ -391,10 +414,6 @@ function deliveryStatus(){
  const timer=E.workerDeliveryFull(g)?'현재 구역 빈칸 대기 · '+wait+' 남음':wait+' 후 도착';
  return `무료 친구 Lv.${E.cannonLevel(g)} · ${timer}<br>친구 상자 ${placed}개${reserve?' · 빈자리 대기 '+reserve+'개':''} · 개수 제한 없음<br>일반 보급 상자 ${g.barrel?'1/1 · 지도에서 열기':'0/1 · 배달 준비 중'}`;
 }
-function shopReceiptMarkup(reward){
- if(!reward)return '';
- return `<section class="shop-receipt" role="status"><h2>이번에 받은 보상</h2><p>${esc(reward.text)}</p>${reward.cards?.map(c=>`<div class="received-card">${art(E.cardPreview(g,c.id).art)}<span>${esc(E.cardName(c.id))}</span><b>+${c.amount}장</b></div>`).join('')||''}</section>`;
-}
 function chestContents(){
  const ids=Object.keys(g.cards),chance=(100/ids.length).toLocaleString('ko-KR',{maximumFractionDigits:2});
  return `<details class="chest-contents"><summary>나올 수 있는 카드 ${ids.length}종 보기</summary><p>아래 카드에서 총 3장을 무작위로 받아요. 한 장마다 각 카드 확률 ${chance}% · 같은 카드가 여러 장 나올 수 있어요.</p><ul>${ids.map(id=>`<li>${esc(E.cardName(id))}</li>`).join('')}</ul></details>`;
@@ -411,7 +430,7 @@ function crewPanel(){
 }
 function panel(name){if(!g)return;settle();if(name==='menu'){open('내 모험 · '+player.nickname,`<div class="facts"><span>현재 구역</span><strong>${g.stage}구역</strong><span>누적 채굴</span><strong>${g.stats.rocks}개</strong><span>누적 합성</span><strong>${g.stats.merges}번</strong><span>진행 저장</span><strong>${client.status==='saved'?'저장 완료':client.status==='offline'?'연결 확인 중':'저장 중'}</strong></div><div class="menu-actions"><button data-panel="chat">친구들과 채팅</button><button data-panel="rankings">전체 랭킹</button><button data-panel="supply">보급·무료 배달</button><button data-panel="help">플레이 안내</button></div><button class="dialog-button" id="sync-game">저장 확인</button><button class="logout-button" id="logout">로그아웃</button><p class="account-note">닉네임과 PIN으로 다른 기기에서도 이어 할 수 있어요. 자리비움 중 생산·지정 작업은 최대 8시간 반영돼요.</p>`,name);}
  else if(name==='cards'){open('카드 연구',`<div class="wallet-line">${icon('elixir')} 연구 <b>${fmt(g.elixir)}</b><span>구역을 넘어 유지돼요</span></div><p class="panel-intro">골드는 시설 강화에, 카드와 연구는 영구 성장에 사용해요.</p>${Object.keys(g.cards).map(id=>cardMarkup(id)).join('')}`,name);}
- else if(name==='shop'){open('보급 상점',`<div class="wallet-line">${icon('gem')} 보석 <b>${g.gems}</b><span>게임 안의 보석만 사용</span></div>${shopReceiptMarkup(shopReceipt)}<article class="shop-feature">${art(9)}<div><span class="rarity">4시간마다 무료</span><h2>작은 보급 상자</h2><p>무작위 카드 3장 · 연구 15</p></div><button data-buy="free" ${g.elapsed<g.shop.freeAt?'disabled':''}>${g.elapsed<g.shop.freeAt?duration((g.shop.freeAt-g.elapsed)*1000):'무료 받기'}</button></article>${chestContents()}<h2 class="section-title">성장 보급</h2><div class="shop-grid"><article>${art(9)}<h3>든든한 보급 상자</h3><p>모든 카드 각 2장<br>총 ${2*Object.keys(g.cards).length}장 + 연구 60</p><button data-buy="chest" ${g.gems<35?'disabled':''}>${icon('gem')} 35</button></article><article>${art(17)}<h3>연구 주머니</h3><p>연구 포인트 80<br>카드 연구에 사용</p><button data-buy="research" ${g.gems<25?'disabled':''}>${icon('gem')} 25</button></article></div><article class="time-offer">${art(17)}<div><h3>5분 시간 단축</h3><p>생산·지정 작업 즉시 진행</p></div><button data-buy="time" ${g.gems<20?'disabled':''}>${icon('gem')} 20</button></article><h2 class="section-title">필요한 카드 선택</h2><p class="panel-intro">카드가 모자라면 보석으로 사고, 카드와 연구 포인트가 모이면 여기서 바로 연구해요. 가게의 골드 강화는 지도에서 해요.</p>${Object.keys(g.cards).map(id=>cardMarkup(id,true)).join('')}<button class="dialog-button" data-panel="cards">모은 카드로 연구하기</button>`,name);}
+ else if(name==='shop'){open('보급 상점',`<div class="wallet-line">${icon('gem')} 보석 <b>${g.gems}</b><span>게임 안의 보석만 사용</span></div><article class="shop-feature">${art(9)}<div><span class="rarity">4시간마다 무료</span><h2>작은 보급 상자</h2><p>무작위 카드 3장 · 연구 15</p></div><button data-buy="free" ${g.elapsed<g.shop.freeAt?'disabled':''}>${g.elapsed<g.shop.freeAt?duration((g.shop.freeAt-g.elapsed)*1000):'무료 받기'}</button></article>${chestContents()}<h2 class="section-title">성장 보급</h2><div class="shop-grid"><article>${art(9)}<h3>든든한 보급 상자</h3><p>모든 카드 각 2장<br>총 ${2*Object.keys(g.cards).length}장 + 연구 60</p><button data-buy="chest" ${g.gems<35?'disabled':''}>${icon('gem')} 35</button></article><article>${art(17)}<h3>연구 주머니</h3><p>연구 포인트 80<br>카드 연구에 사용</p><button data-buy="research" ${g.gems<25?'disabled':''}>${icon('gem')} 25</button></article></div><article class="time-offer">${art(17)}<div><h3>5분 시간 단축</h3><p>생산·지정 작업 즉시 진행</p></div><button data-buy="time" ${g.gems<20?'disabled':''}>${icon('gem')} 20</button></article><h2 class="section-title">필요한 카드 선택</h2><p class="panel-intro">카드가 모자라면 보석으로 사고, 카드와 연구 포인트가 모이면 여기서 바로 연구해요. 가게의 골드 강화는 지도에서 해요.</p>${Object.keys(g.cards).map(id=>cardMarkup(id,true)).join('')}<button class="dialog-button" data-panel="cards">모은 카드로 연구하기</button>`,name);}
  else if(name==='wheel'){open('행운 룰렛',`<p class="wheel-caption">간식 동굴의 작은 행운</p>${wheelMarkup()}<div id="wheel-result" role="status" class="wheel-result">${wheelSpinning?'두근두근…':wheelResult?'획득 · '+wheelResult.label:'오늘의 보상을 돌려 보세요'}</div><button class="dialog-button spin-main" id="spin-free" ${g.wheel.free||wheelSpinning?'disabled':''}>${g.wheel.free?'무료 회전 완료':'무료로 돌리기'}</button><button class="dialog-button" id="spin-extra" ${wheelSpinning||g.wheel.extra>=5||g.elapsed<g.wheel.nextAt?'disabled':''}>${g.wheel.extra>=5?'추가 회전 5회 완료':g.elapsed<g.wheel.nextAt?duration((g.wheel.nextAt-g.elapsed)*1000)+' 후 추가 회전':'추가 회전 · '+g.wheel.extra+'/5'}</button><p class="wheel-note">8칸의 확률은 각각 12.5%예요. 시간 보상은 즉시 적용돼요. 친구 정원이 가득 차면 연구 40으로 바뀌어요.</p><p class="wheel-note">매일 무료 1회 · 추가 회전은 2시간 간격, 하루 최대 5회예요. 자정(한국시간)에 다시 시작해요.</p>`,name);}
  else if(name==='events'){open('오늘의 업무',`<p class="panel-intro">매일 자정(한국시간)에 새 업무가 시작돼요.</p>${TASKS.map(t=>{const amount=g.daily[t.id]||0,claimed=g.daily.claims.includes(t.id);return `<article class="daily-card" data-task="${t.id}"><div><h2>${t.name}</h2><p>${Math.min(amount,t.goal)}/${t.goal} · 보석 ${t.gems} + 연구 ${t.elixir}</p><div class="material-bar"><i style="width:${Math.min(100,amount/t.goal*100)}%"></i></div></div><button data-daily="${t.id}" ${claimed||amount<t.goal?'disabled':''}>${claimed?'받음':'받기'}</button></article>`;}).join('')}`,name);}
  else if(name==='crew'){open('친구 정원',crewPanel(),name);}
@@ -421,7 +440,7 @@ function panel(name){if(!g)return;settle();if(name==='menu'){open('내 모험 ·
  else if(name==='rankings'){open('동굴 탐험 랭킹','<p class="panel-intro">도달 구역 → 누적 채굴 → 합성 횟수 순이에요.</p><div id="ranking-list" aria-live="polite">불러오는 중…</div>',name);loadRankings();}}
 async function startSpin(extra){if(wheelSpinning)return;wheelSpinning=true;wheelResult=null;wheelContext={level:E.hireLevel(g)+1,full:E.occupiedSlots(g)>=E.capacity(g)};panel('wheel');try{const result=await client.confirm('wheel',{extra});if(modalName==='wheel'&&dialog.open){const rotor=$('#wheel-rotor'),start=wheelRotation;wheelRotation=start+1800+((360-result.index*45-start%360)%360);if(rotor){if(!reduced){rotor.style.transition='transform 3.8s cubic-bezier(.12,.7,.12,1)';requestAnimationFrame(()=>rotor.style.transform=`rotate(${wheelRotation}deg)`);await new Promise(resolve=>setTimeout(resolve,3900));}else rotor.style.transform=`rotate(${wheelRotation}deg)`;}}wheelResult=result;if(result.id)launch(result.id);if(modalName!=='wheel')notice('룰렛 획득 · '+result.label);}catch(e){notice(e.message);}finally{wheelSpinning=false;if(modalName==='wheel'&&dialog.open)panel('wheel');}}
 $('#scene-toggle').onclick=()=>panel('menu');$('#close-dialog').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{
- modalName=null;
+ modalName=null;chestView?.destroy();chestView=null;
 });dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.panel){panel(b.dataset.panel);return;}
  if(b.hasAttribute('data-guide-page')){showGuide(Number(b.dataset.guidePage));$('#dialog-content [aria-pressed="true"]')?.focus({preventScroll:true});return;}
@@ -436,7 +455,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
  const id=b.dataset.gate||b.dataset.repair;
  const target=E.targets(g).find(t=>t.id===id);
  if(target){triggerCharge(target);return;}
- }if(b.dataset.gate){const t=[...g.checkpoints,g.exit].find(t=>t.id===b.dataset.gate);if(t.id==='exit'&&t.done){showDeparture();}else orderTarget(t);return;}if(b.dataset.repair){const f=g.facilities.find(f=>f.id===b.dataset.repair);if(f.repaired){action(()=>E.activate(g,f.id),'시설을 가동했어요!');}else if(selected){assignTo(g.friends.find(w=>w.id===selected),f);}else orderTarget(f);return;}if(b.dataset.info){const f=g.facilities.find(f=>f.id===b.dataset.info);if(f.ready)collectFacility(f);else openFacility(f);return;}if(b.dataset.research){const name=modalName,offset=$('#dialog-content').scrollTop;if(action(()=>E.research(g,b.dataset.research))){panel(name);$('#dialog-content').scrollTop=offset;}return;}if(b.dataset.automate){const r=action(()=>E.automate(g,b.dataset.automate),'자동 수령을 켰어요.');if(r)dialog.close();return;}if(b.dataset.collect){collectFacility(g.facilities.find(f=>f.id===b.dataset.collect));dialog.close();return;}if(b.dataset.buy){serverAction(b,'buy',{offer:b.dataset.buy},r=>{shopReceipt=r;if(modalName==='shop'&&dialog.open){const offset=$('#dialog-content').scrollTop;panel('shop');$('#dialog-content').scrollTop=offset;}notice(r.text);});return;}if(b.id==='open-worker-parcel'){openWorkerParcel();return;}if(b.id==='open-barrel'){openMystery();return;}if(b.id==='spin-free'||b.id==='spin-extra'){startSpin(b.id==='spin-extra');return;}});
+ }if(b.dataset.gate){const t=[...g.checkpoints,g.exit].find(t=>t.id===b.dataset.gate);if(t.id==='exit'&&t.done){showDeparture();}else orderTarget(t);return;}if(b.dataset.repair){const f=g.facilities.find(f=>f.id===b.dataset.repair);if(f.repaired){action(()=>E.activate(g,f.id),'시설을 가동했어요!');}else if(selected){assignTo(g.friends.find(w=>w.id===selected),f);}else orderTarget(f);return;}if(b.dataset.info){const f=g.facilities.find(f=>f.id===b.dataset.info);if(f.ready)collectFacility(f);else openFacility(f);return;}if(b.dataset.research){const name=modalName,offset=$('#dialog-content').scrollTop;if(action(()=>E.research(g,b.dataset.research))){panel(name);$('#dialog-content').scrollTop=offset;}return;}if(b.dataset.automate){const r=action(()=>E.automate(g,b.dataset.automate),'자동 수령을 켰어요.');if(r)dialog.close();return;}if(b.dataset.collect){collectFacility(g.facilities.find(f=>f.id===b.dataset.collect));dialog.close();return;}if(b.dataset.buy){if(['free','chest'].includes(b.dataset.buy)){showShopChest(b.dataset.buy);return;}serverAction(b,'buy',{offer:b.dataset.buy},r=>{if(modalName==='shop'&&dialog.open){const offset=$('#dialog-content').scrollTop;panel('shop');$('#dialog-content').scrollTop=offset;}notice(r.text);});return;}if(b.id==='open-worker-parcel'){openWorkerParcel();return;}if(b.id==='open-barrel'){openMystery();return;}if(b.id==='spin-free'||b.id==='spin-extra'){startSpin(b.id==='spin-extra');return;}});
 requestAnimationFrame(draw);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&g){settle();updateHUD(true);client.sync();loadChat();}});
 const lootLayer=$('#board-items');
@@ -543,6 +562,7 @@ lootLayer.addEventListener('click',e=>{
 function openWorkerParcel(id){
  const barrel=id?g.workerBarrels?.find(b=>b.id===id):g.workerBarrels?.find(b=>Number.isInteger(b.x));if(!barrel)return;
  if(E.occupiedSlots(g)>=E.capacity(g)){panel('crew');return;}
+ shakeBoardChest(barrel.id);
  const value=action(()=>client.mutate('unpack',{barrel:barrel.id}));
  if(value){if(dialog.open)dialog.close();launch(value.result.id);}
 }
@@ -569,12 +589,24 @@ function showLootReward(reward,origin){
  }
  setTimeout(()=>node.remove(),3000);
 }
+function shakeBoardChest(id){
+ const node=Array.from(lootLayer.children).find(n=>n.dataset.item===id);
+ if(!node)return Promise.resolve();
+ const ghost=node.cloneNode(true);ghost.classList.add('chest-ghost');ghost.removeAttribute('data-item');ghost.disabled=true;ghost.tabIndex=-1;ghost.setAttribute('aria-hidden','true');ghost.style.pointerEvents='none';ghost.style.opacity='1';world.append(ghost);
+ const body=ghost.querySelector('.loot-body'),label=ghost.querySelector('b');if(label)label.textContent='';
+ if(!reduced)body.animate([{transform:'rotate(0deg)'},{transform:'rotate(-12deg)'},{transform:'rotate(12deg)'},{transform:'rotate(-10deg)'},{transform:'rotate(10deg)'},{transform:'none'}],{duration:500});
+ return new Promise(resolve=>setTimeout(resolve,reduced?0:500)).then(()=>{
+  const image=ghost.querySelector('i');image.style.backgroundImage='url(reward-chest.webp)';image.style.backgroundSize='200% 100%';image.style.backgroundPosition='right center';
+  if(!reduced)body.animate([{transform:'scale(.9)'},{transform:'scale(1.2)'},{transform:'scale(1)'}],{duration:200});
+  return new Promise(resolve=>setTimeout(()=>{ghost.remove();resolve();},reduced?0:180));
+ });
+}
 async function openMystery(){
  if(!g?.barrel||pendingBarrel)return;
  const origin={x:g.barrel.x,y:g.barrel.y,stage:g.stage};
  pendingBarrel=g.barrel.id;refreshPanel(true);
  try{
-  const reward=await client.confirm('barrel',{barrel:pendingBarrel});
+  const [reward]=await Promise.all([client.confirm('barrel',{barrel:pendingBarrel}),shakeBoardChest(pendingBarrel)]);
   if((modalName==='supply'||modalName==='crew')&&dialog.open)dialog.close();notice(reward.text);
   showLootReward(reward,origin);
   if(reward.type==='worker'&&reward.id)launch(reward.id);
